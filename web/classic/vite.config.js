@@ -72,9 +72,7 @@ export default defineConfig({
           'semi-ui': ['@douyinfe/semi-icons', '@douyinfe/semi-ui'],
           tools: ['axios', 'history', 'marked'],
           'react-components': [
-            'react-dropzone',
             'react-fireworks',
-            'react-telegram-login',
             'react-toastify',
             'react-turnstile',
           ],
