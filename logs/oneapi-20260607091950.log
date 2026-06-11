@@ -1,0 +1,91 @@
+[SYS] 2026/06/07 - 09:19:50 | initializing token encoders 
+[SYS] 2026/06/07 - 09:19:50 | token encoders initialized 
+[SYS] 2026/06/07 - 09:19:50 | SQL_DSN not set, using SQLite as database 
+[SYS] 2026/06/07 - 09:19:50 | database migration started 
+[SYS] 2026/06/07 - 09:19:50 | system is already initialized at: 2026-03-24 08:57:55 +0800 CST 
+[SYS] 2026/06/07 - 09:19:50 | REDIS_CONN_STRING not set, Redis is not enabled 
+[SYS] 2026/06/07 - 09:19:50 | i18n initialized with languages: zh-CN, zh-TW, en 
+[SYS] 2026/06/07 - 09:19:50 | Loaded 0 custom OAuth providers 
+[SYS] 2026/06/07 - 09:19:50 | New API v0.0.0 started 
+[INFO] 2026/06/07 - 09:19:50 | SYSTEM | codex credential auto-refresh task started: tick=10m0s threshold=24h0m0s 
+[SYS] 2026/06/07 - 09:19:50 | 正在更新数据看板数据... 
+[SYS] 2026/06/07 - 09:19:50 | upstream model update task started: interval=30m0s 
+[SYS] 2026/06/07 - 09:19:50 | 保存数据看板数据成功，共保存0条数据 
+
+  [32mNew API v0.0.0[0m  ready in 297 ms
+
+  ➜  [1mLocal:[0m   http://localhost:3000/
+  ➜  [1mNetwork:[0m http://192.168.10.35:3000/
+
+[SYS] 2026/06/07 - 09:19:50 | upstream model update check failed: channel_id=9 channel_name=axa err=Get "https://api.axa.us.ci/v1/models": EOF 
+[SYS] 2026/06/07 - 09:19:50 | upstream model update check failed: channel_id=18 channel_name=grok2api err=Get "https://vibe.grok2api.us.ci/v1/models": EOF 
+[SYS] 2026/06/07 - 09:19:51 | upstream model update check failed: channel_id=19 channel_name=gptanon-2api err=status code: 404 
+[SYS] 2026/06/07 - 09:19:51 | upstream model update task done: checked_channels=6 changed_channels=1 detected_add_models=0 detected_remove_models=82 failed_channels=3 auto_added_models=0 
+[SYS] 2026/06/07 - 09:19:51 | upstream model update notifications sent: 0 
+[GIN] 2026/06/07 - 09:19:54 | web | 202606070119549562015008268d9d6RHYQhCyK | 200 |      2.8482ms |       127.0.0.1 |     GET /models
+[GIN] 2026/06/07 - 09:19:55 | web | 202606070119551142691008268d9d6V9LqCwoQ | 200 |    191.1217ms |       127.0.0.1 |     GET /assets/index-BuBYn3UK.js
+[GIN] 2026/06/07 - 09:19:55 | api | 202606070119556065015008268d9d62PBuEs7f | 401 |      1.5677ms |       127.0.0.1 |     GET /api/channel/models_enabled_details
+[GIN] 2026/06/07 - 09:19:55 | api | 202606070119556075021008268d9d6m0w4hlar | 200 |      1.0772ms |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/07 - 09:19:55 | api | 202606070119557072025008268d9d6jDgPhMsu | 401 |      1.0019ms |       127.0.0.1 |     GET /api/channel/models_enabled
+[GIN] 2026/06/07 - 09:19:55 | web | 202606070119557110996008268d9d61Fe7R2R4 | 200 |            0s |       127.0.0.1 |     GET /login?expired=true
+[GIN] 2026/06/07 - 09:19:55 | web | 202606070119557363793008268d9d6aSmZDgSe | 200 |            0s |       127.0.0.1 |     GET /login?expired=true
+[GIN] 2026/06/07 - 09:19:55 | api | 202606070119559032442008268d9d6jIzAVUem | 200 |            0s |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/07 - 09:19:57 | api | 202606070119569444965008268d9d6zSFQdcxh | 200 |     56.3156ms |       127.0.0.1 |    POST /api/user/login?turnstile=
+[GIN] 2026/06/07 - 09:19:57 | api | 20260607011957512907008268d9d6W0GeFkYz | 200 |      1.0454ms |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/07 - 09:19:57 | web | 20260607011957493872008268d9d6QmVydaEH | 200 |     52.3807ms |       127.0.0.1 |     GET /assets/index-Y1BHwnxP.js
+[GIN] 2026/06/07 - 09:19:57 | api | 202606070119573075771008268d9d6iTV4PZWL | 200 |      1.5803ms |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/07 - 09:19:57 | api | 202606070119573206664008268d9d6CXmm9uW3 | 200 |      1.0398ms |       127.0.0.1 |     GET /api/data/?username=&start_timestamp=1780708797&end_timestamp=1780798797&default_time=hour
+[GIN] 2026/06/07 - 09:19:57 | api | 202606070119573589474008268d9d6Pp77p8CV | 200 |            0s |       127.0.0.1 |     GET /api/data/users?start_timestamp=1780708797&end_timestamp=1780798797
+[GIN] 2026/06/07 - 09:19:59 | api | 202606070119591098647008268d9d6bJy2dN40 | 200 |       513.2µs |       127.0.0.1 |     GET /api/channel/models
+[GIN] 2026/06/07 - 09:19:59 | api | 202606070119591098647008268d9d6mKb59vrE | 200 |      2.6791ms |       127.0.0.1 |     GET /api/user/2fa/status
+[GIN] 2026/06/07 - 09:19:59 | api | 202606070119591119381008268d9d6yA2wo4z8 | 200 |      1.7449ms |       127.0.0.1 |     GET /api/user/passkey
+[GIN] 2026/06/07 - 09:19:59 | api | 202606070119591152482008268d9d6OqtwBknO | 200 |       519.6µs |       127.0.0.1 |     GET /api/models
+[GIN] 2026/06/07 - 09:19:59 | api | 202606070119591130653008268d9d6T7IktK63 | 200 |       4.275ms |       127.0.0.1 |     GET /api/channel/?p=1&page_size=10&id_sort=false&tag_mode=false
+[GIN] 2026/06/07 - 09:19:59 | api | 202606070119591163049008268d9d6mLJH28R0 | 200 |      14.901ms |       127.0.0.1 |     GET /api/option/
+[GIN] 2026/06/07 - 09:20:01 | api | 202606070120012365578008268d9d6AJ73yaVG | 200 |       513.2µs |       127.0.0.1 |     GET /api/prefill_group/?type=model
+[SYS] 2026/06/07 - 09:20:05 | 任务进度轮询开始 
+[SYS] 2026/06/07 - 09:20:05 | 任务进度轮询完成 
+[GIN] 2026/06/07 - 09:20:08 | api | 202606070120081234504008268d9d69PctxwoM | 200 |      6.3285ms |       127.0.0.1 |     GET /api/channel/models_enabled_details
+[SYS] 2026/06/07 - 09:20:20 | 任务进度轮询开始 
+[SYS] 2026/06/07 - 09:20:20 | 任务进度轮询完成 
+[GIN] 2026/06/07 - 09:20:21 | web | 202606070120211370652008268d9d6J89L1pd3 | 200 |            0s |       127.0.0.1 |     GET /models
+[GIN] 2026/06/07 - 09:20:21 | web | 202606070120212117677008268d9d6LeszP2TR | 200 |      3.1126ms |       127.0.0.1 |     GET /assets/i18n-BChIBotx.js
+[GIN] 2026/06/07 - 09:20:21 | web | 202606070120212085281008268d9d6pHKGmqSH | 200 |      8.5502ms |       127.0.0.1 |     GET /assets/react-core-HkjhkZmQ.js
+[GIN] 2026/06/07 - 09:20:21 | web | 202606070120212136027008268d9d6NsxQDwaA | 200 |      5.1248ms |       127.0.0.1 |     GET /assets/react-components-CXAaMaX1.js
+[GIN] 2026/06/07 - 09:20:21 | web | 202606070120212143156008268d9d6P96a50w5 | 200 |      8.3212ms |       127.0.0.1 |     GET /assets/tools-_XQHE5yo.js
+[GIN] 2026/06/07 - 09:20:21 | web | 202606070120212165603008268d9d65ahGMZ8W | 200 |     19.5159ms |       127.0.0.1 |     GET /assets/semi-ui-yRXI6evF.css
+[GIN] 2026/06/07 - 09:20:21 | web | 202606070120212193933008268d9d6GYZjxlyJ | 200 |     19.6826ms |       127.0.0.1 |     GET /assets/index-Bu5BJdc-.css
+[GIN] 2026/06/07 - 09:20:21 | web | 202606070120212123958008268d9d65O9vTCI8 | 200 |     61.5465ms |       127.0.0.1 |     GET /assets/semi-ui-CUYvvcMV.js
+[GIN] 2026/06/07 - 09:20:21 | web | 202606070120212066763008268d9d6ADKAIlmp | 200 |    119.5179ms |       127.0.0.1 |     GET /assets/index-BuBYn3UK.js
+[GIN] 2026/06/07 - 09:20:21 | web | 202606070120215355715008268d9d6CcMg556B | 200 |       1.873ms |       127.0.0.1 |     GET /cover-4.webp
+[GIN] 2026/06/07 - 09:20:21 | api | 202606070120215389587008268d9d6mKdvFPQg | 200 |      3.7133ms |       127.0.0.1 |     GET /api/channel/models_enabled_details
+[GIN] 2026/06/07 - 09:20:21 | api | 202606070120215421449008268d9d6mAcxzcWf | 200 |       527.1µs |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/07 - 09:20:21 | web | 202606070120215523140008268d9d6f582w9W3 | 200 |       830.1µs |       127.0.0.1 |     GET /logo.png
+[GIN] 2026/06/07 - 09:20:21 | web | 202606070120215714378008268d9d6tLiIMre5 | 200 |       522.5µs |       127.0.0.1 |     GET /logo.png
+[SYS] 2026/06/07 - 09:20:35 | 任务进度轮询开始 
+[SYS] 2026/06/07 - 09:20:35 | 任务进度轮询完成 
+[SYS] 2026/06/07 - 09:20:50 | syncing options from database 
+[SYS] 2026/06/07 - 09:20:50 | 任务进度轮询开始 
+[SYS] 2026/06/07 - 09:20:50 | 任务进度轮询完成 
+[SYS] 2026/06/07 - 09:21:05 | 任务进度轮询开始 
+[SYS] 2026/06/07 - 09:21:05 | 任务进度轮询完成 
+[SYS] 2026/06/07 - 09:21:20 | 任务进度轮询开始 
+[SYS] 2026/06/07 - 09:21:20 | 任务进度轮询完成 
+[SYS] 2026/06/07 - 09:21:35 | 任务进度轮询开始 
+[SYS] 2026/06/07 - 09:21:35 | 任务进度轮询完成 
+[SYS] 2026/06/07 - 09:21:50 | syncing options from database 
+[SYS] 2026/06/07 - 09:21:50 | 任务进度轮询开始 
+[SYS] 2026/06/07 - 09:21:50 | 任务进度轮询完成 
+[SYS] 2026/06/07 - 09:22:05 | 任务进度轮询开始 
+[SYS] 2026/06/07 - 09:22:05 | 任务进度轮询完成 
+[SYS] 2026/06/07 - 09:22:20 | 任务进度轮询开始 
+[SYS] 2026/06/07 - 09:22:20 | 任务进度轮询完成 
+[SYS] 2026/06/07 - 09:22:35 | 任务进度轮询开始 
+[SYS] 2026/06/07 - 09:22:35 | 任务进度轮询完成 
+[SYS] 2026/06/07 - 09:22:50 | syncing options from database 
+[SYS] 2026/06/07 - 09:22:50 | 任务进度轮询开始 
+[SYS] 2026/06/07 - 09:22:50 | 任务进度轮询完成 
+[SYS] 2026/06/07 - 09:23:05 | 任务进度轮询开始 
+[SYS] 2026/06/07 - 09:23:05 | 任务进度轮询完成 
+[SYS] 2026/06/07 - 09:23:20 | 任务进度轮询开始 
+[SYS] 2026/06/07 - 09:23:20 | 任务进度轮询完成 

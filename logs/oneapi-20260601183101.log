@@ -1,0 +1,32 @@
+[SYS] 2026/06/01 - 18:31:01 | initializing token encoders 
+[SYS] 2026/06/01 - 18:31:01 | token encoders initialized 
+[SYS] 2026/06/01 - 18:31:01 | SQL_DSN not set, using SQLite as database 
+[SYS] 2026/06/01 - 18:31:01 | database migration started 
+[SYS] 2026/06/01 - 18:31:02 | system is already initialized at: 2026-03-24 08:57:55 +0800 CST 
+[SYS] 2026/06/01 - 18:31:02 | REDIS_CONN_STRING not set, Redis is not enabled 
+[SYS] 2026/06/01 - 18:31:02 | i18n initialized with languages: zh-CN, zh-TW, en 
+[SYS] 2026/06/01 - 18:31:02 | Loaded 0 custom OAuth providers 
+[SYS] 2026/06/01 - 18:31:02 | New API v0.0.0 started 
+[SYS] 2026/06/01 - 18:31:02 | 正在更新数据看板数据... 
+[INFO] 2026/06/01 - 18:31:02 | SYSTEM | codex credential auto-refresh task started: tick=10m0s threshold=24h0m0s 
+[INFO] 2026/06/01 - 18:31:02 | SYSTEM | subscription quota reset task started: tick=1m0s 
+[SYS] 2026/06/01 - 18:31:02 | upstream model update task started: interval=30m0s 
+[SYS] 2026/06/01 - 18:31:02 | 保存数据看板数据成功，共保存0条数据 
+
+  [32mNew API v0.0.0[0m  ready in 291 ms
+
+  ➜  [1mLocal:[0m   http://localhost:3000/
+  ➜  [1mNetwork:[0m http://192.168.10.216:3000/
+
+[SYS] 2026/06/01 - 18:31:02 | upstream model update check failed: channel_id=9 channel_name=axa err=Get "https://api.axa.us.ci/v1/models": EOF 
+[SYS] 2026/06/01 - 18:31:02 | upstream model update check failed: channel_id=18 channel_name=grok2api err=Get "https://vibe.grok2api.us.ci/v1/models": read tcp 127.0.0.1:28758->127.0.0.1:7890: wsarecv: An existing connection was forcibly closed by the remote host. 
+[SYS] 2026/06/01 - 18:31:03 | upstream model update check failed: channel_id=19 channel_name=gptanon-2api err=status code: 404 
+[SYS] 2026/06/01 - 18:31:04 | upstream model update task done: checked_channels=6 changed_channels=1 detected_add_models=0 detected_remove_models=82 failed_channels=3 auto_added_models=0 
+[SYS] 2026/06/01 - 18:31:04 | upstream model update notifications sent: 0 
+[GIN] 2026/06/01 - 18:31:10 | web | 202606011031107765704008268d9d6Ny4wFmRm | 200 |       517.5µs |       127.0.0.1 |     GET /console/setting?tab=operation
+[GIN] 2026/06/01 - 18:31:15 | web | 202606011031154328096008268d9d6NeWtZUOD | 200 |            0s |       127.0.0.1 |     GET /
+[SYS] 2026/06/01 - 18:31:17 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 18:31:17 | 任务进度轮询完成 
+[GIN] 2026/06/01 - 18:31:17 | web | 202606011031174577966008268d9d6FMZB0wxY | 200 |            0s |       127.0.0.1 |     GET /
+[GIN] 2026/06/01 - 18:31:18 | web | 20260601103118373397008268d9d6caWAWllJ | 200 |            0s |       127.0.0.1 |     GET /
+[GIN] 2026/06/01 - 18:31:18 | web | 202606011031185654331008268d9d6h7Vnu0og | 200 |            0s |       127.0.0.1 |     GET /

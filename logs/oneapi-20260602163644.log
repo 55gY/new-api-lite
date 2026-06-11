@@ -1,0 +1,113 @@
+[SYS] 2026/06/02 - 16:36:44 | initializing token encoders 
+[SYS] 2026/06/02 - 16:36:44 | token encoders initialized 
+[SYS] 2026/06/02 - 16:36:44 | SQL_DSN not set, using SQLite as database 
+[SYS] 2026/06/02 - 16:36:44 | database migration started 
+[SYS] 2026/06/02 - 16:36:45 | system is already initialized at: 2026-03-24 08:57:55 +0800 CST 
+[SYS] 2026/06/02 - 16:36:45 | REDIS_CONN_STRING not set, Redis is not enabled 
+[SYS] 2026/06/02 - 16:36:45 | i18n initialized with languages: zh-CN, zh-TW, en 
+[SYS] 2026/06/02 - 16:36:45 | Loaded 0 custom OAuth providers 
+[SYS] 2026/06/02 - 16:36:45 | New API v0.0.0 started 
+[SYS] 2026/06/02 - 16:36:45 | 正在更新数据看板数据... 
+[INFO] 2026/06/02 - 16:36:45 | SYSTEM | codex credential auto-refresh task started: tick=10m0s threshold=24h0m0s 
+[INFO] 2026/06/02 - 16:36:45 | SYSTEM | subscription quota reset task started: tick=1m0s 
+[SYS] 2026/06/02 - 16:36:45 | upstream model update task started: interval=30m0s 
+[SYS] 2026/06/02 - 16:36:45 | 保存数据看板数据成功，共保存0条数据 
+
+  [32mNew API v0.0.0[0m  ready in 859 ms
+
+  ➜  [1mLocal:[0m   http://localhost:3000/
+  ➜  [1mNetwork:[0m http://192.168.10.216:3000/
+
+[GIN] 2026/06/02 - 16:36:47 | web | 202606020836479982730008268d9d69VvDwx1Y | 200 |       526.8µs |       127.0.0.1 |     GET /pricing
+[GIN] 2026/06/02 - 16:36:48 | web | 202606020836481015660008268d9d6aFOT5aGw | 200 |     62.3383ms |       127.0.0.1 |     GET /assets/react-components-BMEyFlsF.js
+[GIN] 2026/06/02 - 16:36:48 | web | 20260602083648994672008268d9d6rrX3o61J | 200 |     66.8711ms |       127.0.0.1 |     GET /assets/i18n-CXf1qFdU.js
+[GIN] 2026/06/02 - 16:36:48 | web | 202606020836481005197008268d9d6acBqvnVQ | 200 |     65.8186ms |       127.0.0.1 |     GET /assets/tools-BaE53nVS.js
+[GIN] 2026/06/02 - 16:36:48 | web | 20260602083648942021008268d9d6lexfepw6 | 200 |     79.1356ms |       127.0.0.1 |     GET /assets/react-core-BAQOEN2L.js
+[GIN] 2026/06/02 - 16:36:48 | web | 202606020836481639043008268d9d6bGmm1Edr | 200 |     18.9478ms |       127.0.0.1 |     GET /assets/semi-ui-yRXI6evF.css
+[GIN] 2026/06/02 - 16:36:48 | web | 202606020836481673386008268d9d6Kp54BefM | 200 |     17.5129ms |       127.0.0.1 |     GET /assets/index-DmBMgGbG.css
+[GIN] 2026/06/02 - 16:36:48 | web | 20260602083648999935008268d9d6h539iVAM | 200 |    134.8996ms |       127.0.0.1 |     GET /assets/semi-ui-zoMjJx-j.js
+[GIN] 2026/06/02 - 16:36:48 | web | 20260602083648922682008268d9d6RXv33dDv | 200 |    315.2816ms |       127.0.0.1 |     GET /assets/index-CoZZEcHa.js
+[SYS] 2026/06/02 - 16:36:48 | upstream model update check failed: channel_id=9 channel_name=axa err=Get "https://api.axa.us.ci/v1/models": EOF 
+[SYS] 2026/06/02 - 16:36:48 | upstream model update check failed: channel_id=18 channel_name=grok2api err=Get "https://vibe.grok2api.us.ci/v1/models": read tcp 127.0.0.1:49177->127.0.0.1:7890: wsarecv: An existing connection was forcibly closed by the remote host. 
+[GIN] 2026/06/02 - 16:36:48 | web | 202606020836488625617008268d9d65Dj3F7cM | 200 |      2.1103ms |       127.0.0.1 |     GET /cover-4.webp
+[GIN] 2026/06/02 - 16:36:48 | web | 202606020836488720110008268d9d6JcEvJBis | 404 |       527.7µs |       127.0.0.1 |     GET /api/pricing
+[GIN] 2026/06/02 - 16:36:48 | api | 202606020836488750866008268d9d6VazSdKCv | 200 |       626.9µs |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/02 - 16:36:48 | web | 202606020836488817395008268d9d6VvZnQ6d7 | 200 |            0s |       127.0.0.1 |     GET /logo.png
+[GIN] 2026/06/02 - 16:36:48 | web | 202606020836488936825008268d9d6Ty1JH0Jv | 200 |            0s |       127.0.0.1 |     GET /logo.png
+[GIN] 2026/06/02 - 16:36:51 | web | 202606020836517949202008268d9d6nhg29Bmo | 200 |      1.0472ms |       127.0.0.1 |     GET /assets/IllustrationConstruction-dDyUD5O3.js
+[GIN] 2026/06/02 - 16:36:51 | web | 202606020836517996448008268d9d6lVtpPdBw | 200 |            0s |       127.0.0.1 |     GET /assets/bisect-D13AdYuf.js
+[GIN] 2026/06/02 - 16:36:51 | api | 202606020836518098625008268d9d6Vx8NMZ8A | 401 |       513.3µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/02 - 16:36:51 | web | 202606020836517932571008268d9d62I7Qz1qu | 200 |     34.7937ms |       127.0.0.1 |     GET /assets/index-BS1OUp9L.js
+[GIN] 2026/06/02 - 16:36:51 | web | 202606020836518921211008268d9d68W0ejrsi | 200 |            0s |       127.0.0.1 |     GET /login?expired=true
+[GIN] 2026/06/02 - 16:36:52 | web | 20260602083652275275008268d9d6Gaa0DpCE | 200 |      2.5859ms |       127.0.0.1 |     GET /assets/i18n-CXf1qFdU.js
+[GIN] 2026/06/02 - 16:36:52 | web | 20260602083652285627008268d9d6cdLKlrqt | 200 |      4.1638ms |       127.0.0.1 |     GET /assets/tools-BaE53nVS.js
+[GIN] 2026/06/02 - 16:36:52 | web | 20260602083652270053008268d9d6r7gaxWW5 | 200 |      6.7675ms |       127.0.0.1 |     GET /assets/react-core-BAQOEN2L.js
+[GIN] 2026/06/02 - 16:36:52 | web | 20260602083652337607008268d9d69WIAvP2a | 200 |      1.0405ms |       127.0.0.1 |     GET /assets/react-components-BMEyFlsF.js
+[GIN] 2026/06/02 - 16:36:52 | web | 20260602083652342802008268d9d6FN0CkCsg | 200 |     12.3837ms |       127.0.0.1 |     GET /assets/semi-ui-yRXI6evF.css
+[GIN] 2026/06/02 - 16:36:52 | web | 20260602083652353206008268d9d6Ucbvd9Vn | 200 |     14.5207ms |       127.0.0.1 |     GET /assets/index-DmBMgGbG.css
+[GIN] 2026/06/02 - 16:36:52 | web | 20260602083652280427008268d9d6kRGDitGp | 200 |     51.1018ms |       127.0.0.1 |     GET /assets/semi-ui-zoMjJx-j.js
+[GIN] 2026/06/02 - 16:36:52 | web | 20260602083652270053008268d9d6sL0SZF3k | 200 |    177.9545ms |       127.0.0.1 |     GET /assets/index-CoZZEcHa.js
+[GIN] 2026/06/02 - 16:36:52 | api | 202606020836526160858008268d9d6ixAc3qfN | 200 |            0s |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/02 - 16:36:52 | web | 202606020836526218037008268d9d6sRYXbqSB | 200 |            0s |       127.0.0.1 |     GET /logo.png
+[GIN] 2026/06/02 - 16:36:52 | web | 202606020836526844350008268d9d60IO4tB5x | 200 |            0s |       127.0.0.1 |     GET /logo.png
+[GIN] 2026/06/02 - 16:36:54 | api | 202606020836543279805008268d9d6KTXQ86J3 | 200 |     62.1304ms |       127.0.0.1 |    POST /api/user/login?turnstile=
+[GIN] 2026/06/02 - 16:36:54 | web | 202606020836544575717008268d9d6twX5utVI | 200 |       594.6µs |       127.0.0.1 |     GET /assets/IllustrationConstruction-dDyUD5O3.js
+[GIN] 2026/06/02 - 16:36:54 | web | 202606020836544602729008268d9d6WFQ5vZWm | 200 |            0s |       127.0.0.1 |     GET /assets/bisect-D13AdYuf.js
+[GIN] 2026/06/02 - 16:36:54 | api | 202606020836544641468008268d9d68Potw3SE | 200 |       1.052ms |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/02 - 16:36:54 | web | 202606020836544570419008268d9d6bCMCTQ4E | 200 |      59.229ms |       127.0.0.1 |     GET /assets/index-BS1OUp9L.js
+[GIN] 2026/06/02 - 16:36:54 | api | 202606020836546758469008268d9d6fV8Es4fK | 200 |       519.5µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/02 - 16:36:54 | api | 202606020836546780728008268d9d6GiAE6JmJ | 200 |       530.9µs |       127.0.0.1 |     GET /api/data/?username=&start_timestamp=1780303014&end_timestamp=1780393014&default_time=hour
+[GIN] 2026/06/02 - 16:36:54 | api | 202606020836547286522008268d9d6zy9Rzoz3 | 200 |       999.4µs |       127.0.0.1 |     GET /api/data/users?start_timestamp=1780303014&end_timestamp=1780393014
+[GIN] 2026/06/02 - 16:36:54 | api | 202606020836547892597008268d9d62jL4uX5i | 200 |            0s |       127.0.0.1 |     GET /api/uptime/status
+[SYS] 2026/06/02 - 16:37:00 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:37:00 | 任务进度轮询完成 
+[GIN] 2026/06/02 - 16:37:07 | web | 202606020837074000040008268d9d6TNQB5RWR | 200 |      1.0468ms |       127.0.0.1 |     GET /cover-4.webp
+[GIN] 2026/06/02 - 16:37:07 | web | 202606020837074091149008268d9d6JGe0vkVg | 404 |            0s |       127.0.0.1 |     GET /api/pricing
+[SYS] 2026/06/02 - 16:37:08 | upstream model update check failed: channel_id=19 channel_name=gptanon-2api err=Get "https://gptanon-2api.to2ai.workers.dev/v1/models": unexpected EOF 
+[SYS] 2026/06/02 - 16:37:13 | upstream model update task done: checked_channels=6 changed_channels=1 detected_add_models=0 detected_remove_models=82 failed_channels=3 auto_added_models=0 
+[SYS] 2026/06/02 - 16:37:13 | upstream model update notifications sent: 0 
+[SYS] 2026/06/02 - 16:37:15 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:37:15 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:37:30 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:37:30 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:37:45 | syncing options from database 
+[SYS] 2026/06/02 - 16:37:45 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:37:45 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:38:00 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:38:00 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:38:15 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:38:15 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:38:30 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:38:30 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:38:45 | syncing options from database 
+[SYS] 2026/06/02 - 16:38:45 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:38:45 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:39:00 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:39:00 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:39:15 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:39:15 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:39:30 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:39:30 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:39:45 | syncing options from database 
+[SYS] 2026/06/02 - 16:39:45 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:39:45 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:40:00 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:40:00 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:40:15 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:40:15 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:40:30 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:40:30 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:40:45 | syncing options from database 
+[SYS] 2026/06/02 - 16:40:45 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:40:45 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:41:00 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:41:00 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:41:15 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:41:15 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:41:30 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:41:30 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:41:45 | 正在更新数据看板数据... 
+[SYS] 2026/06/02 - 16:41:45 | 保存数据看板数据成功，共保存0条数据 
+[SYS] 2026/06/02 - 16:41:45 | syncing options from database 
+[SYS] 2026/06/02 - 16:41:45 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:41:45 | 任务进度轮询完成 

@@ -1,0 +1,32 @@
+[SYS] 2026/06/01 - 19:23:11 | initializing token encoders 
+[SYS] 2026/06/01 - 19:23:11 | token encoders initialized 
+[SYS] 2026/06/01 - 19:23:11 | SQL_DSN not set, using SQLite as database 
+[SYS] 2026/06/01 - 19:23:11 | database migration started 
+[SYS] 2026/06/01 - 19:23:12 | system is not initialized and no root user exists 
+[SYS] 2026/06/01 - 19:23:12 | REDIS_CONN_STRING not set, Redis is not enabled 
+[SYS] 2026/06/01 - 19:23:12 | i18n initialized with languages: zh-CN, zh-TW, en 
+[SYS] 2026/06/01 - 19:23:12 | Loaded 0 custom OAuth providers 
+[SYS] 2026/06/01 - 19:23:12 | New API v0.0.0 started 
+[SYS] 2026/06/01 - 19:23:12 | 正在更新数据看板数据... 
+[SYS] 2026/06/01 - 19:23:12 | upstream model update task started: interval=30m0s 
+[INFO] 2026/06/01 - 19:23:12 | SYSTEM | codex credential auto-refresh task started: tick=10m0s threshold=24h0m0s 
+[INFO] 2026/06/01 - 19:23:12 | SYSTEM | subscription quota reset task started: tick=1m0s 
+[SYS] 2026/06/01 - 19:23:12 | 保存数据看板数据成功，共保存0条数据 
+
+  [32mNew API v0.0.0[0m  ready in 492 ms
+
+  ➜  [1mLocal:[0m   http://localhost:3000/
+  ➜  [1mNetwork:[0m http://192.168.10.216:3000/
+
+[GIN] 2026/06/01 - 19:23:15 | api | 202606011123159467179008268d9d6yZO21O2b | 200 |      1.9659ms |             ::1 |     GET /api/status
+[GIN] 2026/06/01 - 19:23:15 | api | 202606011123159568861008268d9d6QY4UUsoC | 401 |            0s |             ::1 |     GET /api/user/self
+[GIN] 2026/06/01 - 19:23:16 | api | 2026060111231641561008268d9d65suNn3E1 | 200 |            0s |             ::1 |     GET /api/status
+[GIN] 2026/06/01 - 19:23:16 | api | 2026060111231655673008268d9d6Ksdh97Uw | 200 |         524µs |             ::1 |     GET /api/status
+[GIN] 2026/06/01 - 19:23:16 | api | 20260601112316213974008268d9d62bXuhfM7 | 200 |       999.6µs |             ::1 |     GET /api/status
+[GIN] 2026/06/01 - 19:23:24 | api | 202606011123242141080008268d9d6asgewhKH | 200 |            0s |             ::1 |     GET /api/status
+[GIN] 2026/06/01 - 19:23:24 | api | 202606011123242351302008268d9d6BQ9HKFDt | 200 |            0s |             ::1 |     GET /api/status
+[GIN] 2026/06/01 - 19:23:24 | api | 202606011123242399810008268d9d6zGDPsM7a | 200 |            0s |             ::1 |     GET /api/status
+[GIN] 2026/06/01 - 19:23:24 | api | 202606011123242686631008268d9d6mydLRh2P | 200 |            0s |             ::1 |     GET /api/notice
+[GIN] 2026/06/01 - 19:23:24 | api | 202606011123242706891008268d9d6cgmEknJG | 200 |        37.6µs |             ::1 |     GET /api/home_page_content
+[SYS] 2026/06/01 - 19:23:27 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 19:23:27 | 任务进度轮询完成 

@@ -1,0 +1,156 @@
+[SYS] 2026/06/10 - 09:49:58 | initializing token encoders 
+[SYS] 2026/06/10 - 09:49:58 | token encoders initialized 
+[SYS] 2026/06/10 - 09:49:58 | using SQLite as database 
+[SYS] 2026/06/10 - 09:49:58 | database migration started 
+[SYS] 2026/06/10 - 09:49:59 | system is already initialized at: 2026-03-24 08:57:55 +0800 CST 
+[SYS] 2026/06/10 - 09:49:59 | REDIS_CONN_STRING not set, Redis is not enabled 
+[SYS] 2026/06/10 - 09:49:59 | i18n initialized with languages: zh-CN, zh-TW, en 
+[SYS] 2026/06/10 - 09:49:59 | New API v0.0.0 started 
+[SYS] 2026/06/10 - 09:49:59 | 正在更新数据看板数据... 
+[INFO] 2026/06/10 - 09:49:59 | SYSTEM | codex credential auto-refresh task started: tick=10m0s threshold=24h0m0s 
+[SYS] 2026/06/10 - 09:49:59 | 保存数据看板数据成功，共保存0条数据 
+[SYS] 2026/06/10 - 09:49:59 | upstream model update task started: interval=30m0s 
+
+  [32mNew API v0.0.0[0m  ready in 600 ms
+
+  ➜  [1mLocal:[0m   http://localhost:3000/
+  ➜  [1mNetwork:[0m http://192.168.10.35:3000/
+
+[SYS] 2026/06/10 - 09:50:01 | upstream model update check failed: channel_id=9 channel_name=axa err=Get "https://api.axa.us.ci/v1/models": read tcp 127.0.0.1:39038->127.0.0.1:7890: wsarecv: An established connection was aborted by the software in your host machine. 
+[SYS] 2026/06/10 - 09:50:01 | upstream model update check failed: channel_id=18 channel_name=grok2api err=Get "https://vibe.grok2api.us.ci/v1/models": EOF 
+[SYS] 2026/06/10 - 09:50:01 | upstream model update check failed: channel_id=19 channel_name=gptanon-2api err=Get "https://gptanon-2api.to2ai.workers.dev/v1/models": EOF 
+[SYS] 2026/06/10 - 09:50:02 | upstream model update task done: checked_channels=6 changed_channels=1 detected_add_models=0 detected_remove_models=82 failed_channels=3 auto_added_models=0 
+[SYS] 2026/06/10 - 09:50:02 | upstream model update notifications sent: 0 
+[GIN] 2026/06/10 - 09:50:21 | web | 202606100150211917227008268d9d622pz9FHT | 200 |      1.0485ms |             ::1 |     GET /console/channel
+[GIN] 2026/06/10 - 09:50:21 | web | 202606100150212184461008268d9d6KTLYXy4R | 200 |    245.7643ms |             ::1 |     GET /assets/index-CxdbczfC.js
+[GIN] 2026/06/10 - 09:50:21 | api | 202606100150218202341008268d9d60IDw6SwE | 401 |       537.8µs |             ::1 |     GET /api/user/self
+[GIN] 2026/06/10 - 09:50:21 | api | 202606100150218236316008268d9d6Z0HAafOL | 401 |       860.3µs |             ::1 |     GET /api/channel/models
+[GIN] 2026/06/10 - 09:50:21 | api | 202606100150218260088008268d9d6TmVCfE2E | 401 |       883.8µs |             ::1 |     GET /api/channel/?p=1&page_size=10&id_sort=true
+[GIN] 2026/06/10 - 09:50:21 | api | 202606100150218268926008268d9d6DyplH5eb | 401 |       150.7µs |             ::1 |     GET /api/models
+[GIN] 2026/06/10 - 09:50:21 | api | 202606100150218290946008268d9d6uCfJCq4I | 401 |       947.6µs |             ::1 |     GET /api/option/
+[GIN] 2026/06/10 - 09:50:21 | api | 202606100150218290946008268d9d62GJHqKkG | 200 |      2.0451ms |             ::1 |     GET /api/status
+[GIN] 2026/06/10 - 09:50:21 | web | 202606100150218885424008268d9d6meDsB7us | 200 |            0s |             ::1 |     GET /login?expired=true
+[GIN] 2026/06/10 - 09:50:21 | web | 202606100150218985862008268d9d6YZRTaUTo | 200 |       999.8µs |             ::1 |     GET /login?expired=true
+[GIN] 2026/06/10 - 09:50:21 | api | 202606100150219030718008268d9d6tqBT0jKV | 401 |       594.4µs |             ::1 |     GET /api/user/self
+[GIN] 2026/06/10 - 09:50:21 | web | 202606100150219067735008268d9d65lVWk94w | 200 |      2.6356ms |             ::1 |     GET /login?expired=true
+[GIN] 2026/06/10 - 09:50:21 | web | 202606100150219096207008268d9d6pOoalARv | 200 |       1.328ms |             ::1 |     GET /login?expired=true
+[GIN] 2026/06/10 - 09:50:21 | web | 202606100150219078750008268d9d6Z8PHDHkp | 200 |      3.6083ms |             ::1 |     GET /login?expired=true
+[GIN] 2026/06/10 - 09:50:21 | web | 202606100150219259974008268d9d6C3wGKhRe | 200 |      1.0001ms |             ::1 |     GET /login?expired=true
+[GIN] 2026/06/10 - 09:50:22 | api | 202606100150221949319008268d9d6tdkD4IY7 | 200 |            0s |             ::1 |     GET /api/status
+[SYS] 2026/06/10 - 09:50:59 | syncing options from database 
+[SYS] 2026/06/10 - 09:51:59 | syncing options from database 
+[SYS] 2026/06/10 - 09:52:59 | syncing options from database 
+[SYS] 2026/06/10 - 09:53:59 | syncing options from database 
+[SYS] 2026/06/10 - 09:54:59 | 正在更新数据看板数据... 
+[SYS] 2026/06/10 - 09:54:59 | 保存数据看板数据成功，共保存0条数据 
+[SYS] 2026/06/10 - 09:54:59 | syncing options from database 
+[SYS] 2026/06/10 - 09:55:59 | syncing options from database 
+[SYS] 2026/06/10 - 09:56:59 | syncing options from database 
+[GIN] 2026/06/10 - 09:57:48 | api | 202606100157488619637008268d9d6HKTp8SQ7 | 200 |    109.6401ms |             ::1 |    POST /api/user/login?turnstile=
+[GIN] 2026/06/10 - 09:57:49 | api | 20260610015749172641008268d9d6x7raSmz7 | 200 |      1.9398ms |             ::1 |     GET /api/user/self
+[GIN] 2026/06/10 - 09:57:49 | web | 2026061001574990440008268d9d6T0JZ38e7 | 200 |    175.5871ms |             ::1 |     GET /assets/index-CpFf1M5J.js
+[GIN] 2026/06/10 - 09:57:49 | api | 202606100157493262416008268d9d6TTCDW6AC | 200 |      2.1817ms |             ::1 |     GET /api/user/self
+[GIN] 2026/06/10 - 09:57:49 | api | 202606100157493306149008268d9d62hIkeAL3 | 200 |     11.7346ms |             ::1 |     GET /api/data/?username=&start_timestamp=1780243200&end_timestamp=1781056669&default_time=hour
+[GIN] 2026/06/10 - 09:57:49 | api | 202606100157494728524008268d9d6DbGoggt6 | 200 |      4.4673ms |             ::1 |     GET /api/data/users?start_timestamp=1780243200&end_timestamp=1781056669
+[GIN] 2026/06/10 - 09:57:51 | api | 202606100157518777313008268d9d6L1LScb0r | 200 |      3.3956ms |             ::1 |     GET /api/token/?p=1&size=10
+[GIN] 2026/06/10 - 09:57:51 | api | 202606100157518777313008268d9d6GjZK0NeT | 200 |     19.6895ms |             ::1 |     GET /api/user/models
+[GIN] 2026/06/10 - 09:57:52 | api | 202606100157529173256008268d9d6nbvTy14J | 200 |       520.7µs |             ::1 |     GET /api/user/2fa/status
+[GIN] 2026/06/10 - 09:57:52 | api | 202606100157529173256008268d9d6MAzGFjF8 | 200 |      1.0959ms |             ::1 |     GET /api/user/self
+[GIN] 2026/06/10 - 09:57:52 | api | 202606100157529197418008268d9d6FimHpvpe | 200 |            0s |             ::1 |     GET /api/status
+[GIN] 2026/06/10 - 09:57:53 | api | 202606100157537087496008268d9d6AJoD3UKD | 200 |      4.4731ms |             ::1 |     GET /api/channel/models
+[GIN] 2026/06/10 - 09:57:53 | api | 202606100157537102577008268d9d6zraMnfQl | 200 |      3.4854ms |             ::1 |     GET /api/models
+[GIN] 2026/06/10 - 09:57:53 | api | 202606100157537087496008268d9d62QNZ5cpf | 200 |     13.1897ms |             ::1 |     GET /api/channel/?p=1&page_size=10&id_sort=true
+[GIN] 2026/06/10 - 09:57:53 | api | 202606100157537108629008268d9d68QAm30gw | 200 |      32.369ms |             ::1 |     GET /api/option/
+[SYS] 2026/06/10 - 09:57:59 | syncing options from database 
+[GIN] 2026/06/10 - 09:58:08 | web | 202606100158083157436008268d9d6FOVSIvsx | 200 |            0s |             ::1 |     GET /console/channel
+[GIN] 2026/06/10 - 09:58:08 | api | 202606100158086033112008268d9d6n5xiwPNb | 200 |       1.603ms |             ::1 |     GET /api/user/self
+[GIN] 2026/06/10 - 09:58:08 | api | 202606100158086070952008268d9d6hju4jcqa | 200 |       3.422ms |             ::1 |     GET /api/channel/models
+[GIN] 2026/06/10 - 09:58:08 | api | 202606100158086094214008268d9d65rCRcbR7 | 200 |      2.3888ms |             ::1 |     GET /api/models
+[GIN] 2026/06/10 - 09:58:08 | api | 202606100158086129728008268d9d6o2kqYGsY | 200 |       3.518ms |             ::1 |     GET /api/status
+[GIN] 2026/06/10 - 09:58:08 | api | 202606100158086070952008268d9d61gO9hQyq | 200 |     15.7825ms |             ::1 |     GET /api/channel/?p=1&page_size=10&id_sort=true
+[GIN] 2026/06/10 - 09:58:08 | api | 202606100158086105172008268d9d662UHZXLD | 200 |     40.4086ms |             ::1 |     GET /api/option/
+[GIN] 2026/06/10 - 09:58:08 | api | 202606100158086718962008268d9d6fvxzRG4Z | 200 |      1.1777ms |             ::1 |     GET /api/user/self
+[SYS] 2026/06/10 - 09:58:59 | syncing options from database 
+[GIN] 2026/06/10 - 09:59:46 | web | 202606100159461008405008268d9d636Mm7JMq | 200 |       523.6µs |       127.0.0.1 |     GET /keys
+[GIN] 2026/06/10 - 09:59:46 | web | 202606100159462092207008268d9d6KsOWCc0I | 200 |     92.0005ms |       127.0.0.1 |     GET /assets/index-CxdbczfC.js
+[GIN] 2026/06/10 - 09:59:46 | api | 202606100159465813171008268d9d6Ymn6orRH | 200 |            0s |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/10 - 09:59:49 | api | 202606100159496527811008268d9d6ftVeZLJA | 401 |       522.7µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/10 - 09:59:49 | web | 202606100159496501604008268d9d6ngAulc8y | 200 |      7.3956ms |       127.0.0.1 |     GET /assets/index-CpFf1M5J.js
+[GIN] 2026/06/10 - 09:59:49 | web | 202606100159496673116008268d9d6ZiPBBerJ | 200 |            0s |       127.0.0.1 |     GET /login?expired=true
+[GIN] 2026/06/10 - 09:59:49 | api | 202606100159498400908008268d9d6K212pW6m | 200 |            0s |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/10 - 09:59:51 | api | 202606100159509529059008268d9d6LguDAdB4 | 200 |    119.8719ms |       127.0.0.1 |    POST /api/user/login?turnstile=
+[GIN] 2026/06/10 - 09:59:51 | api | 202606100159511334971008268d9d6AWaD9ZW3 | 200 |      1.0449ms |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/10 - 09:59:51 | web | 202606100159511297260008268d9d6w7QeiTvd | 200 |     71.8795ms |       127.0.0.1 |     GET /assets/index-CpFf1M5J.js
+[GIN] 2026/06/10 - 09:59:51 | api | 202606100159514215281008268d9d6d6nEfYPr | 200 |         561µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/10 - 09:59:51 | api | 202606100159514262597008268d9d6r4rqMmNT | 200 |       8.707ms |       127.0.0.1 |     GET /api/data/?username=&start_timestamp=1780243200&end_timestamp=1781056791&default_time=hour
+[GIN] 2026/06/10 - 09:59:51 | api | 202606100159515154231008268d9d6tqVJ2LcB | 200 |      2.5658ms |       127.0.0.1 |     GET /api/data/users?start_timestamp=1780243200&end_timestamp=1781056791
+[GIN] 2026/06/10 - 09:59:53 | api | 202606100159537320016008268d9d6RgHg5Wwg | 200 |      1.0588ms |       127.0.0.1 |     GET /api/channel/models
+[GIN] 2026/06/10 - 09:59:53 | api | 202606100159537330604008268d9d6VCRuHQDm | 200 |      1.0634ms |       127.0.0.1 |     GET /api/models
+[GIN] 2026/06/10 - 09:59:53 | api | 202606100159537320016008268d9d6TqcGcQhV | 200 |     13.8141ms |       127.0.0.1 |     GET /api/channel/?p=1&page_size=100&id_sort=true
+[GIN] 2026/06/10 - 09:59:53 | api | 202606100159537330604008268d9d6RNPHU4TV | 200 |     18.0391ms |       127.0.0.1 |     GET /api/option/
+[SYS] 2026/06/10 - 09:59:59 | automatically test channels with interval 10.000000 minutes 
+[SYS] 2026/06/10 - 09:59:59 | automatically testing all channels 
+[SYS] 2026/06/10 - 09:59:59 | 正在更新数据看板数据... 
+[SYS] 2026/06/10 - 09:59:59 | 保存数据看板数据成功，共保存0条数据 
+[SYS] 2026/06/10 - 09:59:59 | automatically channel test finished 
+[SYS] 2026/06/10 - 09:59:59 | testing channel 62 with model gpt-5.5 , info RelayInfo{ RelayFormat: openai, RelayMode: 1, IsStream: false, IsPlayground: false, RequestURLPath: "/v1/chat/completions", OriginModelName: "gpt-5.5", EstimatePromptTokens: 0, ShouldIncludeUsage: false, DisablePing: false, SendResponseCount: 0, FinalPreConsumedQuota: 0, User{ Id: 1, Email: "***masked***", Group: "default", UsingGroup: "default", Quota: 499999224577603 }, Token{ Id: 0, Unlimited: false, Key: ***masked*** }, Timing{ Start: 2026-06-10T09:59:59.42788+08:00, FirstResponse: 2026-06-10T09:59:58.42788+08:00, LatencyMs: -1000 }, ChannelMeta{ Type: 1, Id: 62, IsMultiKey: false, MultiKeyIndex: 0, BaseURL: "https://vip.allinai7.cloud", ApiType: 0, ApiVersion: "", CreateTime: 1780386132, UpstreamModelName: "gpt-5.5", IsModelMapped: false, SupportStreamOptions: true, ApiKey: ***masked*** }, }  
+[SYS] 2026/06/10 - 09:59:59 | syncing options from database 
+[SYS] 2026/06/10 - 10:00:02 | channel test bad response: channel_id=62 name=https://vip.allinai7.cloud type=1 model=gpt-5.5 endpoint_type= status=401 err=bad response status code 401, message: API key is disabled, body: {"code":"API_KEY_DISABLED","message":"API key is disabled"} 
+[SYS] 2026/06/10 - 10:00:02 | testing channel 60 with model gpt-5.5 , info RelayInfo{ RelayFormat: openai, RelayMode: 1, IsStream: false, IsPlayground: false, RequestURLPath: "/v1/chat/completions", OriginModelName: "gpt-5.5", EstimatePromptTokens: 0, ShouldIncludeUsage: false, DisablePing: false, SendResponseCount: 0, FinalPreConsumedQuota: 0, User{ Id: 1, Email: "***masked***", Group: "default", UsingGroup: "default", Quota: 499999224577603 }, Token{ Id: 0, Unlimited: false, Key: ***masked*** }, Timing{ Start: 2026-06-10T10:00:02.11475+08:00, FirstResponse: 2026-06-10T10:00:01.11475+08:00, LatencyMs: -1000 }, ChannelMeta{ Type: 1, Id: 60, IsMultiKey: false, MultiKeyIndex: 0, BaseURL: "https://ai2.hhhl.cc", ApiType: 0, ApiVersion: "", CreateTime: 1780186722, UpstreamModelName: "gpt-5.5", IsModelMapped: false, SupportStreamOptions: true, ApiKey: ***masked*** }, }  
+[SYS] 2026/06/10 - 10:00:29 | channel test bad response: channel_id=60 name=https://ai2.hhhl.cc type=1 model=gpt-5.5 endpoint_type= status=502 err=bad response status code 502, body: error code: 502 
+[SYS] 2026/06/10 - 10:00:29 | testing channel 40 with model gpt-5.5 , info RelayInfo{ RelayFormat: openai, RelayMode: 1, IsStream: false, IsPlayground: false, RequestURLPath: "/v1/chat/completions", OriginModelName: "gpt-5.5", EstimatePromptTokens: 0, ShouldIncludeUsage: false, DisablePing: false, SendResponseCount: 0, FinalPreConsumedQuota: 0, User{ Id: 1, Email: "***masked***", Group: "default", UsingGroup: "default", Quota: 499999224577603 }, Token{ Id: 0, Unlimited: false, Key: ***masked*** }, Timing{ Start: 2026-06-10T10:00:29.4027851+08:00, FirstResponse: 2026-06-10T10:00:28.4027851+08:00, LatencyMs: -1000 }, ChannelMeta{ Type: 1, Id: 40, IsMultiKey: false, MultiKeyIndex: 0, BaseURL: "https://688.qzz.io", ApiType: 0, ApiVersion: "", CreateTime: 1776581954, UpstreamModelName: "gpt-5.5", IsModelMapped: false, SupportStreamOptions: true, ApiKey: ***masked*** }, }  
+[SYS] 2026/06/10 - 10:00:42 | channel test bad response: channel_id=40 name=https://688.qzz.io type=1 model=gpt-5.5 endpoint_type= status=401 err=bad response status code 401, message: Invalid token (request id: 202606100200434936506488268d9d669zziXWz), body: {"error":{"code":"","message":"Invalid token (request id: 202606100200434936506488268d9d669zziXWz)","type":"new_api_error"}} 
+[SYS] 2026/06/10 - 10:00:42 | testing channel 5 with model gpt-5.4 , info RelayInfo{ RelayFormat: openai, RelayMode: 1, IsStream: false, IsPlayground: false, RequestURLPath: "/v1/chat/completions", OriginModelName: "gpt-5.4", EstimatePromptTokens: 0, ShouldIncludeUsage: false, DisablePing: false, SendResponseCount: 0, FinalPreConsumedQuota: 0, User{ Id: 1, Email: "***masked***", Group: "default", UsingGroup: "default", Quota: 499999224577603 }, Token{ Id: 0, Unlimited: false, Key: ***masked*** }, Timing{ Start: 2026-06-10T10:00:42.0897365+08:00, FirstResponse: 2026-06-10T10:00:41.0897365+08:00, LatencyMs: -1000 }, ChannelMeta{ Type: 1, Id: 5, IsMultiKey: false, MultiKeyIndex: 0, BaseURL: "https://runapi.net", ApiType: 0, ApiVersion: "", CreateTime: 1774316096, UpstreamModelName: "gpt-5.4", IsModelMapped: false, SupportStreamOptions: true, ApiKey: ***masked*** }, }  
+[SYS] 2026/06/10 - 10:00:46 | channel test bad response: channel_id=5 name=runapi type=1 model=gpt-5.4 endpoint_type= status=403 err=bad response status code 403, message: No active subscription found for this group, body: {"code":"SUBSCRIPTION_NOT_FOUND","message":"No active subscription found for this group"} 
+[SYS] 2026/06/10 - 10:00:46 | testing channel 13 with model gpt-5 , info RelayInfo{ RelayFormat: openai, RelayMode: 1, IsStream: false, IsPlayground: false, RequestURLPath: "/v1/chat/completions", OriginModelName: "gpt-5", EstimatePromptTokens: 0, ShouldIncludeUsage: false, DisablePing: false, SendResponseCount: 0, FinalPreConsumedQuota: 0, User{ Id: 1, Email: "***masked***", Group: "default", UsingGroup: "default", Quota: 499999224577603 }, Token{ Id: 0, Unlimited: false, Key: ***masked*** }, Timing{ Start: 2026-06-10T10:00:46.574157+08:00, FirstResponse: 2026-06-10T10:00:45.574157+08:00, LatencyMs: -1000 }, ChannelMeta{ Type: 1, Id: 13, IsMultiKey: false, MultiKeyIndex: 0, BaseURL: "https://api.fakerclaw.online", ApiType: 0, ApiVersion: "", CreateTime: 1774323173, UpstreamModelName: "gpt-5", IsModelMapped: false, SupportStreamOptions: true, ApiKey: ***masked*** }, }  
+[SYS] 2026/06/10 - 10:00:47 | channel test bad response: channel_id=13 name=fakeikun type=1 model=gpt-5 endpoint_type= status=503 err=bad response status code 503, message: No available channel for model gpt-5 under group default (distributor) (request id: 20260610020049236011057bwI1gGyg), body: {"error":{"code":"model_not_found","message":"No available channel for model gpt-5 under group default (distributor) (request id: 20260610020049236011057bwI1gGyg)","type":"new_api_error"}} 
+[SYS] 2026/06/10 - 10:00:48 | testing channel 39 with model gpt-5.4 , info RelayInfo{ RelayFormat: openai, RelayMode: 1, IsStream: false, IsPlayground: false, RequestURLPath: "/v1/chat/completions", OriginModelName: "gpt-5.4", EstimatePromptTokens: 0, ShouldIncludeUsage: false, DisablePing: false, SendResponseCount: 0, FinalPreConsumedQuota: 0, User{ Id: 1, Email: "***masked***", Group: "default", UsingGroup: "default", Quota: 499999224577603 }, Token{ Id: 0, Unlimited: false, Key: ***masked*** }, Timing{ Start: 2026-06-10T10:00:48.0035964+08:00, FirstResponse: 2026-06-10T10:00:47.0035964+08:00, LatencyMs: -1000 }, ChannelMeta{ Type: 1, Id: 39, IsMultiKey: false, MultiKeyIndex: 0, BaseURL: "https://api.iamhc.cn", ApiType: 0, ApiVersion: "", CreateTime: 1776556581, UpstreamModelName: "gpt-5.4", IsModelMapped: false, SupportStreamOptions: true, ApiKey: ***masked*** }, }  
+[SYS] 2026/06/10 - 10:00:48 | channel test bad response: channel_id=39 name=https://api.iamhc.cn type=1 model=gpt-5.4 endpoint_type= status=503 err=bad response status code 503, message: No available channel for model gpt-5.4 under group default (distributor) (request id: 202606100200498025192048268d9d6TxlhLXrE), body: {"error":{"code":"model_not_found","message":"No available channel for model gpt-5.4 under group default (distributor) (request id: 202606100200498025192048268d9d6TxlhLXrE)","type":"new_api_error"}} 
+[SYS] 2026/06/10 - 10:00:48 | testing channel 50 with model gpt-5.4 , info RelayInfo{ RelayFormat: openai, RelayMode: 1, IsStream: false, IsPlayground: false, RequestURLPath: "/v1/chat/completions", OriginModelName: "gpt-5.4", EstimatePromptTokens: 0, ShouldIncludeUsage: false, DisablePing: false, SendResponseCount: 0, FinalPreConsumedQuota: 0, User{ Id: 1, Email: "***masked***", Group: "default", UsingGroup: "default", Quota: 499999224577603 }, Token{ Id: 0, Unlimited: false, Key: ***masked*** }, Timing{ Start: 2026-06-10T10:00:48.1121766+08:00, FirstResponse: 2026-06-10T10:00:47.1121766+08:00, LatencyMs: -1000 }, ChannelMeta{ Type: 1, Id: 50, IsMultiKey: false, MultiKeyIndex: 0, BaseURL: "https://api.freemodel.dev", ApiType: 0, ApiVersion: "", CreateTime: 1778381370, UpstreamModelName: "gpt-5.4", IsModelMapped: false, SupportStreamOptions: true, ApiKey: ***masked*** }, }  
+[SYS] 2026/06/10 - 10:00:52 | channel test bad response: channel_id=50 name=https://api.freemodel.dev type=1 model=gpt-5.4 endpoint_type= status=401 err=bad response status code 401, message: Insufficient balance, body: {"error":"Insufficient balance"}
+ 
+[SYS] 2026/06/10 - 10:00:52 | testing channel 58 with model mimo-v2.5-pro , info RelayInfo{ RelayFormat: openai, RelayMode: 1, IsStream: false, IsPlayground: false, RequestURLPath: "/v1/chat/completions", OriginModelName: "mimo-v2.5-pro", EstimatePromptTokens: 0, ShouldIncludeUsage: false, DisablePing: false, SendResponseCount: 0, FinalPreConsumedQuota: 0, User{ Id: 1, Email: "***masked***", Group: "default", UsingGroup: "default", Quota: 499999224577603 }, Token{ Id: 0, Unlimited: false, Key: ***masked*** }, Timing{ Start: 2026-06-10T10:00:52.3737089+08:00, FirstResponse: 2026-06-10T10:00:51.3737089+08:00, LatencyMs: -1000 }, ChannelMeta{ Type: 1, Id: 58, IsMultiKey: false, MultiKeyIndex: 0, BaseURL: "https://token-plan-sgp.xiaomimimo.com", ApiType: 0, ApiVersion: "", CreateTime: 1779865472, UpstreamModelName: "mimo-v2.5-pro", IsModelMapped: false, SupportStreamOptions: true, ApiKey: ***masked*** }, }  
+[SYS] 2026/06/10 - 10:00:52 | channel test bad response: channel_id=58 name=https://token-plan-sgp.xiaomimimo.com/v1 type=1 model=mimo-v2.5-pro endpoint_type= status=401 err=bad response status code 401, message: Invalid API Key, body: {
+    "error": {
+        "message": "Invalid API Key",
+        "param": "Please provide valid API Key",
+        "code": "401",
+        "type": "invalid_key"
+    }
+}
+ 
+[SYS] 2026/06/10 - 10:00:52 | testing channel 45 with model gpt-5.4 , info RelayInfo{ RelayFormat: openai, RelayMode: 1, IsStream: false, IsPlayground: false, RequestURLPath: "/v1/chat/completions", OriginModelName: "gpt-5.4", EstimatePromptTokens: 0, ShouldIncludeUsage: false, DisablePing: false, SendResponseCount: 0, FinalPreConsumedQuota: 0, User{ Id: 1, Email: "***masked***", Group: "default", UsingGroup: "default", Quota: 499999224577603 }, Token{ Id: 0, Unlimited: false, Key: ***masked*** }, Timing{ Start: 2026-06-10T10:00:52.9910145+08:00, FirstResponse: 2026-06-10T10:00:51.9910145+08:00, LatencyMs: -1000 }, ChannelMeta{ Type: 1, Id: 45, IsMultiKey: false, MultiKeyIndex: 0, BaseURL: "https://ai.1239999.xyz", ApiType: 0, ApiVersion: "", CreateTime: 1777182763, UpstreamModelName: "gpt-5.4", IsModelMapped: false, SupportStreamOptions: true, ApiKey: ***masked*** }, }  
+[SYS] 2026/06/10 - 10:00:54 | channel test bad response: channel_id=45 name=https://ai.1239999.xyz type=1 model=gpt-5.4 endpoint_type= status=403 err=bad response status code 403, message: Insufficient account balance, body: {"code":"INSUFFICIENT_BALANCE","message":"Insufficient account balance"} 
+[SYS] 2026/06/10 - 10:00:54 | testing channel 51 with model gpt-5.5 , info RelayInfo{ RelayFormat: openai, RelayMode: 1, IsStream: false, IsPlayground: false, RequestURLPath: "/v1/chat/completions", OriginModelName: "gpt-5.4", EstimatePromptTokens: 0, ShouldIncludeUsage: false, DisablePing: false, SendResponseCount: 0, FinalPreConsumedQuota: 0, User{ Id: 1, Email: "***masked***", Group: "default", UsingGroup: "default", Quota: 499999224577603 }, Token{ Id: 0, Unlimited: false, Key: ***masked*** }, Timing{ Start: 2026-06-10T10:00:54.2538327+08:00, FirstResponse: 2026-06-10T10:00:53.2538327+08:00, LatencyMs: -1000 }, ChannelMeta{ Type: 1, Id: 51, IsMultiKey: false, MultiKeyIndex: 0, BaseURL: "https://a.aiapi1.cc.cd", ApiType: 0, ApiVersion: "", CreateTime: 1778997572, UpstreamModelName: "gpt-5.5", IsModelMapped: true, SupportStreamOptions: true, ApiKey: ***masked*** }, }  
+[SYS] 2026/06/10 - 10:00:59 | syncing options from database 
+[INFO] 2026/06/10 - 10:01:04 | SYSTEM | record usage log: userId=1, params={"channel_id":51,"prompt_tokens":9,"completion_tokens":150,"model_name":"gpt-5.4","token_name":"模型测试","content":"模型测试","token_id":0,"use_time_seconds":10,"is_stream":false,"group":"default","other":{"admin_info":{"use_channel":null},"cache_tokens":0,"frt":-1000,"is_model_mapped":true,"request_conversion":["OpenAI Compatible"],"request_path":"/v1/chat/completions","upstream_model_name":"gpt-5.5"}} 
+[SYS] 2026/06/10 - 10:01:04 | testing channel #51, response: 
+{"choices":[{"finish_reason":"stop","index":0,"message":{"content":"公益服务器压力很大，休息十分钟换key开放，感谢每一个陪伴着，创造者，我们一起等待agi时代来临，欢迎加入,https://dc.hhhl.cc/chat/room/amlc1bekzi   Remember to join the new community! The key will be changed and it will be open soon. Thank you to everyone who has been with us and to all the creators. Let's wait together for the AGI era to arrive. Welcome to join us! https://dc.hhhl.cc/chat/room/amlc1bekzi   TG https://t.me/UniverseFederation","role":"assistant"}}],"created":1781056865,"id":"chatcmpl_local_dj4zysphrlpd","model":"gpt-5.5","object":"chat.completion","usage":{"prompt_tokens":9,"completion_tokens":150,"total_tokens":159,"prompt_tokens_details":{"cached_tokens":0,"text_tokens":0,"audio_tokens":0,"image_tokens":0},"completion_tokens_details":{"text_tokens":0,"audio_tokens":0,"image_tokens":0,"reasoning_tokens":0},"input_tokens":0,"output_tokens":0,"input_tokens_details":null,"claude_cache_creation_5_m_tokens":0,"claude_cache_creation_1_h_tokens":0}} 
+[SYS] 2026/06/10 - 10:01:04 | testing channel 59 with model mimo-v2.5-pro , info RelayInfo{ RelayFormat: openai, RelayMode: 1, IsStream: false, IsPlayground: false, RequestURLPath: "/v1/chat/completions", OriginModelName: "mimo-v2.5-pro", EstimatePromptTokens: 0, ShouldIncludeUsage: false, DisablePing: false, SendResponseCount: 0, FinalPreConsumedQuota: 0, User{ Id: 1, Email: "***masked***", Group: "default", UsingGroup: "default", Quota: 499999224577603 }, Token{ Id: 0, Unlimited: false, Key: ***masked*** }, Timing{ Start: 2026-06-10T10:01:04.8986827+08:00, FirstResponse: 2026-06-10T10:01:03.8986827+08:00, LatencyMs: -1000 }, ChannelMeta{ Type: 1, Id: 59, IsMultiKey: false, MultiKeyIndex: 0, BaseURL: "https://token-plan-cn.xiaomimimo.com", ApiType: 0, ApiVersion: "", CreateTime: 1779927224, UpstreamModelName: "mimo-v2.5-pro", IsModelMapped: false, SupportStreamOptions: true, ApiKey: ***masked*** }, }  
+[SYS] 2026/06/10 - 10:01:05 | channel test bad response: channel_id=59 name=xiaomimimo.com/v1 type=1 model=mimo-v2.5-pro endpoint_type= status=429 err=bad response status code 429, message: quota exhausted, body: {
+    "error": {
+        "code": "429",
+        "message": "quota exhausted",
+        "type": "limitation"
+    }
+}
+ 
+[SYS] 2026/06/10 - 10:01:05 | testing channel 61 with model mimo-v2.5-pro , info RelayInfo{ RelayFormat: openai, RelayMode: 1, IsStream: false, IsPlayground: false, RequestURLPath: "/v1/chat/completions", OriginModelName: "mimo-v2.5-pro", EstimatePromptTokens: 0, ShouldIncludeUsage: false, DisablePing: false, SendResponseCount: 0, FinalPreConsumedQuota: 0, User{ Id: 1, Email: "***masked***", Group: "default", UsingGroup: "default", Quota: 499999224577603 }, Token{ Id: 0, Unlimited: false, Key: ***masked*** }, Timing{ Start: 2026-06-10T10:01:05.0504961+08:00, FirstResponse: 2026-06-10T10:01:04.0504961+08:00, LatencyMs: -1000 }, ChannelMeta{ Type: 1, Id: 61, IsMultiKey: false, MultiKeyIndex: 0, BaseURL: "https://token-plan-cn.xiaomimimo.com", ApiType: 0, ApiVersion: "", CreateTime: 1780277005, UpstreamModelName: "mimo-v2.5-pro", IsModelMapped: false, SupportStreamOptions: true, ApiKey: ***masked*** }, }  
+[SYS] 2026/06/10 - 10:01:05 | channel test bad response: channel_id=61 name=xiaomimimo.com/v1_复制 type=1 model=mimo-v2.5-pro endpoint_type= status=429 err=bad response status code 429, message: quota exhausted, body: {
+    "error": {
+        "code": "429",
+        "message": "quota exhausted",
+        "type": "limitation"
+    }
+}
+ 
+[SYS] 2026/06/10 - 10:01:05 | testing channel 64 with model mimo-v2.5-pro , info RelayInfo{ RelayFormat: openai, RelayMode: 1, IsStream: false, IsPlayground: false, RequestURLPath: "/v1/chat/completions", OriginModelName: "mimo-v2.5-pro", EstimatePromptTokens: 0, ShouldIncludeUsage: false, DisablePing: false, SendResponseCount: 0, FinalPreConsumedQuota: 0, User{ Id: 1, Email: "***masked***", Group: "default", UsingGroup: "default", Quota: 499999224577603 }, Token{ Id: 0, Unlimited: false, Key: ***masked*** }, Timing{ Start: 2026-06-10T10:01:05.2975522+08:00, FirstResponse: 2026-06-10T10:01:04.2975522+08:00, LatencyMs: -1000 }, ChannelMeta{ Type: 1, Id: 64, IsMultiKey: false, MultiKeyIndex: 0, BaseURL: "https://token-plan-cn.xiaomimimo.com", ApiType: 0, ApiVersion: "", CreateTime: 1780474142, UpstreamModelName: "mimo-v2.5-pro", IsModelMapped: false, SupportStreamOptions: true, ApiKey: ***masked*** }, }  
+[SYS] 2026/06/10 - 10:01:05 | channel test bad response: channel_id=64 name=xiaomimimo.com/v1_复制_复制 type=1 model=mimo-v2.5-pro endpoint_type= status=429 err=bad response status code 429, message: Too many requests, body: {
+    "error": {
+        "code": "429",
+        "message": "Too many requests",
+        "type": "limitation"
+    }
+}
+ 
+[SYS] 2026/06/10 - 10:01:05 | testing channel 66 with model claude-opus-4-6 , info RelayInfo{ RelayFormat: openai, RelayMode: 1, IsStream: false, IsPlayground: false, RequestURLPath: "/v1/chat/completions", OriginModelName: "claude-opus-4-6", EstimatePromptTokens: 0, ShouldIncludeUsage: false, DisablePing: false, SendResponseCount: 0, FinalPreConsumedQuota: 0, User{ Id: 1, Email: "***masked***", Group: "default", UsingGroup: "default", Quota: 499999224577603 }, Token{ Id: 0, Unlimited: false, Key: ***masked*** }, Timing{ Start: 2026-06-10T10:01:05.4007599+08:00, FirstResponse: 2026-06-10T10:01:04.4007599+08:00, LatencyMs: -1000 }, ChannelMeta{ Type: 1, Id: 66, IsMultiKey: false, MultiKeyIndex: 0, BaseURL: "https://aiapi1.cc.cd", ApiType: 0, ApiVersion: "", CreateTime: 1780489799, UpstreamModelName: "claude-opus-4-6", IsModelMapped: false, SupportStreamOptions: true, ApiKey: ***masked*** }, }  

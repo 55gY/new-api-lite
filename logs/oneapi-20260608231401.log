@@ -1,0 +1,43 @@
+[SYS] 2026/06/08 - 23:14:01 | initializing token encoders 
+[SYS] 2026/06/08 - 23:14:01 | token encoders initialized 
+[SYS] 2026/06/08 - 23:14:01 | using SQLite as database 
+[SYS] 2026/06/08 - 23:14:01 | database migration started 
+[SYS] 2026/06/08 - 23:14:02 | system is already initialized at: 2026-03-24 08:57:55 +0800 CST 
+[SYS] 2026/06/08 - 23:14:02 | REDIS_CONN_STRING not set, Redis is not enabled 
+[SYS] 2026/06/08 - 23:14:02 | i18n initialized with languages: zh-CN, zh-TW, en 
+[SYS] 2026/06/08 - 23:14:02 | New API v0.0.0 started 
+[SYS] 2026/06/08 - 23:14:02 | 正在更新数据看板数据... 
+[SYS] 2026/06/08 - 23:14:02 | upstream model update task started: interval=30m0s 
+[INFO] 2026/06/08 - 23:14:02 | SYSTEM | codex credential auto-refresh task started: tick=10m0s threshold=24h0m0s 
+[SYS] 2026/06/08 - 23:14:02 | 保存数据看板数据成功，共保存0条数据 
+
+  [32mNew API v0.0.0[0m  ready in 206 ms
+
+  ➜  [1mLocal:[0m   http://localhost:3000/
+  ➜  [1mNetwork:[0m http://192.168.10.35:3000/
+
+[SYS] 2026/06/08 - 23:14:03 | upstream model update check failed: channel_id=9 channel_name=axa err=Get "https://api.axa.us.ci/v1/models": EOF 
+[SYS] 2026/06/08 - 23:14:03 | upstream model update check failed: channel_id=18 channel_name=grok2api err=Get "https://vibe.grok2api.us.ci/v1/models": read tcp 127.0.0.1:29980->127.0.0.1:7890: wsarecv: An established connection was aborted by the software in your host machine. 
+[SYS] 2026/06/08 - 23:14:03 | upstream model update check failed: channel_id=19 channel_name=gptanon-2api err=status code: 404 
+[SYS] 2026/06/08 - 23:14:04 | upstream model update task done: checked_channels=6 changed_channels=1 detected_add_models=0 detected_remove_models=82 failed_channels=3 auto_added_models=0 
+[SYS] 2026/06/08 - 23:14:04 | upstream model update notifications sent: 0 
+[GIN] 2026/06/08 - 23:14:59 | web | 202606081514592536511008268d9d6x01lyXPP | 200 |            0s |             ::1 |     GET /
+[GIN] 2026/06/08 - 23:14:59 | api | 202606081514592631345008268d9d6B8lOXlFM | 200 |            0s |             ::1 |     GET /api/status
+[GIN] 2026/06/08 - 23:14:59 | api | 202606081514592706532008268d9d6PGy2qhR5 | 200 |      2.1989ms |             ::1 |    POST /api/user/login
+[GIN] 2026/06/08 - 23:14:59 | api | 202606081514592733654008268d9d6fWuvdMaG | 401 |       516.8µs |             ::1 |     GET /api/models
+[GIN] 2026/06/08 - 23:14:59 | api | 202606081514592818426008268d9d6qa419uPr | 401 |            0s |             ::1 |     GET /api/channel/
+[GIN] 2026/06/08 - 23:14:59 | api | 202606081514592818426008268d9d658AeawRs | 401 |            0s |             ::1 |     GET /api/token/
+[ERR] 2026/06/08 - 23:14:59 | 202606081514592823696008268d9d6rhWLUdb6 | user 0 | Invalid token 
+[GIN] 2026/06/08 - 23:14:59 | relay | 202606081514592823696008268d9d6rhWLUdb6 | 401 |       595.7µs |             ::1 |     GET /v1/models
+[GIN] 2026/06/08 - 23:14:59 | relay | 202606081514592840001008268d9d6mPako1PK | 503 |            0s |             ::1 |    POST /v1/chat/completions
+[GIN] 2026/06/08 - 23:14:59 | relay | 202606081514592857008008268d9d64l3NyMwt | 503 |            0s |             ::1 |    POST /v1/responses
+[GIN] 2026/06/08 - 23:14:59 | relay | 202606081514592867439008268d9d6xlRAueVi | 503 |            0s |             ::1 |    POST /v1/embeddings
+[GIN] 2026/06/08 - 23:14:59 | web | 202606081514592878926008268d9d6Ya75FMvq | 404 |            0s |             ::1 |    POST /v1/audio/transcriptions
+[GIN] 2026/06/08 - 23:14:59 | web | 202606081514592895184008268d9d6oo4Ap0Oy | 404 |            0s |             ::1 |    POST /v1/videos
+[GIN] 2026/06/08 - 23:14:59 | web | 202606081514592903413008268d9d61CFjak9G | 200 |            0s |             ::1 |    POST /suno/submit/music
+[GIN] 2026/06/08 - 23:14:59 | web | 202606081514592911353008268d9d6HVTAyaRe | 404 |            0s |             ::1 |     GET /api/task/
+[GIN] 2026/06/08 - 23:14:59 | web | 202606081514592911353008268d9d6espC5gFB | 404 |         515µs |             ::1 |     GET /api/prefill_group/
+[GIN] 2026/06/08 - 23:14:59 | api | 202606081514592916554008268d9d6MQReInt9 | 401 |            0s |             ::1 |     GET /api/user/quota
+[GIN] 2026/06/08 - 23:14:59 | web | 202606081514592923249008268d9d66YbopldX | 404 |            0s |             ::1 |     GET /api/rate/
+[SYS] 2026/06/08 - 23:15:02 | syncing options from database 
+[SYS] 2026/06/08 - 23:16:02 | syncing options from database 

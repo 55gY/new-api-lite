@@ -1,0 +1,116 @@
+/*
+Copyright (C) 2025 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+
+import { useMemo } from 'react';
+import { Activity, Zap, Gauge } from 'lucide-react';
+import {
+  IconTextStroked,
+  IconPulse,
+  IconStopwatchStroked,
+  IconTypograph,
+  IconSend,
+} from '@douyinfe/semi-icons';
+import { createSectionTitle } from '../../helpers/dashboard';
+
+export const useDashboardStats = (
+  userState,
+  consumeQuota,
+  consumeTokens,
+  times,
+  trendData,
+  performanceMetrics,
+  navigate,
+  t,
+) => {
+  const groupedStatsData = useMemo(
+    () => [
+      {
+        title: createSectionTitle(Activity, t('使用统计')),
+        color: 'bg-green-50',
+        items: [
+          {
+            title: t('请求次数'),
+            value: userState.user?.request_count,
+            icon: <IconSend />,
+            avatarColor: 'green',
+            trendData: [],
+            trendColor: '#10b981',
+          },
+          {
+            title: t('统计次数'),
+            value: times,
+            icon: <IconPulse />,
+            avatarColor: 'cyan',
+            trendData: trendData.times,
+            trendColor: '#06b6d4',
+          },
+        ],
+      },
+      {
+        title: createSectionTitle(Zap, t('Token 消耗')),
+        color: 'bg-yellow-50',
+        items: [
+          {
+            title: t('统计Tokens'),
+            value: isNaN(consumeTokens) ? 0 : consumeTokens.toLocaleString(),
+            icon: <IconTextStroked />,
+            avatarColor: 'pink',
+            trendData: trendData.tokens,
+            trendColor: '#ec4899',
+          },
+        ],
+      },
+      {
+        title: createSectionTitle(Gauge, t('性能指标')),
+        color: 'bg-indigo-50',
+        items: [
+          {
+            title: t('平均RPM'),
+            value: performanceMetrics.avgRPM,
+            icon: <IconStopwatchStroked />,
+            avatarColor: 'indigo',
+            trendData: trendData.rpm,
+            trendColor: '#6366f1',
+          },
+          {
+            title: t('平均TPM'),
+            value: performanceMetrics.avgTPM,
+            icon: <IconTypograph />,
+            avatarColor: 'orange',
+            trendData: trendData.tpm,
+            trendColor: '#f97316',
+          },
+        ],
+      },
+    ],
+    [
+      userState?.user?.request_count,
+      times,
+      consumeTokens,
+      trendData,
+      performanceMetrics,
+      navigate,
+      t,
+    ],
+  );
+
+  return {
+    groupedStatsData,
+  };
+};

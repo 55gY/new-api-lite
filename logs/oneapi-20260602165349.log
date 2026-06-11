@@ -1,0 +1,138 @@
+[SYS] 2026/06/02 - 16:53:49 | initializing token encoders 
+[SYS] 2026/06/02 - 16:53:49 | token encoders initialized 
+[SYS] 2026/06/02 - 16:53:49 | SQL_DSN not set, using SQLite as database 
+[SYS] 2026/06/02 - 16:53:49 | database migration started 
+[SYS] 2026/06/02 - 16:53:50 | system is already initialized at: 2026-03-24 08:57:55 +0800 CST 
+[SYS] 2026/06/02 - 16:53:50 | REDIS_CONN_STRING not set, Redis is not enabled 
+[SYS] 2026/06/02 - 16:53:50 | i18n initialized with languages: zh-CN, zh-TW, en 
+[SYS] 2026/06/02 - 16:53:50 | Loaded 0 custom OAuth providers 
+[SYS] 2026/06/02 - 16:53:50 | New API v0.0.0 started 
+[SYS] 2026/06/02 - 16:53:50 | 正在更新数据看板数据... 
+[INFO] 2026/06/02 - 16:53:50 | SYSTEM | codex credential auto-refresh task started: tick=10m0s threshold=24h0m0s 
+[SYS] 2026/06/02 - 16:53:50 | upstream model update task started: interval=30m0s 
+[INFO] 2026/06/02 - 16:53:50 | SYSTEM | subscription quota reset task started: tick=1m0s 
+[SYS] 2026/06/02 - 16:53:50 | 保存数据看板数据成功，共保存0条数据 
+
+  [32mNew API v0.0.0[0m  ready in 631 ms
+
+  ➜  [1mLocal:[0m   http://localhost:3000/
+  ➜  [1mNetwork:[0m http://192.168.10.216:3000/
+
+[SYS] 2026/06/02 - 16:53:52 | upstream model update check failed: channel_id=9 channel_name=axa err=Get "https://api.axa.us.ci/v1/models": read tcp 127.0.0.1:12728->127.0.0.1:7890: wsarecv: An existing connection was forcibly closed by the remote host. 
+[SYS] 2026/06/02 - 16:53:52 | upstream model update check failed: channel_id=18 channel_name=grok2api err=Get "https://vibe.grok2api.us.ci/v1/models": EOF 
+[SYS] 2026/06/02 - 16:53:52 | upstream model update check failed: channel_id=19 channel_name=gptanon-2api err=status code: 404 
+[GIN] 2026/06/02 - 16:53:53 | web | 202606020853531096767008268d9d6dF7kqcnw | 200 |       529.2µs |       127.0.0.1 |     GET /pricing
+[GIN] 2026/06/02 - 16:53:53 | web | 202606020853537118559008268d9d69f9nsKZw | 200 |    132.5799ms |       127.0.0.1 |     GET /assets/react-components-BMEyFlsF.js
+[GIN] 2026/06/02 - 16:53:53 | web | 202606020853537027352008268d9d64eurCR3Q | 200 |    142.3607ms |       127.0.0.1 |     GET /assets/i18n-CXf1qFdU.js
+[GIN] 2026/06/02 - 16:53:53 | web | 202606020853537092242008268d9d67dv1RHTw | 200 |    141.6532ms |       127.0.0.1 |     GET /assets/tools-BaE53nVS.js
+[GIN] 2026/06/02 - 16:53:53 | web | 202606020853536985429008268d9d6bLy0vzPt | 200 |    160.6057ms |       127.0.0.1 |     GET /assets/react-core-BAQOEN2L.js
+[GIN] 2026/06/02 - 16:53:53 | web | 202606020853538454951008268d9d6bCVIDNUh | 200 |     29.1854ms |       127.0.0.1 |     GET /assets/semi-ui-yRXI6evF.css
+[GIN] 2026/06/02 - 16:53:53 | web | 202606020853538496210008268d9d6djrRIF6v | 200 |     33.9488ms |       127.0.0.1 |     GET /assets/index-DmBMgGbG.css
+[GIN] 2026/06/02 - 16:53:53 | web | 202606020853537067768008268d9d6UkKriLJT | 200 |    252.7178ms |       127.0.0.1 |     GET /assets/semi-ui-zoMjJx-j.js
+[GIN] 2026/06/02 - 16:53:54 | web | 202606020853536846299008268d9d6hjcdVWFG | 200 |    614.5966ms |       127.0.0.1 |     GET /assets/index-CoZZEcHa.js
+[SYS] 2026/06/02 - 16:53:54 | upstream model update task done: checked_channels=6 changed_channels=1 detected_add_models=0 detected_remove_models=82 failed_channels=3 auto_added_models=0 
+[SYS] 2026/06/02 - 16:53:54 | upstream model update notifications sent: 0 
+[GIN] 2026/06/02 - 16:53:54 | web | 202606020853549110755008268d9d6kHix478E | 200 |            0s |       127.0.0.1 |     GET /logo.png
+[GIN] 2026/06/02 - 16:53:55 | web | 202606020853551682053008268d9d6IWH49HYV | 200 |      2.0946ms |       127.0.0.1 |     GET /cover-4.webp
+[GIN] 2026/06/02 - 16:53:55 | api | 202606020853551812545008268d9d6CtUosPoS | 200 |      3.6949ms |       127.0.0.1 |     GET /api/pricing
+[GIN] 2026/06/02 - 16:53:55 | api | 202606020853551882574008268d9d6MAQlTo9O | 200 |       529.7µs |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/02 - 16:53:55 | web | 202606020853551968537008268d9d6DW3A3cU1 | 200 |       992.8µs |       127.0.0.1 |     GET /logo.png
+[SYS] 2026/06/02 - 16:54:05 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:54:05 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:54:20 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:54:20 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:54:35 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:54:35 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:54:50 | syncing options from database 
+[SYS] 2026/06/02 - 16:54:50 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:54:50 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:55:05 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:55:05 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:55:20 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:55:20 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:55:35 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:55:35 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:55:50 | syncing options from database 
+[SYS] 2026/06/02 - 16:55:50 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:55:50 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:56:05 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:56:05 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:56:20 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:56:20 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:56:35 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:56:35 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:56:50 | syncing options from database 
+[SYS] 2026/06/02 - 16:56:50 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:56:50 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:57:05 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:57:05 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:57:20 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:57:20 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:57:35 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:57:35 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:57:50 | syncing options from database 
+[SYS] 2026/06/02 - 16:57:50 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:57:50 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:58:05 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:58:05 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:58:20 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:58:20 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:58:35 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:58:35 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:58:50 | 正在更新数据看板数据... 
+[SYS] 2026/06/02 - 16:58:50 | 保存数据看板数据成功，共保存0条数据 
+[SYS] 2026/06/02 - 16:58:50 | syncing options from database 
+[SYS] 2026/06/02 - 16:58:50 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:58:50 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:59:05 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:59:05 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:59:20 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:59:20 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:59:35 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:59:35 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:59:50 | syncing options from database 
+[SYS] 2026/06/02 - 16:59:50 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:59:50 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 17:00:05 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 17:00:05 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 17:00:20 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 17:00:20 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 17:00:35 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 17:00:35 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 17:00:50 | syncing options from database 
+[SYS] 2026/06/02 - 17:00:50 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 17:00:50 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 17:01:05 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 17:01:05 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 17:01:20 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 17:01:20 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 17:01:35 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 17:01:35 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 17:01:50 | syncing options from database 
+[SYS] 2026/06/02 - 17:01:50 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 17:01:50 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 17:02:05 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 17:02:05 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 17:02:20 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 17:02:20 | 任务进度轮询完成 
+[GIN] 2026/06/02 - 17:02:26 | web | 202606020902265121660008268d9d6n1Q82Q8U | 200 |            0s |       127.0.0.1 |     GET /pricing
+[GIN] 2026/06/02 - 17:02:26 | web | 202606020902266220048008268d9d6J9DKprpR | 200 |      2.6568ms |       127.0.0.1 |     GET /assets/i18n-CXf1qFdU.js
+[GIN] 2026/06/02 - 17:02:26 | web | 202606020902266214919008268d9d6zS0zIKnD | 200 |      9.2854ms |       127.0.0.1 |     GET /assets/react-core-BAQOEN2L.js
+[GIN] 2026/06/02 - 17:02:26 | web | 202606020902266277761008268d9d6HbMJKZ84 | 200 |      4.0009ms |       127.0.0.1 |     GET /assets/tools-BaE53nVS.js
+[GIN] 2026/06/02 - 17:02:26 | web | 202606020902266307773008268d9d63vDrfke7 | 200 |      2.5506ms |       127.0.0.1 |     GET /assets/react-components-BMEyFlsF.js
+[GIN] 2026/06/02 - 17:02:26 | web | 202606020902266317770008268d9d68N5H1AkR | 200 |     19.2965ms |       127.0.0.1 |     GET /assets/semi-ui-yRXI6evF.css
+[GIN] 2026/06/02 - 17:02:26 | web | 202606020902266328151008268d9d6y9S5Qd7D | 200 |     20.2589ms |       127.0.0.1 |     GET /assets/index-DmBMgGbG.css
+[GIN] 2026/06/02 - 17:02:26 | web | 202606020902266252664008268d9d6RijrCmnW | 200 |     71.6758ms |       127.0.0.1 |     GET /assets/semi-ui-zoMjJx-j.js
+[GIN] 2026/06/02 - 17:02:26 | web | 202606020902266209438008268d9d6Ypt7HNE7 | 200 |     260.189ms |       127.0.0.1 |     GET /assets/index-CoZZEcHa.js
+[GIN] 2026/06/02 - 17:02:27 | web | 202606020902272574429008268d9d6eIrGOBOH | 200 |      1.5736ms |       127.0.0.1 |     GET /cover-4.webp
+[GIN] 2026/06/02 - 17:02:27 | api | 202606020902272652608008268d9d6UuvMeRGY | 200 |       806.6µs |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/02 - 17:02:27 | api | 202606020902272652608008268d9d6V6vX4c8k | 200 |      6.6094ms |       127.0.0.1 |     GET /api/pricing
+[GIN] 2026/06/02 - 17:02:27 | web | 202606020902272748284008268d9d6Z5eOnUYV | 200 |            0s |       127.0.0.1 |     GET /logo.png
+[GIN] 2026/06/02 - 17:02:27 | web | 202606020902272881824008268d9d6KJi2EOoI | 200 |            0s |       127.0.0.1 |     GET /logo.png
+[SYS] 2026/06/02 - 17:02:35 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 17:02:35 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 17:02:50 | syncing options from database 
+[SYS] 2026/06/02 - 17:02:50 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 17:02:50 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 17:03:05 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 17:03:05 | 任务进度轮询完成 

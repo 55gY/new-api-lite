@@ -1,0 +1,45 @@
+[SYS] 2026/06/05 - 15:26:09 | initializing token encoders 
+[SYS] 2026/06/05 - 15:26:09 | token encoders initialized 
+[SYS] 2026/06/05 - 15:26:09 | SQL_DSN not set, using SQLite as database 
+[SYS] 2026/06/05 - 15:26:09 | database migration started 
+[SYS] 2026/06/05 - 15:26:10 | system is already initialized at: 2026-03-24 08:57:55 +0800 CST 
+[SYS] 2026/06/05 - 15:26:10 | REDIS_CONN_STRING not set, Redis is not enabled 
+[SYS] 2026/06/05 - 15:26:10 | i18n initialized with languages: zh-CN, zh-TW, en 
+[SYS] 2026/06/05 - 15:26:10 | Loaded 0 custom OAuth providers 
+[SYS] 2026/06/05 - 15:26:10 | New API v0.0.0 started 
+[SYS] 2026/06/05 - 15:26:10 | 正在更新数据看板数据... 
+[INFO] 2026/06/05 - 15:26:10 | SYSTEM | codex credential auto-refresh task started: tick=10m0s threshold=24h0m0s 
+[SYS] 2026/06/05 - 15:26:10 | upstream model update task started: interval=30m0s 
+[SYS] 2026/06/05 - 15:26:10 | 保存数据看板数据成功，共保存0条数据 
+[SYS] 2026/06/05 - 15:26:10 | upstream model update task done: checked_channels=6 changed_channels=2 detected_add_models=12 detected_remove_models=93 failed_channels=0 auto_added_models=0 
+[SYS] 2026/06/05 - 15:26:10 | upstream model update notifications sent: 0 
+
+  [32mNew API v0.0.0[0m  ready in 226 ms
+
+  ➜  [1mLocal:[0m   http://localhost:3000/
+  ➜  [1mNetwork:[0m http://192.168.10.35:3000/
+
+[GIN] 2026/06/05 - 15:26:11 | web | 202606050726117036462008268d9d6yVwMlbO0 | 200 |       512.3µs |       127.0.0.1 |     GET /models
+[GIN] 2026/06/05 - 15:26:11 | api | 202606050726118485112008268d9d6LnOlmCSX | 401 |       524.1µs |       127.0.0.1 |     GET /api/channel/models_enabled
+[GIN] 2026/06/05 - 15:26:11 | api | 202606050726118490179008268d9d6Y8PXJI2v | 200 |        12.8µs |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/05 - 15:26:11 | web | 202606050726118757426008268d9d6Rf0MOUwO | 200 |            0s |       127.0.0.1 |     GET /login?expired=true
+[GIN] 2026/06/05 - 15:26:12 | api | 20260605072612234598008268d9d6ZXDuxdg2 | 200 |       999.5µs |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/05 - 15:26:13 | api | 202606050726129429077008268d9d6GUkS7Trn | 200 |      58.588ms |       127.0.0.1 |    POST /api/user/login?turnstile=
+[GIN] 2026/06/05 - 15:26:13 | api | 20260605072613776909008268d9d6J9uI6Yos | 200 |       580.6µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/05 - 15:26:13 | api | 20260605072613960662008268d9d65bmCMMlP | 200 |         523µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/05 - 15:26:13 | api | 20260605072613998263008268d9d657PRLmZa | 200 |       518.9µs |       127.0.0.1 |     GET /api/data/?username=&start_timestamp=1780557973&end_timestamp=1780647973&default_time=hour
+[GIN] 2026/06/05 - 15:26:13 | api | 202606050726131317607008268d9d6lsgp5qlQ | 200 |            0s |       127.0.0.1 |     GET /api/data/users?start_timestamp=1780557973&end_timestamp=1780647973
+[GIN] 2026/06/05 - 15:26:14 | api | 202606050726142893241008268d9d6N78JI8el | 200 |      1.6006ms |       127.0.0.1 |     GET /api/channel/models_enabled
+[SYS] 2026/06/05 - 15:26:25 | 任务进度轮询开始 
+[SYS] 2026/06/05 - 15:26:25 | 任务进度轮询完成 
+[SYS] 2026/06/05 - 15:26:40 | 任务进度轮询开始 
+[SYS] 2026/06/05 - 15:26:40 | 任务进度轮询完成 
+[SYS] 2026/06/05 - 15:26:55 | 任务进度轮询开始 
+[SYS] 2026/06/05 - 15:26:55 | 任务进度轮询完成 
+[SYS] 2026/06/05 - 15:27:10 | syncing options from database 
+[SYS] 2026/06/05 - 15:27:10 | 任务进度轮询开始 
+[SYS] 2026/06/05 - 15:27:10 | 任务进度轮询完成 
+[SYS] 2026/06/05 - 15:27:25 | 任务进度轮询开始 
+[SYS] 2026/06/05 - 15:27:25 | 任务进度轮询完成 
+[SYS] 2026/06/05 - 15:27:40 | 任务进度轮询开始 
+[SYS] 2026/06/05 - 15:27:40 | 任务进度轮询完成 

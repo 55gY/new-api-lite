@@ -1,0 +1,68 @@
+[SYS] 2026/06/02 - 16:34:25 | initializing token encoders 
+[SYS] 2026/06/02 - 16:34:25 | token encoders initialized 
+[SYS] 2026/06/02 - 16:34:25 | SQL_DSN not set, using SQLite as database 
+[SYS] 2026/06/02 - 16:34:25 | database migration started 
+[SYS] 2026/06/02 - 16:34:26 | system is already initialized at: 2026-06-02 10:18:10 +0800 CST 
+[SYS] 2026/06/02 - 16:34:26 | REDIS_CONN_STRING not set, Redis is not enabled 
+[SYS] 2026/06/02 - 16:34:26 | i18n initialized with languages: zh-CN, zh-TW, en 
+[SYS] 2026/06/02 - 16:34:26 | Loaded 0 custom OAuth providers 
+[SYS] 2026/06/02 - 16:34:26 | New API v0.0.0 started 
+[SYS] 2026/06/02 - 16:34:26 | 正在更新数据看板数据... 
+[INFO] 2026/06/02 - 16:34:26 | SYSTEM | codex credential auto-refresh task started: tick=10m0s threshold=24h0m0s 
+[INFO] 2026/06/02 - 16:34:26 | SYSTEM | subscription quota reset task started: tick=1m0s 
+[SYS] 2026/06/02 - 16:34:26 | upstream model update task started: interval=30m0s 
+[SYS] 2026/06/02 - 16:34:26 | 保存数据看板数据成功，共保存0条数据 
+
+  [32mNew API v0.0.0[0m  ready in 488 ms
+
+  ➜  [1mLocal:[0m   http://localhost:3000/
+  ➜  [1mNetwork:[0m http://192.168.10.216:3000/
+
+[GIN] 2026/06/02 - 16:34:28 | web | 202606020834285663861008268d9d6Eo14aRo1 | 200 |       511.9µs |       127.0.0.1 |     GET /console
+[GIN] 2026/06/02 - 16:34:28 | web | 202606020834287689151008268d9d6JGAJcQwU | 200 |     73.2886ms |       127.0.0.1 |     GET /assets/i18n-CXf1qFdU.js
+[GIN] 2026/06/02 - 16:34:28 | web | 202606020834287694322008268d9d6S6xZXf3J | 200 |     74.4818ms |       127.0.0.1 |     GET /assets/tools-BaE53nVS.js
+[GIN] 2026/06/02 - 16:34:28 | web | 202606020834287703519008268d9d65cwLLFg0 | 200 |     87.9545ms |       127.0.0.1 |     GET /assets/index-DmBMgGbG.css
+[GIN] 2026/06/02 - 16:34:28 | web | 202606020834287694322008268d9d6YW7TKomB | 200 |    131.3957ms |       127.0.0.1 |     GET /assets/semi-ui-zoMjJx-j.js
+[GIN] 2026/06/02 - 16:34:29 | web | 202606020834287664095008268d9d6atvyaTmQ | 200 |    304.9217ms |       127.0.0.1 |     GET /assets/index-CoZZEcHa.js
+[GIN] 2026/06/02 - 16:34:29 | api | 202606020834294712494008268d9d6eRo8Kccn | 401 |      1.0444ms |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/02 - 16:34:29 | api | 202606020834294712494008268d9d6yy7wRKLn | 200 |      2.6475ms |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/02 - 16:34:29 | web | 202606020834294543500008268d9d60JXAuOMZ | 200 |     49.6376ms |       127.0.0.1 |     GET /assets/index-BS1OUp9L.js
+[GIN] 2026/06/02 - 16:34:29 | web | 202606020834295155956008268d9d60WH5ZEbu | 200 |            0s |       127.0.0.1 |     GET /login?expired=true
+[GIN] 2026/06/02 - 16:34:29 | api | 202606020834297176504008268d9d623P2FrIf | 200 |            0s |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/02 - 16:34:31 | api | 202606020834313916170008268d9d6xnU7KHyo | 200 |     63.5185ms |       127.0.0.1 |    POST /api/user/login?turnstile=
+[GIN] 2026/06/02 - 16:34:31 | api | 202606020834315602344008268d9d6tPgMS1j8 | 200 |      1.7525ms |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/02 - 16:34:31 | web | 202606020834315562346008268d9d6ffvAUziD | 200 |     67.2621ms |       127.0.0.1 |     GET /assets/index-BS1OUp9L.js
+[GIN] 2026/06/02 - 16:34:31 | api | 202606020834318293576008268d9d6pmQj1Et4 | 200 |       526.3µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/02 - 16:34:31 | api | 202606020834318345502008268d9d6lDKMxo2f | 200 |       519.7µs |       127.0.0.1 |     GET /api/data/?username=&start_timestamp=1780302871&end_timestamp=1780392871&default_time=hour
+[GIN] 2026/06/02 - 16:34:31 | api | 202606020834318774826008268d9d6PnOSRX3i | 200 |       530.6µs |       127.0.0.1 |     GET /api/data/users?start_timestamp=1780302871&end_timestamp=1780392871
+[GIN] 2026/06/02 - 16:34:31 | api | 202606020834319419507008268d9d6cU1UQpoF | 200 |            0s |       127.0.0.1 |     GET /api/uptime/status
+[GIN] 2026/06/02 - 16:34:33 | web | 202606020834334187594008268d9d6f0xp9l3z | 404 |            0s |       127.0.0.1 |     GET /api/pricing
+[SYS] 2026/06/02 - 16:34:41 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:34:41 | 任务进度轮询完成 
+[GIN] 2026/06/02 - 16:34:43 | web | 202606020834437841961008268d9d6c8bYWmqP | 200 |            0s |       127.0.0.1 |     GET /pricing
+[GIN] 2026/06/02 - 16:34:43 | web | 202606020834438655948008268d9d6wBhix7r5 | 200 |      3.0005ms |       127.0.0.1 |     GET /assets/i18n-CXf1qFdU.js
+[GIN] 2026/06/02 - 16:34:43 | web | 202606020834438685953008268d9d68HDkXSb5 | 200 |      1.7687ms |       127.0.0.1 |     GET /assets/react-components-BMEyFlsF.js
+[GIN] 2026/06/02 - 16:34:43 | web | 202606020834438675953008268d9d6ZG6MBxgA | 200 |      5.7516ms |       127.0.0.1 |     GET /assets/tools-BaE53nVS.js
+[GIN] 2026/06/02 - 16:34:43 | web | 202606020834438645949008268d9d6D2n2huRS | 200 |      11.132ms |       127.0.0.1 |     GET /assets/react-core-BAQOEN2L.js
+[GIN] 2026/06/02 - 16:34:43 | web | 202606020834438713476008268d9d67Khs4g6I | 200 |     11.9704ms |       127.0.0.1 |     GET /assets/semi-ui-yRXI6evF.css
+[GIN] 2026/06/02 - 16:34:43 | web | 202606020834438713476008268d9d6nBLBVegr | 200 |     15.8355ms |       127.0.0.1 |     GET /assets/index-DmBMgGbG.css
+[GIN] 2026/06/02 - 16:34:43 | web | 202606020834438655948008268d9d6H1huz7wV | 200 |     62.8477ms |       127.0.0.1 |     GET /assets/semi-ui-zoMjJx-j.js
+[GIN] 2026/06/02 - 16:34:44 | web | 202606020834438615955008268d9d621ylxrgc | 200 |    177.6432ms |       127.0.0.1 |     GET /assets/index-CoZZEcHa.js
+[GIN] 2026/06/02 - 16:34:44 | web | 202606020834444224445008268d9d6eSFe9GOp | 200 |      2.5732ms |       127.0.0.1 |     GET /cover-4.webp
+[GIN] 2026/06/02 - 16:34:44 | web | 202606020834444267735008268d9d6xGGYo63G | 404 |            0s |       127.0.0.1 |     GET /api/pricing
+[GIN] 2026/06/02 - 16:34:44 | api | 202606020834444294306008268d9d6RMEBrOD0 | 200 |            0s |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/02 - 16:34:44 | web | 202606020834444374257008268d9d6ExSraEMc | 200 |           1ms |       127.0.0.1 |     GET /logo.png
+[GIN] 2026/06/02 - 16:34:44 | web | 202606020834444484859008268d9d6uEaV6sLB | 200 |            0s |       127.0.0.1 |     GET /logo.png
+[SYS] 2026/06/02 - 16:34:56 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:34:56 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:35:11 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:35:11 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:35:26 | syncing options from database 
+[SYS] 2026/06/02 - 16:35:26 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:35:26 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:35:41 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:35:41 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:35:56 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:35:56 | 任务进度轮询完成 
+[SYS] 2026/06/02 - 16:36:11 | 任务进度轮询开始 
+[SYS] 2026/06/02 - 16:36:11 | 任务进度轮询完成 

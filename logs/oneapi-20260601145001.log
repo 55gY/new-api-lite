@@ -1,0 +1,132 @@
+[SYS] 2026/06/01 - 14:50:01 | initializing token encoders 
+[SYS] 2026/06/01 - 14:50:01 | token encoders initialized 
+[SYS] 2026/06/01 - 14:50:01 | SQL_DSN not set, using SQLite as database 
+[SYS] 2026/06/01 - 14:50:01 | database migration started 
+[SYS] 2026/06/01 - 14:50:01 | system is already initialized at: 2026-03-24 08:57:55 +0800 CST 
+[SYS] 2026/06/01 - 14:50:01 | REDIS_CONN_STRING not set, Redis is not enabled 
+[SYS] 2026/06/01 - 14:50:01 | i18n initialized with languages: zh-CN, zh-TW, en 
+[SYS] 2026/06/01 - 14:50:01 | Loaded 0 custom OAuth providers 
+[SYS] 2026/06/01 - 14:50:01 | New API v0.0.0 started 
+[SYS] 2026/06/01 - 14:50:01 | 正在更新数据看板数据... 
+[INFO] 2026/06/01 - 14:50:01 | SYSTEM | codex credential auto-refresh task started: tick=10m0s threshold=24h0m0s 
+[INFO] 2026/06/01 - 14:50:01 | SYSTEM | subscription quota reset task started: tick=1m0s 
+[SYS] 2026/06/01 - 14:50:01 | upstream model update task started: interval=30m0s 
+[SYS] 2026/06/01 - 14:50:01 | 保存数据看板数据成功，共保存0条数据 
+
+  [32mNew API v0.0.0[0m  ready in 279 ms
+
+  ➜  [1mLocal:[0m   http://localhost:3000/
+  ➜  [1mNetwork:[0m http://192.168.10.216:3000/
+
+[SYS] 2026/06/01 - 14:50:02 | upstream model update check failed: channel_id=9 channel_name=axa err=Get "https://api.axa.us.ci/v1/models": EOF 
+[SYS] 2026/06/01 - 14:50:02 | upstream model update check failed: channel_id=18 channel_name=grok2api err=Get "https://vibe.grok2api.us.ci/v1/models": read tcp 127.0.0.1:17487->127.0.0.1:7890: wsarecv: An established connection was aborted by the software in your host machine. 
+[SYS] 2026/06/01 - 14:50:02 | upstream model update check failed: channel_id=19 channel_name=gptanon-2api err=status code: 404 
+[SYS] 2026/06/01 - 14:50:03 | upstream model update task done: checked_channels=6 changed_channels=2 detected_add_models=2 detected_remove_models=82 failed_channels=3 auto_added_models=2 
+[SYS] 2026/06/01 - 14:50:03 | upstream model update notifications sent: 0 
+[GIN] 2026/06/01 - 14:50:04 | web | 202606010650048829302008268d9d66Qbm0svp | 200 |       651.3µs |       127.0.0.1 |     GET /pricing
+[GIN] 2026/06/01 - 14:50:05 | api | 202606010650051042669008268d9d6uwh8lW2B | 200 |       812.8µs |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/01 - 14:50:05 | api | 202606010650051042669008268d9d6EdJmDiZj | 200 |      1.8567ms |       127.0.0.1 |     GET /api/pricing
+[SYS] 2026/06/01 - 14:50:16 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:50:16 | 任务进度轮询完成 
+[SYS] 2026/06/01 - 14:50:31 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:50:31 | 任务进度轮询完成 
+[SYS] 2026/06/01 - 14:50:46 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:50:46 | 任务进度轮询完成 
+[SYS] 2026/06/01 - 14:51:01 | syncing options from database 
+[SYS] 2026/06/01 - 14:51:01 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:51:01 | 任务进度轮询完成 
+[SYS] 2026/06/01 - 14:51:16 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:51:16 | 任务进度轮询完成 
+[SYS] 2026/06/01 - 14:51:31 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:51:31 | 任务进度轮询完成 
+[SYS] 2026/06/01 - 14:51:46 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:51:46 | 任务进度轮询完成 
+[SYS] 2026/06/01 - 14:52:01 | syncing options from database 
+[SYS] 2026/06/01 - 14:52:01 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:52:01 | 任务进度轮询完成 
+[SYS] 2026/06/01 - 14:52:16 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:52:16 | 任务进度轮询完成 
+[SYS] 2026/06/01 - 14:52:31 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:52:31 | 任务进度轮询完成 
+[SYS] 2026/06/01 - 14:52:46 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:52:46 | 任务进度轮询完成 
+[SYS] 2026/06/01 - 14:53:01 | syncing options from database 
+[SYS] 2026/06/01 - 14:53:01 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:53:01 | 任务进度轮询完成 
+[GIN] 2026/06/01 - 14:53:02 | api | 202606010653028118815008268d9d6q1OEf97B | 401 |       522.7µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/01 - 14:53:02 | web | 202606010653028266126008268d9d6cZOdeifT | 200 |            0s |       127.0.0.1 |     GET /login?expired=true
+[GIN] 2026/06/01 - 14:53:02 | api | 202606010653028420462008268d9d6xDo8wr1o | 401 |       529.8µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/01 - 14:53:02 | web | 202606010653028867630008268d9d6rKEEpMJb | 200 |            0s |       127.0.0.1 |     GET /login?expired=true
+[GIN] 2026/06/01 - 14:53:03 | api | 202606010653031112437008268d9d6DtiPWyrI | 200 |            0s |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/01 - 14:53:04 | api | 202606010653042836028008268d9d680k1Uj5a | 200 |     61.5958ms |       127.0.0.1 |    POST /api/user/login?turnstile=
+[GIN] 2026/06/01 - 14:53:04 | api | 202606010653044138661008268d9d65qDCNCa7 | 200 |       999.1µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/01 - 14:53:04 | api | 202606010653044533249008268d9d6CJrEGo0i | 200 |       518.5µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/01 - 14:53:04 | api | 202606010653044565186008268d9d6TaWs71d3 | 200 |      1.0398ms |       127.0.0.1 |     GET /api/data/?username=&start_timestamp=1780210384&end_timestamp=1780300384&default_time=hour
+[GIN] 2026/06/01 - 14:53:04 | api | 202606010653044946499008268d9d6qhrRwxk0 | 200 |      1.0003ms |       127.0.0.1 |     GET /api/data/users?start_timestamp=1780210384&end_timestamp=1780300384
+[GIN] 2026/06/01 - 14:53:04 | api | 202606010653045506023008268d9d6iUvHcqQJ | 200 |            0s |       127.0.0.1 |     GET /api/uptime/status
+[GIN] 2026/06/01 - 14:53:06 | api | 202606010653061754503008268d9d6ahosabLI | 200 |     15.5154ms |       127.0.0.1 |     GET /api/option/
+[SYS] 2026/06/01 - 14:53:16 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:53:16 | 任务进度轮询完成 
+[SYS] 2026/06/01 - 14:53:31 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:53:31 | 任务进度轮询完成 
+[GIN] 2026/06/01 - 14:53:34 | api | 202606010653342940963008268d9d6AB0xx4vD | 200 |      8.3877ms |       127.0.0.1 |     PUT /api/option/
+[GIN] 2026/06/01 - 14:53:34 | api | 202606010653343128385008268d9d6nGJU1fOj | 200 |      20.116ms |       127.0.0.1 |     GET /api/option/
+[SYS] 2026/06/01 - 14:53:46 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:53:46 | 任务进度轮询完成 
+[GIN] 2026/06/01 - 14:53:48 | api | 202606010653486786100008268d9d6KLR0cdVG | 200 |      6.5835ms |       127.0.0.1 |     PUT /api/option/
+[GIN] 2026/06/01 - 14:53:48 | api | 202606010653486940317008268d9d6KP3O5Wdo | 200 |     17.4555ms |       127.0.0.1 |     GET /api/option/
+[GIN] 2026/06/01 - 14:53:48 | api | 202606010653487318454008268d9d6AIF82fVj | 200 |       558.4µs |       127.0.0.1 |     GET /api/user/self
+[SYS] 2026/06/01 - 14:54:01 | syncing options from database 
+[SYS] 2026/06/01 - 14:54:01 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:54:01 | 任务进度轮询完成 
+[GIN] 2026/06/01 - 14:54:14 | web | 202606010654142867500008268d9d6rwbxz4Hy | 200 |            0s |       127.0.0.1 |     GET /console/setting?tab=operation
+[GIN] 2026/06/01 - 14:54:14 | api | 202606010654144801627008268d9d6AymKDsYs | 200 |       742.8µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/01 - 14:54:14 | api | 202606010654144810561008268d9d6bU1PqRTu | 200 |       758.3µs |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/01 - 14:54:14 | api | 202606010654145608729008268d9d6SsWR9oiN | 200 |     14.8389ms |       127.0.0.1 |     GET /api/option/
+[SYS] 2026/06/01 - 14:54:16 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:54:16 | 任务进度轮询完成 
+[GIN] 2026/06/01 - 14:54:21 | api | 202606010654213704930008268d9d67JCmuQ72 | 200 |            0s |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/01 - 14:54:21 | api | 202606010654213736554008268d9d6w0s0uYC2 | 200 |      1.2103ms |       127.0.0.1 |     GET /api/user/aff
+[GIN] 2026/06/01 - 14:54:21 | api | 202606010654213753842008268d9d6FhWtZ015 | 200 |       518.3µs |       127.0.0.1 |     GET /api/user/topup/info
+[GIN] 2026/06/01 - 14:54:21 | api | 202606010654213759025008268d9d6lqdhHy4o | 200 |            0s |       127.0.0.1 |     GET /api/subscription/plans
+[GIN] 2026/06/01 - 14:54:21 | api | 202606010654213769515008268d9d6EQeFuCSr | 200 |      1.9849ms |       127.0.0.1 |     GET /api/subscription/self
+[GIN] 2026/06/01 - 14:54:21 | api | 202606010654213917311008268d9d62hpWfkxc | 200 |       531.7µs |       127.0.0.1 |    POST /api/user/amount
+[GIN] 2026/06/01 - 14:54:27 | api | 202606010654272386141008268d9d6oPCW5EWi | 200 |      1.3524ms |       127.0.0.1 |     GET /api/user/2fa/status
+[GIN] 2026/06/01 - 14:54:27 | api | 202606010654272391679008268d9d6cj2IR3ab | 200 |       2.128ms |       127.0.0.1 |     GET /api/user/oauth/bindings
+[GIN] 2026/06/01 - 14:54:27 | api | 202606010654272418088008268d9d6A3Zi8Aqt | 200 |       707.3µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/01 - 14:54:27 | api | 202606010654272423224008268d9d6pA9zEpCg | 200 |       193.7µs |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/01 - 14:54:27 | api | 202606010654272418088008268d9d6HvT1TCCo | 200 |      2.2943ms |       127.0.0.1 |     GET /api/user/passkey
+[SYS] 2026/06/01 - 14:54:31 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:54:31 | 任务进度轮询完成 
+[SYS] 2026/06/01 - 14:54:46 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:54:46 | 任务进度轮询完成 
+[SYS] 2026/06/01 - 14:55:01 | 正在更新数据看板数据... 
+[SYS] 2026/06/01 - 14:55:01 | 保存数据看板数据成功，共保存0条数据 
+[SYS] 2026/06/01 - 14:55:01 | syncing options from database 
+[SYS] 2026/06/01 - 14:55:01 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:55:01 | 任务进度轮询完成 
+[SYS] 2026/06/01 - 14:55:16 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:55:16 | 任务进度轮询完成 
+[SYS] 2026/06/01 - 14:55:31 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:55:31 | 任务进度轮询完成 
+[SYS] 2026/06/01 - 14:55:46 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:55:46 | 任务进度轮询完成 
+[GIN] 2026/06/01 - 14:56:01 | api | 20260601065601280697008268d9d64g09DJhK | 200 |       554.3µs |       127.0.0.1 |     GET /api/user/self
+[SYS] 2026/06/01 - 14:56:01 | syncing options from database 
+[SYS] 2026/06/01 - 14:56:01 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:56:01 | 任务进度轮询完成 
+[SYS] 2026/06/01 - 14:56:16 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:56:16 | 任务进度轮询完成 
+[SYS] 2026/06/01 - 14:56:31 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:56:31 | 任务进度轮询完成 
+[SYS] 2026/06/01 - 14:56:46 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:56:46 | 任务进度轮询完成 
+[SYS] 2026/06/01 - 14:57:01 | syncing options from database 
+[SYS] 2026/06/01 - 14:57:01 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:57:01 | 任务进度轮询完成 
+[SYS] 2026/06/01 - 14:57:16 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:57:16 | 任务进度轮询完成 
+[SYS] 2026/06/01 - 14:57:31 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:57:31 | 任务进度轮询完成 
+[SYS] 2026/06/01 - 14:57:46 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 14:57:46 | 任务进度轮询完成 

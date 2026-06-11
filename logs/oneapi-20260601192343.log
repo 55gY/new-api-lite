@@ -1,0 +1,41 @@
+[SYS] 2026/06/01 - 19:23:43 | initializing token encoders 
+[SYS] 2026/06/01 - 19:23:43 | token encoders initialized 
+[SYS] 2026/06/01 - 19:23:43 | SQL_DSN not set, using SQLite as database 
+[SYS] 2026/06/01 - 19:23:43 | database migration started 
+[SYS] 2026/06/01 - 19:23:43 | system is not initialized and no root user exists 
+[SYS] 2026/06/01 - 19:23:43 | REDIS_CONN_STRING not set, Redis is not enabled 
+[SYS] 2026/06/01 - 19:23:43 | i18n initialized with languages: zh-CN, zh-TW, en 
+[SYS] 2026/06/01 - 19:23:43 | Loaded 0 custom OAuth providers 
+[SYS] 2026/06/01 - 19:23:43 | New API v0.0.0 started 
+[SYS] 2026/06/01 - 19:23:43 | 正在更新数据看板数据... 
+[INFO] 2026/06/01 - 19:23:43 | SYSTEM | codex credential auto-refresh task started: tick=10m0s threshold=24h0m0s 
+[INFO] 2026/06/01 - 19:23:43 | SYSTEM | subscription quota reset task started: tick=1m0s 
+[SYS] 2026/06/01 - 19:23:43 | 保存数据看板数据成功，共保存0条数据 
+[SYS] 2026/06/01 - 19:23:43 | upstream model update task started: interval=30m0s 
+
+  [32mNew API v0.0.0[0m  ready in 594 ms
+
+  ➜  [1mLocal:[0m   http://localhost:3000/
+  ➜  [1mNetwork:[0m http://192.168.10.216:3000/
+
+[GIN] 2026/06/01 - 19:23:49 | api | 202606011123493310919008268d9d6bkIzK9EA | 200 |       2.036ms |             ::1 |     GET /api/notice
+[GIN] 2026/06/01 - 19:23:49 | api | 202606011123493331279008268d9d6nhNhmeyi | 200 |      2.0002ms |             ::1 |     GET /api/status
+[GIN] 2026/06/01 - 19:23:49 | api | 202606011123493310919008268d9d6TtcpfSll | 200 |       2.036ms |             ::1 |     GET /api/status
+[GIN] 2026/06/01 - 19:23:50 | api | 202606011123504606390008268d9d6WkG9GvKB | 200 |            0s |             ::1 |     GET /api/status
+[GIN] 2026/06/01 - 19:23:50 | api | 202606011123504980042008268d9d6bMMv6HGA | 200 |            0s |             ::1 |     GET /api/status
+[GIN] 2026/06/01 - 19:23:50 | api | 202606011123504980042008268d9d6M6QOnYhk | 200 |            0s |             ::1 |     GET /api/status
+[GIN] 2026/06/01 - 19:23:50 | api | 202606011123505208307008268d9d6OJNEVIiL | 200 |            0s |             ::1 |     GET /api/home_page_content
+[GIN] 2026/06/01 - 19:23:50 | api | 202606011123505217094008268d9d6AXwoNO7c | 200 |            0s |             ::1 |     GET /api/notice
+[GIN] 2026/06/01 - 19:23:54 | api | 20260601112354237358008268d9d63Kq26hGL | 200 |      1.3301ms |             ::1 |    POST /api/user/login?turnstile=
+[SYS] 2026/06/01 - 19:23:58 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 19:23:58 | 任务进度轮询完成 
+[SYS] 2026/06/01 - 19:23:59 | 为新用户 gy55you (角色: 1) 初始化边栏配置 
+[GIN] 2026/06/01 - 19:23:59 | api | 202606011123593382128008268d9d64JOD4Dkm | 200 |     64.7097ms |             ::1 |    POST /api/user/register?turnstile=
+[GIN] 2026/06/01 - 19:24:00 | api | 202606011124008023867008268d9d66nQQUR4x | 200 |     56.7181ms |             ::1 |    POST /api/user/login?turnstile=
+[GIN] 2026/06/01 - 19:24:00 | api | 202606011124008796167008268d9d6V4iZmYf2 | 200 |         556µs |             ::1 |     GET /api/user/self
+[GIN] 2026/06/01 - 19:24:00 | api | 202606011124009770451008268d9d6oGrbJEAY | 200 |       523.6µs |             ::1 |     GET /api/user/self
+[GIN] 2026/06/01 - 19:24:01 | api | 202606011124013568017008268d9d65akP3Vsj | 200 |       872.7µs |             ::1 |     GET /api/data/self?start_timestamp=1780230241&end_timestamp=1780316641&default_time=hour
+[GIN] 2026/06/01 - 19:24:01 | api | 202606011124013568017008268d9d6Lo7BzKdw | 200 |      1.3945ms |             ::1 |     GET /api/token/?p=1&size=10
+[GIN] 2026/06/01 - 19:24:01 | api | 202606011124013568017008268d9d6g8gI8SEY | 200 |      1.3945ms |             ::1 |     GET /api/user/models
+[GIN] 2026/06/01 - 19:24:01 | api | 202606011124013587168008268d9d6cSnfxaT7 | 200 |       515.6µs |             ::1 |     GET /api/uptime/status
+[GIN] 2026/06/01 - 19:24:09 | api | 202606011124098709515008268d9d6mgpmlmXv | 200 |            0s |             ::1 |     GET /api/status

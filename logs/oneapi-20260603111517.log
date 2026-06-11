@@ -1,0 +1,55 @@
+[SYS] 2026/06/03 - 11:15:17 | initializing token encoders 
+[SYS] 2026/06/03 - 11:15:17 | token encoders initialized 
+[SYS] 2026/06/03 - 11:15:17 | SQL_DSN not set, using SQLite as database 
+[SYS] 2026/06/03 - 11:15:17 | database migration started 
+[SYS] 2026/06/03 - 11:15:17 | system is already initialized at: 2026-06-03 10:51:16 +0800 CST 
+[SYS] 2026/06/03 - 11:15:17 | REDIS_CONN_STRING not set, Redis is not enabled 
+[SYS] 2026/06/03 - 11:15:17 | i18n initialized with languages: zh-CN, zh-TW, en 
+[SYS] 2026/06/03 - 11:15:17 | Loaded 0 custom OAuth providers 
+[SYS] 2026/06/03 - 11:15:17 | New API v0.0.0 started 
+[SYS] 2026/06/03 - 11:15:17 | 正在更新数据看板数据... 
+[SYS] 2026/06/03 - 11:15:17 | upstream model update task started: interval=30m0s 
+[SYS] 2026/06/03 - 11:15:17 | 保存数据看板数据成功，共保存0条数据 
+[INFO] 2026/06/03 - 11:15:17 | SYSTEM | codex credential auto-refresh task started: tick=10m0s threshold=24h0m0s 
+[INFO] 2026/06/03 - 11:15:17 | SYSTEM | subscription quota reset task started: tick=1m0s 
+
+  [32mNew API v0.0.0[0m  ready in 300 ms
+
+  ➜  [1mLocal:[0m   http://localhost:3000/
+  ➜  [1mNetwork:[0m http://192.168.10.216:3000/
+
+[GIN] 2026/06/03 - 11:15:19 | web | 202606030315197709266008268d9d6QpobCETM | 200 |       516.7µs |       127.0.0.1 |     GET /console/channel
+[GIN] 2026/06/03 - 11:15:19 | api | 202606030315199972505008268d9d6hSVXOkmA | 401 |      1.0608ms |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/03 - 11:15:19 | api | 202606030315199994107008268d9d6x88HFKUQ | 401 |       524.7µs |       127.0.0.1 |     GET /api/channel/models
+[GIN] 2026/06/03 - 11:15:20 | api | 202606030315209846008268d9d6sIdLb0d8 | 401 |      1.2195ms |       127.0.0.1 |     GET /api/group/
+[GIN] 2026/06/03 - 11:15:20 | api | 2026060303152022041008268d9d6QDGViCiW | 401 |       530.8µs |       127.0.0.1 |     GET /api/user/2fa/status
+[GIN] 2026/06/03 - 11:15:20 | api | 2026060303152032483008268d9d6sPjuS1gT | 401 |       522.9µs |       127.0.0.1 |     GET /api/user/passkey
+[GIN] 2026/06/03 - 11:15:20 | api | 2026060303152037712008268d9d67WdUofl4 | 401 |      1.5581ms |       127.0.0.1 |     GET /api/channel/?p=1&page_size=10&id_sort=false&tag_mode=false
+[GIN] 2026/06/03 - 11:15:20 | api | 2026060303152058522008268d9d6UJwMZzkf | 401 |       523.2µs |       127.0.0.1 |     GET /api/models
+[GIN] 2026/06/03 - 11:15:20 | api | 2026060303152069233008268d9d60qebXZcG | 401 |       522.1µs |       127.0.0.1 |     GET /api/option/
+[GIN] 2026/06/03 - 11:15:20 | api | 2026060303152079669008268d9d6BArKmPJC | 200 |            0s |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/03 - 11:15:20 | web | 202606030315201495870008268d9d6YTTIs2FU | 200 |       530.1µs |       127.0.0.1 |     GET /login?expired=true
+[GIN] 2026/06/03 - 11:15:20 | api | 202606030315203603035008268d9d6MzNOQvFT | 200 |            0s |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/03 - 11:15:21 | api | 202606030315216107465008268d9d651qz4Tg6 | 200 |     61.4601ms |       127.0.0.1 |    POST /api/user/login?turnstile=
+[GIN] 2026/06/03 - 11:15:21 | api | 202606030315217434292008268d9d62Yx9FMHD | 200 |       518.7µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/03 - 11:15:21 | api | 202606030315217768941008268d9d6Qm8advuy | 200 |      1.0375ms |       127.0.0.1 |     GET /api/data/?username=&start_timestamp=1780370121&end_timestamp=1780460121&default_time=hour
+[GIN] 2026/06/03 - 11:15:21 | api | 202606030315218049704008268d9d64S39Pw4K | 200 |            0s |       127.0.0.1 |     GET /api/data/users?start_timestamp=1780370121&end_timestamp=1780460121
+[GIN] 2026/06/03 - 11:15:21 | api | 202606030315218636872008268d9d6CidkzOUZ | 200 |            0s |       127.0.0.1 |     GET /api/uptime/status
+[GIN] 2026/06/03 - 11:15:23 | api | 202606030315238651034008268d9d68YtdNXIv | 200 |      1.0022ms |       127.0.0.1 |     GET /api/channel/models
+[GIN] 2026/06/03 - 11:15:23 | api | 202606030315238689441008268d9d6KLs0gBVO | 200 |       520.8µs |       127.0.0.1 |     GET /api/group/
+[GIN] 2026/06/03 - 11:15:23 | api | 202606030315238694649008268d9d6QPQqJrMJ | 200 |       524.1µs |       127.0.0.1 |     GET /api/user/2fa/status
+[GIN] 2026/06/03 - 11:15:23 | api | 202606030315238705141008268d9d6Gx8N2LTP | 200 |      1.0484ms |       127.0.0.1 |     GET /api/user/passkey
+[GIN] 2026/06/03 - 11:15:23 | api | 202606030315238715625008268d9d6hf3hJHum | 200 |      1.0381ms |       127.0.0.1 |     GET /api/channel/?p=1&page_size=10&id_sort=false&tag_mode=false
+[GIN] 2026/06/03 - 11:15:23 | api | 202606030315238726006008268d9d6yw5eeatD | 200 |       521.6µs |       127.0.0.1 |     GET /api/models
+[GIN] 2026/06/03 - 11:15:23 | api | 202606030315238726006008268d9d6Y8SKiiDf | 200 |      3.5111ms |       127.0.0.1 |     GET /api/option/
+[SYS] 2026/06/03 - 11:15:27 | testing channel 1 with model gpt-5.5 , info RelayInfo{ RelayFormat: openai, RelayMode: 1, IsStream: false, IsPlayground: false, RequestURLPath: "/v1/chat/completions", OriginModelName: "gpt-5.5", EstimatePromptTokens: 0, ShouldIncludeUsage: false, DisablePing: false, SendResponseCount: 0, FinalPreConsumedQuota: 0, User{ Id: 1, Email: "***masked***", Group: "default", UsingGroup: "default", Quota: 100000000 }, Token{ Id: 0, Unlimited: false, Key: ***masked*** }, Timing{ Start: 2026-06-03T11:15:27.0205018+08:00, FirstResponse: 2026-06-03T11:15:26.0205018+08:00, LatencyMs: -1000 }, ChannelMeta{ Type: 1, Id: 1, IsMultiKey: false, MultiKeyIndex: 0, BaseURL: "http://13.210.164.168:3000", ApiType: 0, ApiVersion: "", Organization: "", CreateTime: 1780455947, UpstreamModelName: "gpt-5.5", IsModelMapped: false, SupportStreamOptions: true, ApiKey: ***masked*** }, }  
+[SYS] 2026/06/03 - 11:15:32 | 任务进度轮询开始 
+[SYS] 2026/06/03 - 11:15:32 | 任务进度轮询完成 
+[INFO] 2026/06/03 - 11:15:32 | SYSTEM | record consume log: userId=1, params={"channel_id":1,"prompt_tokens":7,"completion_tokens":13,"model_name":"gpt-5.5","token_name":"模型测试","quota":0,"content":"模型测试","token_id":0,"use_time_seconds":5,"is_stream":false,"group":"default","other":{"admin_info":{"use_channel":null},"cache_tokens":0,"frt":-1000,"request_conversion":["OpenAI Compatible"],"request_path":"/v1/chat/completions"}} 
+[SYS] 2026/06/03 - 11:15:32 | testing channel #1, response: 
+{"id":"resp_0667e8e570636ec8016a1f9c5423b081998d2cefdcb603034f","object":"chat.completion","created":1780456532,"model":"gpt-5.5","choices":[{"index":0,"message":{"role":"assistant","content":"Hi! How can I help you today?","reasoning_content":null,"tool_calls":null},"finish_reason":"stop","native_finish_reason":"stop"}],"usage":{"completion_tokens":13,"total_tokens":20,"prompt_tokens":7,"prompt_tokens_details":{"cached_tokens":0},"completion_tokens_details":{"reasoning_tokens":0}}} 
+[GIN] 2026/06/03 - 11:15:32 | api | 20260603031527187654008268d9d6qYigTKLw | 200 |    5.9314763s |       127.0.0.1 |     GET /api/channel/test/1?model=gpt-5.5
+[SYS] 2026/06/03 - 11:15:47 | 任务进度轮询开始 
+[SYS] 2026/06/03 - 11:15:47 | 任务进度轮询完成 
+[GIN] 2026/06/03 - 11:15:52 | web | 202606030315523296912008268d9d6K0ZhDsXb | 404 |       512.4µs |       127.0.0.1 |     GET /api/channel/update_balance/1/
+[GIN] 2026/06/03 - 11:15:54 | web | 202606030315541600891008268d9d6lnIqpBvv | 404 |       518.9µs |       127.0.0.1 |     GET /api/channel/update_balance/1/

@@ -1,0 +1,36 @@
+[SYS] 2026/06/01 - 18:31:35 | initializing token encoders 
+[SYS] 2026/06/01 - 18:31:35 | token encoders initialized 
+[SYS] 2026/06/01 - 18:31:35 | SQL_DSN not set, using SQLite as database 
+[SYS] 2026/06/01 - 18:31:35 | database migration started 
+[SYS] 2026/06/01 - 18:31:35 | system is already initialized at: 2026-03-24 08:57:55 +0800 CST 
+[SYS] 2026/06/01 - 18:31:35 | REDIS_CONN_STRING not set, Redis is not enabled 
+[SYS] 2026/06/01 - 18:31:35 | i18n initialized with languages: zh-CN, zh-TW, en 
+[SYS] 2026/06/01 - 18:31:35 | Loaded 0 custom OAuth providers 
+[SYS] 2026/06/01 - 18:31:35 | New API v0.0.0 started 
+[INFO] 2026/06/01 - 18:31:35 | SYSTEM | codex credential auto-refresh task started: tick=10m0s threshold=24h0m0s 
+[SYS] 2026/06/01 - 18:31:35 | upstream model update task started: interval=30m0s 
+[INFO] 2026/06/01 - 18:31:35 | SYSTEM | subscription quota reset task started: tick=1m0s 
+[SYS] 2026/06/01 - 18:31:35 | 正在更新数据看板数据... 
+[SYS] 2026/06/01 - 18:31:35 | 保存数据看板数据成功，共保存0条数据 
+[SYS] 2026/06/01 - 18:31:35 | upstream model update task done: checked_channels=6 changed_channels=2 detected_add_models=12 detected_remove_models=93 failed_channels=0 auto_added_models=0 
+[SYS] 2026/06/01 - 18:31:35 | upstream model update notifications sent: 0 
+
+  [32mNew API v0.0.0[0m  ready in 261 ms
+
+  ➜  [1mLocal:[0m   http://localhost:3000/
+  ➜  [1mNetwork:[0m http://192.168.10.216:3000/
+
+[GIN] 2026/06/01 - 18:31:41 | web | 202606011031416883954008268d9d6c5WtMRqY | 200 |       521.2µs |       127.0.0.1 |     GET /
+[GIN] 2026/06/01 - 18:31:41 | web | 202606011031417971479008268d9d6OK2mDGUJ | 200 |            0s |       127.0.0.1 |     GET /favicon.ico
+[GIN] 2026/06/01 - 18:31:43 | web | 202606011031432085442008268d9d6mSMSWynz | 200 |       514.4µs |       127.0.0.1 |     GET /
+[GIN] 2026/06/01 - 18:31:43 | web | 202606011031432988103008268d9d62SKo8JWC | 200 |            0s |       127.0.0.1 |     GET /favicon.ico
+[SYS] 2026/06/01 - 18:31:50 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 18:31:50 | 任务进度轮询完成 
+[GIN] 2026/06/01 - 18:31:54 | web | 202606011031542111901008268d9d6sLVUj4L3 | 200 |            0s |       127.0.0.1 |     GET /
+[GIN] 2026/06/01 - 18:31:54 | web | 202606011031543205098008268d9d64sXbgD7x | 200 |            0s |       127.0.0.1 |     GET /favicon.ico
+[GIN] 2026/06/01 - 18:31:54 | web | 202606011031548112066008268d9d6wTVbEWV7 | 200 |       952.5µs |       127.0.0.1 |     GET /
+[GIN] 2026/06/01 - 18:31:54 | web | 202606011031548962590008268d9d6honixZIK | 200 |            0s |       127.0.0.1 |     GET /favicon.ico
+[GIN] 2026/06/01 - 18:31:55 | web | 202606011031553052646008268d9d6pUdUDBKx | 200 |            0s |       127.0.0.1 |     GET /
+[GIN] 2026/06/01 - 18:31:55 | web | 202606011031553867484008268d9d6E80iaFQU | 200 |            0s |       127.0.0.1 |     GET /favicon.ico
+[SYS] 2026/06/01 - 18:32:05 | 任务进度轮询开始 
+[SYS] 2026/06/01 - 18:32:05 | 任务进度轮询完成 

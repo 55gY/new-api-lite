@@ -1,0 +1,106 @@
+[SYS] 2026/06/04 - 16:15:29 | initializing token encoders 
+[SYS] 2026/06/04 - 16:15:29 | token encoders initialized 
+[SYS] 2026/06/04 - 16:15:29 | SQL_DSN not set, using SQLite as database 
+[SYS] 2026/06/04 - 16:15:29 | database migration started 
+[SYS] 2026/06/04 - 16:15:29 | system is already initialized at: 2026-06-03 10:51:16 +0800 CST 
+[SYS] 2026/06/04 - 16:15:29 | REDIS_CONN_STRING not set, Redis is not enabled 
+[SYS] 2026/06/04 - 16:15:29 | i18n initialized with languages: zh-CN, zh-TW, en 
+[SYS] 2026/06/04 - 16:15:29 | Loaded 0 custom OAuth providers 
+[SYS] 2026/06/04 - 16:15:29 | New API v0.0.0 started 
+[SYS] 2026/06/04 - 16:15:29 | 正在更新数据看板数据... 
+[SYS] 2026/06/04 - 16:15:29 | upstream model update task started: interval=30m0s 
+[SYS] 2026/06/04 - 16:15:29 | 保存数据看板数据成功，共保存0条数据 
+[INFO] 2026/06/04 - 16:15:29 | SYSTEM | codex credential auto-refresh task started: tick=10m0s threshold=24h0m0s 
+
+  [32mNew API v0.0.0[0m  ready in 337 ms
+
+  ➜  [1mLocal:[0m   http://localhost:3000/
+  ➜  [1mNetwork:[0m http://192.168.10.216:3000/
+
+[GIN] 2026/06/04 - 16:15:31 | web | 202606040815314064300008268d9d6WIVMbMXo | 200 |      1.0008ms |       127.0.0.1 |     GET /console/channel
+[GIN] 2026/06/04 - 16:15:31 | web | 202606040815315466971008268d9d6Ezj0CfiX | 200 |     92.2275ms |       127.0.0.1 |     GET /assets/react-components-BMEyFlsF.js
+[GIN] 2026/06/04 - 16:15:31 | web | 202606040815315404737008268d9d6dcvIvd4H | 200 |     99.4512ms |       127.0.0.1 |     GET /assets/i18n-Bgu-_Vlz.js
+[GIN] 2026/06/04 - 16:15:31 | web | 202606040815315451105008268d9d6v0m9DABx | 200 |     100.482ms |       127.0.0.1 |     GET /assets/tools-BXrkEEb-.js
+[GIN] 2026/06/04 - 16:15:31 | web | 202606040815315399575008268d9d6mAR5BEU2 | 200 |    107.5697ms |       127.0.0.1 |     GET /assets/react-core-BAQOEN2L.js
+[GIN] 2026/06/04 - 16:15:31 | web | 202606040815316399249008268d9d6eKaKeLIS | 200 |     16.1154ms |       127.0.0.1 |     GET /assets/semi-ui-yRXI6evF.css
+[GIN] 2026/06/04 - 16:15:31 | web | 202606040815316429330008268d9d6cfkoG50G | 200 |     18.7173ms |       127.0.0.1 |     GET /assets/index-EHaGWLSC.css
+[GIN] 2026/06/04 - 16:15:31 | web | 202606040815315408203008268d9d6sMCl5BlX | 200 |    163.9624ms |       127.0.0.1 |     GET /assets/semi-ui-S2btfsMH.js
+[GIN] 2026/06/04 - 16:15:31 | web | 202606040815315389325008268d9d6EZsLet67 | 200 |    312.7818ms |       127.0.0.1 |     GET /assets/index-uCHgWXdS.js
+[GIN] 2026/06/04 - 16:15:32 | api | 202606040815323982699008268d9d6NmjDkGht | 401 |            0s |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/04 - 16:15:32 | api | 202606040815324079231008268d9d65Q60SIgA | 401 |            0s |       127.0.0.1 |     GET /api/channel/models
+[GIN] 2026/06/04 - 16:15:32 | api | 202606040815324089229008268d9d6U6berLQs | 401 |      1.0001ms |       127.0.0.1 |     GET /api/user/2fa/status
+[GIN] 2026/06/04 - 16:15:32 | api | 202606040815324109225008268d9d6bxadPUN6 | 401 |       999.6µs |       127.0.0.1 |     GET /api/user/passkey
+[GIN] 2026/06/04 - 16:15:32 | api | 202606040815324226480008268d9d6MpP3BTmB | 401 |       515.9µs |       127.0.0.1 |     GET /api/channel/?p=1&page_size=10&id_sort=false&tag_mode=false
+[GIN] 2026/06/04 - 16:15:32 | api | 202606040815324231639008268d9d6LdpRR0iL | 401 |      2.6132ms |       127.0.0.1 |     GET /api/models
+[GIN] 2026/06/04 - 16:15:32 | api | 202606040815324257771008268d9d66hD1Ks0r | 401 |      1.5312ms |       127.0.0.1 |     GET /api/option/
+[GIN] 2026/06/04 - 16:15:32 | api | 202606040815324384129008268d9d6tmd7lUZP | 200 |            0s |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/04 - 16:15:32 | web | 202606040815327630565008268d9d6gdEornjO | 200 |            0s |       127.0.0.1 |     GET /login?expired=true
+[GIN] 2026/06/04 - 16:15:32 | web | 202606040815329514762008268d9d6R3FJAi7F | 200 |      2.0908ms |       127.0.0.1 |     GET /assets/i18n-Bgu-_Vlz.js
+[GIN] 2026/06/04 - 16:15:32 | web | 202606040815329546236008268d9d6lpP7cj3e | 200 |      3.5232ms |       127.0.0.1 |     GET /assets/tools-BXrkEEb-.js
+[GIN] 2026/06/04 - 16:15:32 | web | 202606040815329551414008268d9d6TW05uzL0 | 200 |      3.0054ms |       127.0.0.1 |     GET /assets/react-components-BMEyFlsF.js
+[GIN] 2026/06/04 - 16:15:32 | web | 202606040815329503968008268d9d6E41UtzMU | 200 |      9.7278ms |       127.0.0.1 |     GET /assets/react-core-BAQOEN2L.js
+[GIN] 2026/06/04 - 16:15:32 | web | 202606040815329556576008268d9d6HCogb0mB | 200 |     15.8344ms |       127.0.0.1 |     GET /assets/semi-ui-yRXI6evF.css
+[GIN] 2026/06/04 - 16:15:32 | web | 202606040815329585654008268d9d6d0thIZoK | 200 |     12.9266ms |       127.0.0.1 |     GET /assets/index-EHaGWLSC.css
+[GIN] 2026/06/04 - 16:15:33 | web | 202606040815329519983008268d9d6uqVe1gHB | 200 |      58.154ms |       127.0.0.1 |     GET /assets/semi-ui-S2btfsMH.js
+[GIN] 2026/06/04 - 16:15:33 | web | 202606040815329239334008268d9d657QxdKZN | 200 |    199.5127ms |       127.0.0.1 |     GET /assets/index-uCHgWXdS.js
+[GIN] 2026/06/04 - 16:15:33 | api | 202606040815335964471008268d9d61jJ6X0iw | 200 |      1.0251ms |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/04 - 16:15:33 | web | 202606040815336425288008268d9d68FaTF96X | 200 |            0s |       127.0.0.1 |     GET /logo.png
+[GIN] 2026/06/04 - 16:15:33 | web | 202606040815336772092008268d9d6q8F3zj0M | 200 |       516.7µs |       127.0.0.1 |     GET /logo.png
+[GIN] 2026/06/04 - 16:15:40 | web | 202606040815401130478008268d9d6T67noZMb | 200 |            0s |       127.0.0.1 |     GET /login?expired=true
+[GIN] 2026/06/04 - 16:15:40 | web | 202606040815402331620008268d9d68hm4t4FZ | 200 |      2.5112ms |       127.0.0.1 |     GET /assets/i18n-Bgu-_Vlz.js
+[GIN] 2026/06/04 - 16:15:40 | web | 202606040815402358370008268d9d69LodWXB4 | 200 |      1.0293ms |       127.0.0.1 |     GET /assets/react-components-BMEyFlsF.js
+[GIN] 2026/06/04 - 16:15:40 | web | 202606040815402336766008268d9d6exZiNC1B | 200 |      4.4241ms |       127.0.0.1 |     GET /assets/tools-BXrkEEb-.js
+[GIN] 2026/06/04 - 16:15:40 | web | 202606040815402290647008268d9d6To4DslIB | 200 |      9.5627ms |       127.0.0.1 |     GET /assets/react-core-BAQOEN2L.js
+[GIN] 2026/06/04 - 16:15:40 | web | 202606040815402373602008268d9d6FeDm1YIk | 200 |     12.6733ms |       127.0.0.1 |     GET /assets/semi-ui-yRXI6evF.css
+[GIN] 2026/06/04 - 16:15:40 | web | 202606040815402381007008268d9d6TjxaiPQr | 200 |     16.6106ms |       127.0.0.1 |     GET /assets/index-EHaGWLSC.css
+[GIN] 2026/06/04 - 16:15:40 | web | 202606040815402331620008268d9d6rDgm8zvz | 200 |      62.937ms |       127.0.0.1 |     GET /assets/semi-ui-S2btfsMH.js
+[GIN] 2026/06/04 - 16:15:40 | web | 202606040815402285493008268d9d6T0wTWkH6 | 200 |    200.2745ms |       127.0.0.1 |     GET /assets/index-uCHgWXdS.js
+[GIN] 2026/06/04 - 16:15:40 | api | 202606040815407941190008268d9d6y4ighCFD | 200 |      2.6606ms |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/04 - 16:15:40 | web | 202606040815408119490008268d9d6nob9Kha5 | 200 |            0s |       127.0.0.1 |     GET /logo.png
+[GIN] 2026/06/04 - 16:15:40 | web | 202606040815408258867008268d9d6ErGnFfcu | 200 |            0s |       127.0.0.1 |     GET /logo.png
+[GIN] 2026/06/04 - 16:15:42 | api | 202606040815426722728008268d9d6wIfOSR7h | 200 |     60.7774ms |       127.0.0.1 |    POST /api/user/login?turnstile=
+[GIN] 2026/06/04 - 16:15:42 | web | 202606040815428488986008268d9d6KSEVQ3Uz | 200 |            0s |       127.0.0.1 |     GET /assets/bisect-D13AdYuf.js
+[GIN] 2026/06/04 - 16:15:42 | web | 202606040815428483860008268d9d6RxDNirox | 200 |      2.2273ms |       127.0.0.1 |     GET /assets/IllustrationConstruction-dDyUD5O3.js
+[GIN] 2026/06/04 - 16:15:42 | api | 202606040815428562654008268d9d6zUy93lJZ | 200 |      1.5813ms |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/04 - 16:15:42 | web | 202606040815428478727008268d9d6SD87g5N8 | 200 |     66.2161ms |       127.0.0.1 |     GET /assets/index-CrzTbEUt.js
+[GIN] 2026/06/04 - 16:15:43 | api | 20260604081543948293008268d9d6SPZvEXyX | 200 |       519.1µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/04 - 16:15:43 | api | 20260604081543981139008268d9d6y3SfZvae | 200 |      1.0341ms |       127.0.0.1 |     GET /api/data/?username=&start_timestamp=1780474543&end_timestamp=1780564543&default_time=hour
+[GIN] 2026/06/04 - 16:15:43 | api | 202606040815431405446008268d9d6g9K3rMhH | 200 |      1.1105ms |       127.0.0.1 |     GET /api/data/users?start_timestamp=1780474543&end_timestamp=1780564543
+[GIN] 2026/06/04 - 16:15:43 | api | 202606040815432225142008268d9d6KzrCh4sK | 200 |         515µs |       127.0.0.1 |     GET /api/uptime/status
+[SYS] 2026/06/04 - 16:15:44 | 任务进度轮询开始 
+[SYS] 2026/06/04 - 16:15:44 | 任务进度轮询完成 
+[GIN] 2026/06/04 - 16:15:45 | api | 202606040815459809083008268d9d6c50i8AHo | 200 |       551.3µs |       127.0.0.1 |     GET /api/user/models
+[GIN] 2026/06/04 - 16:15:45 | api | 202606040815459868299008268d9d6kpRMfFot | 200 |       521.1µs |       127.0.0.1 |     GET /api/token/?p=1&size=10
+[GIN] 2026/06/04 - 16:15:53 | api | 202606040815532740953008268d9d6RxPpQxq3 | 200 |       1.588ms |       127.0.0.1 |     GET /api/log/?p=1&page_size=10&type=0&username=&token_name=&model_name=&start_timestamp=1780502400&end_timestamp=1780564553&channel=&request_id=
+[GIN] 2026/06/04 - 16:15:53 | api | 202606040815533356457008268d9d6pVuswG46 | 200 |       1.032ms |       127.0.0.1 |     GET /api/log/stat?type=0&username=&token_name=&model_name=&start_timestamp=1780502400&end_timestamp=1780564553&channel=
+[GIN] 2026/06/04 - 16:15:55 | api | 202606040815559231836008268d9d66rHiPf7Q | 200 |      1.0451ms |       127.0.0.1 |     GET /api/channel/models
+[GIN] 2026/06/04 - 16:15:55 | api | 202606040815559280664008268d9d6BSQyQHM9 | 200 |       520.5µs |       127.0.0.1 |     GET /api/user/2fa/status
+[GIN] 2026/06/04 - 16:15:55 | api | 202606040815559349256008268d9d6D2hSBJV2 | 200 |      1.0373ms |       127.0.0.1 |     GET /api/user/passkey
+[GIN] 2026/06/04 - 16:15:55 | api | 202606040815559778663008268d9d6bwg3jiRU | 200 |       515.4µs |       127.0.0.1 |     GET /api/models
+[GIN] 2026/06/04 - 16:15:55 | api | 202606040815559778663008268d9d6sTwTpggf | 200 |      1.5634ms |       127.0.0.1 |     GET /api/channel/?p=1&page_size=10&id_sort=false&tag_mode=false
+[GIN] 2026/06/04 - 16:15:55 | api | 202606040815559799506008268d9d6kdUovlAs | 200 |      1.5627ms |       127.0.0.1 |     GET /api/option/
+[GIN] 2026/06/04 - 16:15:57 | api | 202606040815574515679008268d9d6NhC47M9U | 200 |      1.0364ms |       127.0.0.1 |     GET /api/vendors/?page_size=1000
+[GIN] 2026/06/04 - 16:15:57 | api | 202606040815574515679008268d9d6CcAdxU66 | 200 |      1.0364ms |       127.0.0.1 |     GET /api/models/?p=1&page_size=10
+[SYS] 2026/06/04 - 16:15:59 | 任务进度轮询开始 
+[SYS] 2026/06/04 - 16:15:59 | 任务进度轮询完成 
+[GIN] 2026/06/04 - 16:15:59 | api | 202606040815595051435008268d9d6R6Gyd3Hx | 200 |       515.5µs |       127.0.0.1 |     GET /api/deployments/settings
+[GIN] 2026/06/04 - 16:16:00 | api | 202606040816001110807008268d9d6DU0xgZDe | 200 |      1.0443ms |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/04 - 16:16:00 | api | 202606040816001115994008268d9d6SUJHBbYV | 200 |      1.0444ms |       127.0.0.1 |     GET /api/user/?p=0&page_size=10
+[GIN] 2026/06/04 - 16:16:02 | api | 202606040816021533023008268d9d6U5ar22pn | 200 |       1.547ms |       127.0.0.1 |     GET /api/option/
+[GIN] 2026/06/04 - 16:16:03 | api | 202606040816038212978008268d9d6qvyrNEFk | 200 |         519µs |       127.0.0.1 |     GET /api/data/?username=&start_timestamp=1780474563&end_timestamp=1780564563&default_time=hour
+[GIN] 2026/06/04 - 16:16:03 | api | 202606040816038207753008268d9d6Yc1IyXey | 200 |      1.0415ms |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/04 - 16:16:03 | api | 202606040816038864002008268d9d6CV6lh1GE | 200 |         6.5µs |       127.0.0.1 |     GET /api/data/users?start_timestamp=1780474563&end_timestamp=1780564563
+[GIN] 2026/06/04 - 16:16:03 | api | 202606040816039377562008268d9d6fozo4Zc6 | 200 |            0s |       127.0.0.1 |     GET /api/uptime/status
+[GIN] 2026/06/04 - 16:16:04 | api | 202606040816045367227008268d9d6mTrXGCU3 | 200 |            0s |       127.0.0.1 |     GET /api/user/models
+[GIN] 2026/06/04 - 16:16:07 | api | 202606040816072050404008268d9d6azGGeyC5 | 200 |            0s |       127.0.0.1 |     GET /api/data/?username=&start_timestamp=1780474567&end_timestamp=1780564567&default_time=hour
+[GIN] 2026/06/04 - 16:16:07 | api | 202606040816072050404008268d9d6m8JGYnRC | 200 |            0s |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/04 - 16:16:07 | api | 202606040816072225347008268d9d6UhnepAEt | 200 |       516.3µs |       127.0.0.1 |     GET /api/data/users?start_timestamp=1780474567&end_timestamp=1780564567
+[GIN] 2026/06/04 - 16:16:07 | api | 202606040816072756803008268d9d6KjEfjnJN | 200 |       508.8µs |       127.0.0.1 |     GET /api/uptime/status
+[GIN] 2026/06/04 - 16:16:07 | web | 202606040816079113448008268d9d6ogA0imTT | 200 |       1.089ms |       127.0.0.1 |     GET /cover-4.webp
+[GIN] 2026/06/04 - 16:16:07 | api | 202606040816079213882008268d9d6YBKxdr9b | 200 |       524.5µs |       127.0.0.1 |     GET /api/pricing
+[SYS] 2026/06/04 - 16:16:14 | 任务进度轮询开始 
+[SYS] 2026/06/04 - 16:16:14 | 任务进度轮询完成 
+[GIN] 2026/06/04 - 16:16:25 | api | 202606040816251470949008268d9d6uChGW0Ty | 200 |       532.6µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/04 - 16:16:25 | api | 202606040816251491902008268d9d6ZD3sCaI9 | 200 |       1.293ms |       127.0.0.1 |     GET /api/data/?username=&start_timestamp=1780474585&end_timestamp=1780564585&default_time=hour
+[GIN] 2026/06/04 - 16:16:25 | api | 202606040816253069354008268d9d649tjO5bU | 200 |      1.9565ms |       127.0.0.1 |     GET /api/data/users?start_timestamp=1780474585&end_timestamp=1780564585
+[GIN] 2026/06/04 - 16:16:25 | api | 202606040816253318177008268d9d6MfRkyGtF | 200 |       517.3µs |       127.0.0.1 |     GET /api/uptime/status

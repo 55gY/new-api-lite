@@ -1,0 +1,40 @@
+[SYS] 2026/06/10 - 09:29:35 | initializing token encoders 
+[SYS] 2026/06/10 - 09:29:35 | token encoders initialized 
+[SYS] 2026/06/10 - 09:29:35 | using SQLite as database 
+[SYS] 2026/06/10 - 09:29:35 | database migration started 
+[SYS] 2026/06/10 - 09:29:35 | system is already initialized at: 2026-03-24 08:57:55 +0800 CST 
+[SYS] 2026/06/10 - 09:29:35 | REDIS_CONN_STRING not set, Redis is not enabled 
+[SYS] 2026/06/10 - 09:29:35 | i18n initialized with languages: zh-CN, zh-TW, en 
+[SYS] 2026/06/10 - 09:29:35 | New API v0.0.0 started 
+[SYS] 2026/06/10 - 09:29:35 | upstream model update task started: interval=30m0s 
+[SYS] 2026/06/10 - 09:29:35 | 正在更新数据看板数据... 
+[SYS] 2026/06/10 - 09:29:35 | 保存数据看板数据成功，共保存0条数据 
+[INFO] 2026/06/10 - 09:29:35 | SYSTEM | codex credential auto-refresh task started: tick=10m0s threshold=24h0m0s 
+
+  [32mNew API v0.0.0[0m  ready in 338 ms
+
+  ➜  [1mLocal:[0m   http://localhost:3001/
+  ➜  [1mNetwork:[0m http://192.168.10.35:3001/
+
+[SYS] 2026/06/10 - 09:29:36 | upstream model update check failed: channel_id=9 channel_name=axa err=Get "https://api.axa.us.ci/v1/models": read tcp 127.0.0.1:24268->127.0.0.1:7890: wsarecv: An existing connection was forcibly closed by the remote host. 
+[SYS] 2026/06/10 - 09:29:36 | upstream model update check failed: channel_id=18 channel_name=grok2api err=Get "https://vibe.grok2api.us.ci/v1/models": EOF 
+[SYS] 2026/06/10 - 09:29:36 | upstream model update check failed: channel_id=19 channel_name=gptanon-2api err=status code: 404 
+[SYS] 2026/06/10 - 09:29:37 | upstream model update task done: checked_channels=6 changed_channels=1 detected_add_models=0 detected_remove_models=82 failed_channels=3 auto_added_models=0 
+[SYS] 2026/06/10 - 09:29:37 | upstream model update notifications sent: 0 
+[GIN] 2026/06/10 - 09:29:49 | web | 202606100129494624354008268d9d6Iv0UKmge | 200 |       628.6µs |             ::1 |     GET /console/channel
+[GIN] 2026/06/10 - 09:29:49 | web | 202606100129495004930008268d9d6RJuXcTo4 | 200 |    174.8504ms |             ::1 |     GET /assets/i18n-DiWaxoG1.js
+[GIN] 2026/06/10 - 09:29:49 | web | 202606100129495014824008268d9d6w9Onk8ZC | 200 |    241.9916ms |             ::1 |     GET /assets/semi-ui-yRXI6evF.css
+[GIN] 2026/06/10 - 09:29:49 | web | 202606100129494984952008268d9d6BAyqnOKQ | 200 |    261.0443ms |             ::1 |     GET /assets/react-core-CrhRkQo_.js
+[GIN] 2026/06/10 - 09:29:49 | web | 202606100129498344035008268d9d6bee67H4V | 200 |       34.15ms |             ::1 |     GET /assets/react-components-D_IizzI1.js
+[GIN] 2026/06/10 - 09:29:49 | web | 202606100129497588183008268d9d60JD7V9W9 | 200 |     74.5858ms |             ::1 |     GET /assets/tools-C0EboDDl.js
+[GIN] 2026/06/10 - 09:29:49 | web | 202606100129495014824008268d9d6Ic3yyZn0 | 200 |    315.9201ms |             ::1 |     GET /assets/index-DR58fp4L.css
+[GIN] 2026/06/10 - 09:29:50 | web | 202606100129495014824008268d9d6k5kPMEFq | 200 |    601.4467ms |             ::1 |     GET /assets/semi-ui-CuYQJcLe.js
+[GIN] 2026/06/10 - 09:29:50 | web | 202606100129494860850008268d9d6XY7KweZe | 200 |    744.3668ms |             ::1 |     GET /assets/index-jYA5xj26.js
+[GIN] 2026/06/10 - 09:29:50 | api | 202606100129507758366008268d9d6WkGYPFLH | 200 |       992.1µs |             ::1 |     GET /api/status
+[GIN] 2026/06/10 - 09:29:50 | web | 202606100129509009091008268d9d6vz58so1t | 200 |            0s |             ::1 |     GET /logo.png
+[GIN] 2026/06/10 - 09:29:51 | api | 202606100129508999064008268d9d6w9XOUoD8 | 401 |     114.272ms |             ::1 |     GET /api/user/self
+[GIN] 2026/06/10 - 09:29:51 | web | 20260610012951382896008268d9d6vjELyzqG | 200 |       507.5µs |             ::1 |     GET /login?expired=true
+[GIN] 2026/06/10 - 09:29:51 | api | 202606100129512733632008268d9d6hE2QUr6I | 200 |            0s |             ::1 |     GET /api/status
+[SYS] 2026/06/10 - 09:30:35 | syncing options from database 
+[SYS] 2026/06/10 - 09:31:35 | syncing options from database 
+[SYS] 2026/06/10 - 09:32:35 | syncing options from database 

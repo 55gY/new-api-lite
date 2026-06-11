@@ -1,0 +1,79 @@
+[SYS] 2026/06/09 - 15:01:08 | initializing token encoders 
+[SYS] 2026/06/09 - 15:01:08 | token encoders initialized 
+[SYS] 2026/06/09 - 15:01:08 | using SQLite as database 
+[SYS] 2026/06/09 - 15:01:08 | database migration started 
+[SYS] 2026/06/09 - 15:01:08 | system is already initialized at: 2026-03-24 08:57:55 +0800 CST 
+[SYS] 2026/06/09 - 15:01:08 | REDIS_CONN_STRING not set, Redis is not enabled 
+[SYS] 2026/06/09 - 15:01:08 | i18n initialized with languages: zh-CN, zh-TW, en 
+[SYS] 2026/06/09 - 15:01:08 | New API v0.0.0 started 
+[SYS] 2026/06/09 - 15:01:08 | 正在更新数据看板数据... 
+[SYS] 2026/06/09 - 15:01:08 | upstream model update task started: interval=30m0s 
+[INFO] 2026/06/09 - 15:01:08 | SYSTEM | codex credential auto-refresh task started: tick=10m0s threshold=24h0m0s 
+[SYS] 2026/06/09 - 15:01:08 | 保存数据看板数据成功，共保存0条数据 
+
+  [32mNew API v0.0.0[0m  ready in 184 ms
+
+  ➜  [1mLocal:[0m   http://localhost:3000/
+  ➜  [1mNetwork:[0m http://192.168.10.35:3000/
+
+[SYS] 2026/06/09 - 15:01:09 | upstream model update check failed: channel_id=9 channel_name=axa err=Get "https://api.axa.us.ci/v1/models": read tcp 127.0.0.1:62125->127.0.0.1:7890: wsarecv: An existing connection was forcibly closed by the remote host. 
+[SYS] 2026/06/09 - 15:01:09 | upstream model update check failed: channel_id=18 channel_name=grok2api err=Get "https://vibe.grok2api.us.ci/v1/models": EOF 
+[GIN] 2026/06/09 - 15:01:11 | web | 202606090701116736987008268d9d6Q3puGDHW | 200 |       654.5µs |       127.0.0.1 |     GET /console/log
+[GIN] 2026/06/09 - 15:01:11 | web | 202606090701117424426008268d9d6sxTuPZHL | 200 |     61.9096ms |       127.0.0.1 |     GET /assets/index-BFudiym2.css
+[GIN] 2026/06/09 - 15:01:11 | web | 202606090701117408638008268d9d6d5ZyqxOz | 200 |     106.029ms |       127.0.0.1 |     GET /assets/index-BVVpsg0R.js
+[GIN] 2026/06/09 - 15:01:12 | api | 20260609070112138651008268d9d6FcxbXZfj | 401 |         544µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/09 - 15:01:12 | api | 20260609070112138651008268d9d6Gy25q7n3 | 401 |       2.093ms |       127.0.0.1 |     GET /api/log/?p=1&page_size=10&type=0&username=&token_name=&model_name=&start_timestamp=1780934400&end_timestamp=1780992071&channel=&request_id=
+[GIN] 2026/06/09 - 15:01:12 | api | 20260609070112160227008268d9d6Z7ZCRCNw | 200 |       524.6µs |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/09 - 15:01:12 | api | 20260609070112498111008268d9d6MzPvZHjS | 401 |            0s |       127.0.0.1 |     GET /api/log/stat?type=0&username=&token_name=&model_name=&start_timestamp=1780934400&end_timestamp=1780992071&channel=
+[GIN] 2026/06/09 - 15:01:12 | web | 202606090701121136805008268d9d62PYzbnpo | 200 |            0s |       127.0.0.1 |     GET /login?expired=true
+[GIN] 2026/06/09 - 15:01:12 | api | 202606090701122638219008268d9d6hnmhkGD5 | 200 |            0s |       127.0.0.1 |     GET /api/status
+[SYS] 2026/06/09 - 15:01:16 | upstream model update check failed: channel_id=19 channel_name=gptanon-2api err=status code: 404 
+[SYS] 2026/06/09 - 15:01:18 | upstream model update task done: checked_channels=6 changed_channels=1 detected_add_models=0 detected_remove_models=82 failed_channels=3 auto_added_models=0 
+[SYS] 2026/06/09 - 15:01:18 | upstream model update notifications sent: 0 
+[GIN] 2026/06/09 - 15:01:19 | api | 202606090701196760244008268d9d6YnzEMhUA | 200 |     59.1511ms |       127.0.0.1 |    POST /api/user/login?turnstile=
+[GIN] 2026/06/09 - 15:01:19 | api | 202606090701198163565008268d9d6WmF7EBCM | 200 |      1.0399ms |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/09 - 15:01:19 | web | 202606090701198145599008268d9d608kS5Fe6 | 200 |     57.9966ms |       127.0.0.1 |     GET /assets/index-VcP-g5dl.js
+[GIN] 2026/06/09 - 15:01:20 | api | 20260609070120188821008268d9d6OzRKUeJH | 200 |       705.4µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/09 - 15:01:20 | api | 20260609070120228077008268d9d662aEry3q | 200 |      5.2683ms |       127.0.0.1 |     GET /api/data/?username=&start_timestamp=1780243200&end_timestamp=1780988480&default_time=hour
+[GIN] 2026/06/09 - 15:01:20 | api | 20260609070120831986008268d9d67cM9pepy | 200 |      1.0812ms |       127.0.0.1 |     GET /api/data/users?start_timestamp=1780243200&end_timestamp=1780988480
+[GIN] 2026/06/09 - 15:01:23 | api | 202606090701237060988008268d9d6xTm7rIAQ | 200 |       521.4µs |       127.0.0.1 |     GET /api/channel/models
+[GIN] 2026/06/09 - 15:01:23 | api | 202606090701237078575008268d9d6vOaAVjw0 | 200 |      1.3342ms |       127.0.0.1 |     GET /api/channel/?p=1&page_size=10&id_sort=true
+[GIN] 2026/06/09 - 15:01:23 | api | 202606090701237083845008268d9d6U94Cs03O | 200 |       807.2µs |       127.0.0.1 |     GET /api/models
+[GIN] 2026/06/09 - 15:01:23 | api | 202606090701237091917008268d9d6Mr4nrE3i | 200 |     13.6727ms |       127.0.0.1 |     GET /api/option/
+[GIN] 2026/06/09 - 15:01:59 | api | 202606090701598756751008268d9d6bRJWXbxx | 200 |            0s |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/09 - 15:01:59 | api | 202606090701598756751008268d9d6ex9rmYE3 | 200 |       525.6µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/09 - 15:01:59 | api | 202606090701598756751008268d9d6v66KL86l | 200 |      1.5629ms |       127.0.0.1 |     GET /api/user/2fa/status
+[GIN] 2026/06/09 - 15:02:00 | api | 202606090702005227859008268d9d6EAkC0l2k | 200 |      2.0762ms |       127.0.0.1 |     GET /api/log/?p=1&page_size=10&type=0&username=&token_name=&model_name=&start_timestamp=1780934400&end_timestamp=1780992120&channel=&request_id=
+[GIN] 2026/06/09 - 15:02:00 | api | 202606090702006045995008268d9d64KdqeOmu | 200 |       524.5µs |       127.0.0.1 |     GET /api/log/stat?type=0&username=&token_name=&model_name=&start_timestamp=1780934400&end_timestamp=1780992120&channel=
+[GIN] 2026/06/09 - 15:02:04 | api | 202606090702045398972008268d9d6zCWRa7S9 | 200 |      1.0405ms |       127.0.0.1 |     GET /api/token/?p=1&size=10
+[GIN] 2026/06/09 - 15:02:04 | api | 202606090702045398972008268d9d6SmDxa91O | 200 |      7.2472ms |       127.0.0.1 |     GET /api/user/models
+[SYS] 2026/06/09 - 15:02:08 | syncing options from database 
+[GIN] 2026/06/09 - 15:02:10 | api | 202606090702109164815008268d9d6soIFv1z5 | 200 |      3.6274ms |       127.0.0.1 |     GET /api/channel/models_enabled_details
+[GIN] 2026/06/09 - 15:02:33 | api | 202606090702334521783008268d9d6iEkRAilA | 200 |      1.4257ms |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/09 - 15:02:33 | api | 202606090702334536040008268d9d6Xnm5IxC2 | 200 |      3.1653ms |       127.0.0.1 |     GET /api/data/?username=&start_timestamp=1780243200&end_timestamp=1780988553&default_time=hour
+[GIN] 2026/06/09 - 15:02:33 | api | 202606090702334959210008268d9d6n4MC6amN | 200 |      1.0729ms |       127.0.0.1 |     GET /api/data/users?start_timestamp=1780243200&end_timestamp=1780988553
+[GIN] 2026/06/09 - 15:02:34 | api | 202606090702348543305008268d9d6DEsRkBWp | 200 |      2.2229ms |       127.0.0.1 |     GET /api/user/models
+[GIN] 2026/06/09 - 15:02:34 | api | 202606090702348560361008268d9d6pYPo0vKo | 200 |      2.1505ms |       127.0.0.1 |     GET /api/token/?p=1&size=10
+[GIN] 2026/06/09 - 15:02:37 | api | 202606090702374506590008268d9d6Qro7MRjc | 200 |      1.5686ms |       127.0.0.1 |     GET /api/log/?p=1&page_size=10&type=0&username=&token_name=&model_name=&start_timestamp=1780934400&end_timestamp=1780992157&channel=&request_id=
+[GIN] 2026/06/09 - 15:02:37 | api | 202606090702375346225008268d9d6t5KDaMyL | 200 |       999.3µs |       127.0.0.1 |     GET /api/log/stat?type=0&username=&token_name=&model_name=&start_timestamp=1780934400&end_timestamp=1780992157&channel=
+[GIN] 2026/06/09 - 15:02:51 | api | 202606090702516898593008268d9d6aCCGvkAM | 200 |       539.7µs |       127.0.0.1 |     GET /api/channel/models
+[GIN] 2026/06/09 - 15:02:51 | api | 202606090702516921183008268d9d6YW1ESQHZ | 200 |       523.4µs |       127.0.0.1 |     GET /api/models
+[GIN] 2026/06/09 - 15:02:51 | api | 202606090702516921183008268d9d65eC7648q | 200 |      1.6459ms |       127.0.0.1 |     GET /api/channel/?p=1&page_size=10&id_sort=true
+[GIN] 2026/06/09 - 15:02:51 | api | 202606090702516921183008268d9d6RQh3mJdK | 200 |      12.375ms |       127.0.0.1 |     GET /api/option/
+[SYS] 2026/06/09 - 15:03:08 | syncing options from database 
+[SYS] 2026/06/09 - 15:04:08 | syncing options from database 
+[SYS] 2026/06/09 - 15:05:08 | syncing options from database 
+[SYS] 2026/06/09 - 15:06:08 | 正在更新数据看板数据... 
+[SYS] 2026/06/09 - 15:06:08 | 保存数据看板数据成功，共保存0条数据 
+[SYS] 2026/06/09 - 15:06:08 | syncing options from database 
+[SYS] 2026/06/09 - 15:07:08 | syncing options from database 
+[GIN] 2026/06/09 - 15:07:19 | api | 202606090707191391891008268d9d6osgEUAFW | 200 |      3.0013ms |       127.0.0.1 |     GET /api/channel/models_enabled_details
+[GIN] 2026/06/09 - 15:07:34 | api | 202606090707348312417008268d9d6s9sU38Po | 200 |       3.442ms |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/09 - 15:07:34 | api | 202606090707348322424008268d9d6sdPugZoy | 200 |      5.1271ms |       127.0.0.1 |     GET /api/data/?username=&start_timestamp=1780243200&end_timestamp=1780988854&default_time=hour
+[GIN] 2026/06/09 - 15:07:34 | api | 202606090707348851234008268d9d6VES9wJxn | 200 |      1.5731ms |       127.0.0.1 |     GET /api/data/users?start_timestamp=1780243200&end_timestamp=1780988854
+[GIN] 2026/06/09 - 15:07:43 | api | 202606090707431736454008268d9d61ynrgfnH | 200 |         586µs |       127.0.0.1 |     GET /api/channel/models
+[GIN] 2026/06/09 - 15:07:43 | api | 202606090707431823620008268d9d65SqNbpVQ | 200 |       999.1µs |       127.0.0.1 |     GET /api/models
+[GIN] 2026/06/09 - 15:07:43 | api | 202606090707431823620008268d9d6MMNXdffd | 200 |      1.6129ms |       127.0.0.1 |     GET /api/channel/?p=1&page_size=10&id_sort=true
+[GIN] 2026/06/09 - 15:07:43 | api | 202606090707431833611008268d9d6JXpI23OG | 200 |     14.7207ms |       127.0.0.1 |     GET /api/option/
+[SYS] 2026/06/09 - 15:08:08 | syncing options from database 
+[SYS] 2026/06/09 - 15:09:08 | syncing options from database 

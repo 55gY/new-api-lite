@@ -1,0 +1,162 @@
+[SYS] 2026/06/09 - 15:13:49 | initializing token encoders 
+[SYS] 2026/06/09 - 15:13:49 | token encoders initialized 
+[SYS] 2026/06/09 - 15:13:49 | using SQLite as database 
+[SYS] 2026/06/09 - 15:13:49 | database migration started 
+[SYS] 2026/06/09 - 15:13:49 | system is already initialized at: 2026-03-24 08:57:55 +0800 CST 
+[SYS] 2026/06/09 - 15:13:49 | REDIS_CONN_STRING not set, Redis is not enabled 
+[SYS] 2026/06/09 - 15:13:49 | i18n initialized with languages: zh-CN, zh-TW, en 
+[SYS] 2026/06/09 - 15:13:49 | New API v0.0.0 started 
+[SYS] 2026/06/09 - 15:13:49 | 正在更新数据看板数据... 
+[INFO] 2026/06/09 - 15:13:49 | SYSTEM | codex credential auto-refresh task started: tick=10m0s threshold=24h0m0s 
+[SYS] 2026/06/09 - 15:13:49 | upstream model update task started: interval=30m0s 
+[SYS] 2026/06/09 - 15:13:49 | 保存数据看板数据成功，共保存0条数据 
+
+  [32mNew API v0.0.0[0m  ready in 248 ms
+
+  ➜  [1mLocal:[0m   http://localhost:3000/
+  ➜  [1mNetwork:[0m http://192.168.10.35:3000/
+
+[SYS] 2026/06/09 - 15:13:50 | upstream model update check failed: channel_id=9 channel_name=axa err=Get "https://api.axa.us.ci/v1/models": read tcp 127.0.0.1:16836->127.0.0.1:7890: wsarecv: An existing connection was forcibly closed by the remote host. 
+[SYS] 2026/06/09 - 15:13:50 | upstream model update check failed: channel_id=18 channel_name=grok2api err=Get "https://vibe.grok2api.us.ci/v1/models": EOF 
+[GIN] 2026/06/09 - 15:13:51 | web | 202606090713518832812008268d9d6z4BX7ECN | 200 |      1.2557ms |       127.0.0.1 |     GET /console/setting?tab=operation
+[GIN] 2026/06/09 - 15:13:52 | web | 202606090713519657163008268d9d6gss5AGJH | 200 |     54.0404ms |       127.0.0.1 |     GET /assets/index-DhuUyEKc.css
+[GIN] 2026/06/09 - 15:13:52 | web | 202606090713519519665008268d9d6NuDwk16s | 200 |    112.0677ms |       127.0.0.1 |     GET /assets/index-BPNcEPvz.js
+[GIN] 2026/06/09 - 15:13:52 | api | 202606090713522306469008268d9d60wTFsw6c | 200 |       527.5µs |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/09 - 15:13:52 | api | 202606090713522306469008268d9d6CjHdGilr | 401 |       527.5µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/09 - 15:13:52 | api | 202606090713522941966008268d9d655e1kPFo | 401 |            0s |       127.0.0.1 |     GET /api/option/
+[GIN] 2026/06/09 - 15:13:52 | web | 202606090713523179939008268d9d6uAs5FYVT | 200 |            0s |       127.0.0.1 |     GET /login?expired=true
+[GIN] 2026/06/09 - 15:13:52 | web | 202606090713524089842008268d9d6WV0sxAKB | 200 |            0s |       127.0.0.1 |     GET /login?expired=true
+[GIN] 2026/06/09 - 15:13:52 | api | 202606090713525835911008268d9d6kmawdM5p | 200 |            0s |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/09 - 15:13:53 | api | 202606090713534827287008268d9d6fT4UcxC1 | 200 |     58.7874ms |       127.0.0.1 |    POST /api/user/login?turnstile=
+[GIN] 2026/06/09 - 15:13:53 | api | 202606090713536224327008268d9d6rqwMVkHg | 200 |       1.046ms |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/09 - 15:13:53 | web | 202606090713536218697008268d9d626MUrT6j | 200 |     53.3939ms |       127.0.0.1 |     GET /assets/index-sE8yW5cr.js
+[GIN] 2026/06/09 - 15:13:53 | api | 202606090713538341093008268d9d6csq17AI1 | 200 |       534.6µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/09 - 15:13:53 | api | 202606090713538370537008268d9d6yBECsMVJ | 200 |      5.2404ms |       127.0.0.1 |     GET /api/data/?username=&start_timestamp=1780243200&end_timestamp=1780989233&default_time=hour
+[GIN] 2026/06/09 - 15:13:53 | api | 202606090713538898453008268d9d6ahHMFRMw | 200 |      1.8089ms |       127.0.0.1 |     GET /api/data/users?start_timestamp=1780243200&end_timestamp=1780989233
+[GIN] 2026/06/09 - 15:13:54 | api | 202606090713547059808008268d9d6sseonAAJ | 200 |      7.0487ms |       127.0.0.1 |     GET /api/channel/models_enabled_details
+[SYS] 2026/06/09 - 15:13:58 | upstream model update check failed: channel_id=19 channel_name=gptanon-2api err=status code: 404 
+[SYS] 2026/06/09 - 15:13:59 | upstream model update task done: checked_channels=6 changed_channels=1 detected_add_models=0 detected_remove_models=82 failed_channels=3 auto_added_models=0 
+[SYS] 2026/06/09 - 15:13:59 | upstream model update notifications sent: 0 
+[GIN] 2026/06/09 - 15:14:14 | api | 20260609071414907724008268d9d6aIaHG6Mw | 200 |      1.0411ms |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/09 - 15:14:14 | api | 20260609071414907724008268d9d6nha3H7wg | 200 |      5.3605ms |       127.0.0.1 |     GET /api/data/?username=&start_timestamp=1780243200&end_timestamp=1780989254&default_time=hour
+[GIN] 2026/06/09 - 15:14:14 | api | 202606090714141810811008268d9d6JHOwUP2g | 200 |      3.1241ms |       127.0.0.1 |     GET /api/data/users?start_timestamp=1780243200&end_timestamp=1780989254
+[GIN] 2026/06/09 - 15:14:15 | api | 202606090714158550585008268d9d6weBGNWPY | 200 |      1.0521ms |       127.0.0.1 |     GET /api/channel/models
+[GIN] 2026/06/09 - 15:14:15 | api | 202606090714158599500008268d9d6U4OT8Bqw | 200 |      1.2848ms |       127.0.0.1 |     GET /api/models
+[GIN] 2026/06/09 - 15:14:15 | api | 202606090714158593805008268d9d6J91DoyWN | 200 |      2.8935ms |       127.0.0.1 |     GET /api/channel/?p=1&page_size=10&id_sort=true
+[GIN] 2026/06/09 - 15:14:15 | api | 202606090714158607188008268d9d64XaqHsjK | 200 |     21.6613ms |       127.0.0.1 |     GET /api/option/
+[GIN] 2026/06/09 - 15:14:22 | web | 202606090714226397121008268d9d63wkR19HF | 200 |       514.2µs |       127.0.0.1 |     GET /console/channel
+[GIN] 2026/06/09 - 15:14:22 | api | 202606090714228960406008268d9d6vCNnu4E2 | 200 |      1.3539ms |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/09 - 15:14:22 | api | 202606090714228960406008268d9d69HaWP92M | 200 |      1.9485ms |       127.0.0.1 |     GET /api/channel/models
+[GIN] 2026/06/09 - 15:14:22 | api | 202606090714228968630008268d9d6QPvFHaEe | 200 |      4.0597ms |       127.0.0.1 |     GET /api/channel/?p=1&page_size=10&id_sort=true
+[GIN] 2026/06/09 - 15:14:22 | api | 202606090714228990291008268d9d6TV7PPLlS | 200 |      3.9254ms |       127.0.0.1 |     GET /api/models
+[GIN] 2026/06/09 - 15:14:22 | api | 202606090714229026364008268d9d6Mxg0uExu | 200 |      1.1896ms |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/09 - 15:14:22 | api | 202606090714229000178008268d9d6dq6JsUQo | 200 |     33.7377ms |       127.0.0.1 |     GET /api/option/
+[GIN] 2026/06/09 - 15:14:23 | api | 20260609071423511895008268d9d6jsv8GhZ4 | 200 |       1.047ms |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/09 - 15:14:25 | web | 20260609071425754802008268d9d6hVumWoks | 200 |            0s |       127.0.0.1 |     GET /console/channel
+[GIN] 2026/06/09 - 15:14:25 | web | 202606090714251458246008268d9d69T8Cafej | 200 |      3.5066ms |       127.0.0.1 |     GET /assets/i18n-DiWaxoG1.js
+[GIN] 2026/06/09 - 15:14:25 | web | 202606090714251499259008268d9d6AVSEtEi4 | 200 |      5.9706ms |       127.0.0.1 |     GET /assets/tools-C0EboDDl.js
+[GIN] 2026/06/09 - 15:14:25 | web | 202606090714251447560008268d9d6oWvl3rRr | 200 |     13.1477ms |       127.0.0.1 |     GET /assets/react-core-CrhRkQo_.js
+[GIN] 2026/06/09 - 15:14:25 | web | 202606090714251559042008268d9d6s57GHyDb | 200 |      1.9995ms |       127.0.0.1 |     GET /assets/react-components-D_IizzI1.js
+[GIN] 2026/06/09 - 15:14:25 | web | 202606090714251559042008268d9d6SLFiw9kt | 200 |     31.4795ms |       127.0.0.1 |     GET /assets/semi-ui-yRXI6evF.css
+[GIN] 2026/06/09 - 15:14:25 | web | 202606090714251559042008268d9d6FiqD4aWB | 200 |     33.1287ms |       127.0.0.1 |     GET /assets/index-DhuUyEKc.css
+[GIN] 2026/06/09 - 15:14:25 | web | 202606090714251493312008268d9d671Wiys7l | 200 |     97.8364ms |       127.0.0.1 |     GET /assets/semi-ui-CuYQJcLe.js
+[GIN] 2026/06/09 - 15:14:25 | web | 202606090714251442246008268d9d6RoIIMwnU | 200 |    119.5339ms |       127.0.0.1 |     GET /assets/index-BPNcEPvz.js
+[GIN] 2026/06/09 - 15:14:25 | api | 202606090714255442473008268d9d6OBcifOVu | 200 |      1.0717ms |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/09 - 15:14:25 | api | 202606090714255442473008268d9d6gM3863wP | 200 |      1.5903ms |       127.0.0.1 |     GET /api/channel/models
+[GIN] 2026/06/09 - 15:14:25 | api | 202606090714255498808008268d9d62xRRBt3I | 200 |      1.5878ms |       127.0.0.1 |     GET /api/channel/?p=1&page_size=10&id_sort=true
+[GIN] 2026/06/09 - 15:14:25 | api | 202606090714255509538008268d9d6S2jZAnbo | 200 |       1.047ms |       127.0.0.1 |     GET /api/models
+[GIN] 2026/06/09 - 15:14:25 | api | 202606090714255525848008268d9d6Osgd58XM | 200 |            0s |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/09 - 15:14:25 | web | 202606090714255599351008268d9d6MrN65TCB | 200 |            0s |       127.0.0.1 |     GET /logo.png
+[GIN] 2026/06/09 - 15:14:25 | api | 202606090714255514686008268d9d6COB6WL5S | 200 |     23.1521ms |       127.0.0.1 |     GET /api/option/
+[GIN] 2026/06/09 - 15:14:25 | web | 202606090714255843229008268d9d6wXgCvLAe | 200 |            0s |       127.0.0.1 |     GET /logo.png
+[GIN] 2026/06/09 - 15:14:25 | api | 202606090714256607502008268d9d6ybokHWV2 | 200 |       515.4µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/09 - 15:14:26 | web | 202606090714264212181008268d9d6xyStOOG6 | 200 |            0s |       127.0.0.1 |     GET /console/channel
+[GIN] 2026/06/09 - 15:14:26 | web | 202606090714264870615008268d9d6IxpHBdAc | 200 |      2.4432ms |       127.0.0.1 |     GET /assets/i18n-DiWaxoG1.js
+[GIN] 2026/06/09 - 15:14:26 | web | 202606090714264860682008268d9d66IhZE5hv | 200 |     18.4343ms |       127.0.0.1 |     GET /assets/react-core-CrhRkQo_.js
+[GIN] 2026/06/09 - 15:14:26 | web | 202606090714265075015008268d9d63biIMrfI | 200 |      1.9997ms |       127.0.0.1 |     GET /assets/react-components-D_IizzI1.js
+[GIN] 2026/06/09 - 15:14:26 | web | 202606090714264935017008268d9d6xwnhtUyC | 200 |     15.9995ms |       127.0.0.1 |     GET /assets/tools-C0EboDDl.js
+[GIN] 2026/06/09 - 15:14:26 | web | 202606090714264925021008268d9d65drmXU9Q | 200 |     32.6283ms |       127.0.0.1 |     GET /assets/semi-ui-yRXI6evF.css
+[GIN] 2026/06/09 - 15:14:26 | web | 202606090714265095012008268d9d6GTLIG7td | 200 |     30.6293ms |       127.0.0.1 |     GET /assets/index-DhuUyEKc.css
+[GIN] 2026/06/09 - 15:14:26 | web | 202606090714264870615008268d9d6n2Trnmm3 | 200 |    111.4576ms |       127.0.0.1 |     GET /assets/semi-ui-CuYQJcLe.js
+[GIN] 2026/06/09 - 15:14:26 | web | 202606090714264855455008268d9d6J2fxGD4s | 200 |    133.5926ms |       127.0.0.1 |     GET /assets/index-BPNcEPvz.js
+[GIN] 2026/06/09 - 15:14:26 | api | 202606090714269260651008268d9d6qwnVE7w1 | 200 |       999.8µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/09 - 15:14:26 | api | 202606090714269270649008268d9d6lpvyFYWJ | 200 |      2.0333ms |       127.0.0.1 |     GET /api/channel/models
+[GIN] 2026/06/09 - 15:14:26 | api | 202606090714269311434008268d9d6mtebcsPC | 200 |       2.689ms |       127.0.0.1 |     GET /api/channel/?p=1&page_size=10&id_sort=true
+[GIN] 2026/06/09 - 15:14:26 | api | 202606090714269338324008268d9d6QL0Mplnf | 200 |       1.137ms |       127.0.0.1 |     GET /api/models
+[GIN] 2026/06/09 - 15:14:26 | api | 202606090714269348747008268d9d63R6SYVBN | 200 |        94.7µs |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/09 - 15:14:26 | web | 202606090714269474057008268d9d6CdwHPUqQ | 200 |       525.7µs |       127.0.0.1 |     GET /logo.png
+[GIN] 2026/06/09 - 15:14:26 | api | 202606090714269343604008268d9d6XwB8oekV | 200 |     24.2068ms |       127.0.0.1 |     GET /api/option/
+[GIN] 2026/06/09 - 15:14:26 | web | 202606090714269651473008268d9d6Y2hr0CUB | 200 |         633µs |       127.0.0.1 |     GET /logo.png
+[GIN] 2026/06/09 - 15:14:27 | api | 20260609071427507021008268d9d6dQbWYV7G | 200 |      1.4706ms |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/09 - 15:14:27 | web | 202606090714277852815008268d9d6u6VwOzN2 | 200 |            0s |       127.0.0.1 |     GET /console/channel
+[GIN] 2026/06/09 - 15:14:27 | web | 202606090714278493736008268d9d6AVE2EpGv | 200 |       998.5µs |       127.0.0.1 |     GET /assets/react-components-D_IizzI1.js
+[GIN] 2026/06/09 - 15:14:27 | web | 202606090714278464397008268d9d6pqmaKlIa | 200 |      4.9324ms |       127.0.0.1 |     GET /assets/tools-C0EboDDl.js
+[GIN] 2026/06/09 - 15:14:27 | web | 202606090714278458551008268d9d6XOsieL3r | 200 |      7.5173ms |       127.0.0.1 |     GET /assets/i18n-DiWaxoG1.js
+[GIN] 2026/06/09 - 15:14:27 | web | 202606090714278437087008268d9d6WPF14epl | 200 |     17.6283ms |       127.0.0.1 |     GET /assets/react-core-CrhRkQo_.js
+[GIN] 2026/06/09 - 15:14:27 | web | 202606090714278523722008268d9d69Rnzkq2t | 200 |     24.9097ms |       127.0.0.1 |     GET /assets/semi-ui-yRXI6evF.css
+[GIN] 2026/06/09 - 15:14:27 | web | 202606090714278553722008268d9d68ElORxZX | 200 |      28.122ms |       127.0.0.1 |     GET /assets/index-DhuUyEKc.css
+[GIN] 2026/06/09 - 15:14:27 | web | 202606090714278464397008268d9d6X1VcsGWG | 200 |     93.3622ms |       127.0.0.1 |     GET /assets/semi-ui-CuYQJcLe.js
+[GIN] 2026/06/09 - 15:14:27 | web | 202606090714278421511008268d9d6Xun046X7 | 200 |     122.719ms |       127.0.0.1 |     GET /assets/index-BPNcEPvz.js
+[GIN] 2026/06/09 - 15:14:28 | api | 202606090714282565728008268d9d6Xex0eVHK | 200 |      1.0735ms |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/09 - 15:14:28 | api | 202606090714282571236008268d9d6jW4DQVhH | 200 |      1.6335ms |       127.0.0.1 |     GET /api/channel/models
+[GIN] 2026/06/09 - 15:14:28 | api | 202606090714282643470008268d9d642YmMMYs | 200 |            0s |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/09 - 15:14:28 | api | 202606090714282623469008268d9d6sPK7mOEn | 200 |      2.9997ms |       127.0.0.1 |     GET /api/channel/?p=1&page_size=10&id_sort=true
+[GIN] 2026/06/09 - 15:14:28 | api | 202606090714282643470008268d9d6TKpt5NjY | 200 |       999.6µs |       127.0.0.1 |     GET /api/models
+[GIN] 2026/06/09 - 15:14:28 | web | 202606090714282898546008268d9d6kr4Eaiwi | 200 |            0s |       127.0.0.1 |     GET /logo.png
+[GIN] 2026/06/09 - 15:14:28 | api | 202606090714282643470008268d9d6OLYaViCi | 200 |     27.5039ms |       127.0.0.1 |     GET /api/option/
+[GIN] 2026/06/09 - 15:14:28 | web | 202606090714282993309008268d9d6YVgQT25v | 200 |            0s |       127.0.0.1 |     GET /logo.png
+[GIN] 2026/06/09 - 15:14:28 | api | 202606090714283785006008268d9d6h5mPrXBG | 200 |       538.4µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/09 - 15:14:29 | web | 20260609071429191651008268d9d6qBsfpsOm | 200 |       512.8µs |       127.0.0.1 |     GET /console/channel
+[GIN] 2026/06/09 - 15:14:29 | web | 20260609071429844274008268d9d6EmQnQYiC | 200 |      2.5117ms |       127.0.0.1 |     GET /assets/i18n-DiWaxoG1.js
+[GIN] 2026/06/09 - 15:14:29 | web | 20260609071429879512008268d9d6AzLide5E | 200 |      1.0001ms |       127.0.0.1 |     GET /assets/react-components-D_IizzI1.js
+[GIN] 2026/06/09 - 15:14:29 | web | 20260609071429869508008268d9d6QPdyOggv | 200 |      6.6374ms |       127.0.0.1 |     GET /assets/tools-C0EboDDl.js
+[GIN] 2026/06/09 - 15:14:29 | web | 20260609071429839125008268d9d6oQsuZiRK | 200 |     11.6752ms |       127.0.0.1 |     GET /assets/react-core-CrhRkQo_.js
+[GIN] 2026/06/09 - 15:14:29 | web | 20260609071429889513008268d9d6QfH2kjQh | 200 |     26.0737ms |       127.0.0.1 |     GET /assets/semi-ui-yRXI6evF.css
+[GIN] 2026/06/09 - 15:14:29 | web | 20260609071429909500008268d9d69LcMW2Wg | 200 |     33.0262ms |       127.0.0.1 |     GET /assets/index-DhuUyEKc.css
+[GIN] 2026/06/09 - 15:14:29 | web | 20260609071429849518008268d9d6JyYBah50 | 200 |      99.436ms |       127.0.0.1 |     GET /assets/semi-ui-CuYQJcLe.js
+[GIN] 2026/06/09 - 15:14:29 | web | 20260609071429833771008268d9d6UmBRXCqM | 200 |    116.2489ms |       127.0.0.1 |     GET /assets/index-BPNcEPvz.js
+[GIN] 2026/06/09 - 15:14:29 | api | 202606090714294058513008268d9d6u541TBJ8 | 200 |       520.8µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/09 - 15:14:29 | api | 202606090714294058513008268d9d6LkGktG6w | 200 |      1.5602ms |       127.0.0.1 |     GET /api/channel/models
+[GIN] 2026/06/09 - 15:14:29 | api | 202606090714294121420008268d9d6vl8Iokp2 | 200 |            0s |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/09 - 15:14:29 | api | 202606090714294111462008268d9d6LsgSvNJB | 200 |      1.9951ms |       127.0.0.1 |     GET /api/channel/?p=1&page_size=10&id_sort=true
+[GIN] 2026/06/09 - 15:14:29 | api | 202606090714294111462008268d9d6tNAZZxpN | 200 |      1.9951ms |       127.0.0.1 |     GET /api/models
+[GIN] 2026/06/09 - 15:14:29 | web | 202606090714294223610008268d9d6ZsGWTSbp | 200 |            0s |       127.0.0.1 |     GET /logo.png
+[GIN] 2026/06/09 - 15:14:29 | api | 202606090714294121420008268d9d6cHEXWZ46 | 200 |     15.1847ms |       127.0.0.1 |     GET /api/option/
+[GIN] 2026/06/09 - 15:14:29 | web | 202606090714294544094008268d9d6qwVjhpR4 | 200 |            0s |       127.0.0.1 |     GET /logo.png
+[GIN] 2026/06/09 - 15:14:29 | api | 202606090714294899734008268d9d63fcvb2Hr | 200 |         764µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/09 - 15:14:30 | web | 202606090714305880244008268d9d6uU4tPwno | 200 |       882.4µs |       127.0.0.1 |     GET /console/channel
+[GIN] 2026/06/09 - 15:14:30 | web | 202606090714306435579008268d9d6m68LjGNu | 200 |      1.4467ms |       127.0.0.1 |     GET /assets/react-components-D_IizzI1.js
+[GIN] 2026/06/09 - 15:14:30 | web | 202606090714306427551008268d9d6k7JtLDX3 | 200 |       2.824ms |       127.0.0.1 |     GET /assets/i18n-DiWaxoG1.js
+[GIN] 2026/06/09 - 15:14:30 | web | 202606090714306432619008268d9d6IDHoRpuh | 200 |      3.9171ms |       127.0.0.1 |     GET /assets/tools-C0EboDDl.js
+[GIN] 2026/06/09 - 15:14:30 | web | 202606090714306417991008268d9d6FW6d064p | 200 |     10.0958ms |       127.0.0.1 |     GET /assets/react-core-CrhRkQo_.js
+[GIN] 2026/06/09 - 15:14:30 | web | 202606090714306455791008268d9d6ti2rsubl | 200 |     14.9833ms |       127.0.0.1 |     GET /assets/semi-ui-yRXI6evF.css
+[GIN] 2026/06/09 - 15:14:30 | web | 202606090714306466268008268d9d63gGshmYR | 200 |     17.6421ms |       127.0.0.1 |     GET /assets/index-DhuUyEKc.css
+[GIN] 2026/06/09 - 15:14:30 | web | 202606090714306435579008268d9d6JmYqGMw7 | 200 |     55.9197ms |       127.0.0.1 |     GET /assets/semi-ui-CuYQJcLe.js
+[GIN] 2026/06/09 - 15:14:30 | web | 202606090714306407962008268d9d6RtEal1sH | 200 |     71.7756ms |       127.0.0.1 |     GET /assets/index-BPNcEPvz.js
+[GIN] 2026/06/09 - 15:14:30 | api | 202606090714309169022008268d9d6H95n6X73 | 200 |       524.5µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/09 - 15:14:30 | api | 202606090714309169022008268d9d61W3YLf42 | 200 |      1.0474ms |       127.0.0.1 |     GET /api/channel/models
+[GIN] 2026/06/09 - 15:14:30 | api | 202606090714309209102008268d9d6VawP1N14 | 200 |      1.5531ms |       127.0.0.1 |     GET /api/channel/?p=1&page_size=10&id_sort=true
+[GIN] 2026/06/09 - 15:14:30 | api | 202606090714309229749008268d9d6LoZVQ9IZ | 200 |            0s |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/09 - 15:14:30 | api | 202606090714309224633008268d9d619HW8nkS | 200 |       511.6µs |       127.0.0.1 |     GET /api/models
+[GIN] 2026/06/09 - 15:14:30 | api | 202606090714309224633008268d9d6PGywNwhv | 200 |     14.2979ms |       127.0.0.1 |     GET /api/option/
+[GIN] 2026/06/09 - 15:14:30 | web | 202606090714309408142008268d9d6QhNj1UiC | 429 |            0s |       127.0.0.1 |     GET /logo.png
+[GIN] 2026/06/09 - 15:14:30 | web | 202606090714309472169008268d9d6UPtc7LTo | 429 |            0s |       127.0.0.1 |     GET /logo.png
+[GIN] 2026/06/09 - 15:14:30 | api | 202606090714309960420008268d9d60X6ZC90L | 200 |      1.1623ms |       127.0.0.1 |     GET /api/user/self
+[SYS] 2026/06/09 - 15:14:49 | syncing options from database 
+[GIN] 2026/06/09 - 15:14:50 | api | 202606090714504860081008268d9d6fxmqDDdg | 200 |      4.0418ms |       127.0.0.1 |     GET /api/log/?p=1&page_size=10&type=0&username=&token_name=&model_name=&start_timestamp=1780934400&end_timestamp=1780992890&channel=&request_id=
+[GIN] 2026/06/09 - 15:14:50 | api | 202606090714505155535008268d9d6nbc0g3p0 | 200 |       520.9µs |       127.0.0.1 |     GET /api/log/stat?type=0&username=&token_name=&model_name=&start_timestamp=1780934400&end_timestamp=1780992890&channel=
+[GIN] 2026/06/09 - 15:15:02 | api | 202606090715029010830008268d9d6LajpO557 | 200 |      2.8216ms |       127.0.0.1 |     GET /api/token/?p=1&size=10
+[GIN] 2026/06/09 - 15:15:02 | api | 202606090715029000836008268d9d6JFuM9Bgg | 200 |       7.672ms |       127.0.0.1 |     GET /api/user/models
+[GIN] 2026/06/09 - 15:15:07 | api | 202606090715077564999008268d9d6ea7QRAEy | 200 |      1.0549ms |       127.0.0.1 |     GET /api/log/?p=1&page_size=10&type=0&username=&token_name=&model_name=&start_timestamp=1780934400&end_timestamp=1780992907&channel=&request_id=
+[GIN] 2026/06/09 - 15:15:07 | api | 202606090715078824398008268d9d6T88IA4Gp | 200 |         527µs |       127.0.0.1 |     GET /api/log/stat?type=0&username=&token_name=&model_name=&start_timestamp=1780934400&end_timestamp=1780992907&channel=
+[GIN] 2026/06/09 - 15:15:08 | api | 202606090715086215862008268d9d6Qay5xSXC | 200 |      1.9282ms |       127.0.0.1 |     GET /api/token/?p=1&size=10
+[GIN] 2026/06/09 - 15:15:08 | api | 202606090715086215862008268d9d6jFbSD8t2 | 200 |      2.9994ms |       127.0.0.1 |     GET /api/user/models
+[GIN] 2026/06/09 - 15:15:27 | api | 20260609071527910825008268d9d6MQStvtLf | 200 |            0s |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/09 - 15:15:27 | api | 20260609071527910825008268d9d6RPtL3eHw | 200 |       1.059ms |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/09 - 15:15:27 | api | 20260609071527910825008268d9d60v5vHe7j | 200 |      2.1059ms |       127.0.0.1 |     GET /api/user/2fa/status
+[GIN] 2026/06/09 - 15:15:27 | web | 20260609071527979496008268d9d6lqH475nV | 429 |            0s |       127.0.0.1 |     GET /cover-4.webp
+[GIN] 2026/06/09 - 15:15:28 | api | 202606090715281483218008268d9d6seqGFNqH | 200 |      1.1147ms |       127.0.0.1 |     GET /api/channel/models
+[GIN] 2026/06/09 - 15:15:28 | api | 202606090715281494365008268d9d6A34CnIBq | 200 |       511.9µs |       127.0.0.1 |     GET /api/models
+[GIN] 2026/06/09 - 15:15:28 | api | 202606090715281494365008268d9d6afQ0SflI | 200 |      2.1786ms |       127.0.0.1 |     GET /api/channel/?p=1&page_size=10&id_sort=true
+[GIN] 2026/06/09 - 15:15:28 | api | 202606090715281494365008268d9d6o5ujT1Ma | 200 |     14.6357ms |       127.0.0.1 |     GET /api/option/
+[SYS] 2026/06/09 - 15:15:49 | syncing options from database 

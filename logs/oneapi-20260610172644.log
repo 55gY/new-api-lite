@@ -1,0 +1,46 @@
+[SYS] 2026/06/10 - 17:26:44 | initializing token encoders 
+[SYS] 2026/06/10 - 17:26:44 | token encoders initialized 
+[SYS] 2026/06/10 - 17:26:44 | using SQLite as database 
+[SYS] 2026/06/10 - 17:26:44 | database migration started 
+[SYS] 2026/06/10 - 17:26:44 | system is already initialized at: 2026-03-24 08:57:55 +0800 CST 
+[SYS] 2026/06/10 - 17:26:44 | REDIS_CONN_STRING not set, Redis is not enabled 
+[SYS] 2026/06/10 - 17:26:44 | i18n initialized with languages: zh-CN, zh-TW, en 
+[SYS] 2026/06/10 - 17:26:44 | New API v0.0.0 started 
+[SYS] 2026/06/10 - 17:26:44 | 正在更新数据看板数据... 
+[INFO] 2026/06/10 - 17:26:44 | SYSTEM | codex credential auto-refresh task started: tick=10m0s threshold=24h0m0s 
+[SYS] 2026/06/10 - 17:26:44 | upstream model update task started: interval=30m0s 
+[SYS] 2026/06/10 - 17:26:44 | 保存数据看板数据成功，共保存0条数据 
+[SYS] 2026/06/10 - 17:26:44 | upstream model update task done: checked_channels=5 changed_channels=2 detected_add_models=12 detected_remove_models=93 failed_channels=0 auto_added_models=0 
+[SYS] 2026/06/10 - 17:26:44 | upstream model update notifications sent: 0 
+
+  [32mNew API v0.0.0[0m  ready in 311 ms
+
+  ➜  [1mLocal:[0m   http://localhost:3000/
+  ➜  [1mNetwork:[0m http://192.168.10.35:3000/
+
+[GIN] 2026/06/10 - 17:26:46 | web | 202606100926465047004008268d9d6WkwjgNUO | 200 |         519µs |       127.0.0.1 |     GET /console/log
+[GIN] 2026/06/10 - 17:26:46 | api | 202606100926467385731008268d9d6L2z9j2Gu | 401 |      1.6437ms |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/10 - 17:26:46 | api | 202606100926467417966008268d9d6SRtWJzCq | 401 |       516.7µs |       127.0.0.1 |     GET /api/log/?p=1&page_size=100&type=0&username=&token_name=&model_name=&start_timestamp=1781020800&end_timestamp=1781087206&channel=&request_id=&exclude_model_test=false
+[GIN] 2026/06/10 - 17:26:46 | api | 202606100926467421498008268d9d6ogo3JZKr | 200 |       516.7µs |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/10 - 17:26:46 | api | 202606100926467941956008268d9d6cuNafayz | 401 |            0s |       127.0.0.1 |     GET /api/log/stat?type=0&username=&token_name=&model_name=&start_timestamp=1781020800&end_timestamp=1781087206&channel=&exclude_model_test=false
+[GIN] 2026/06/10 - 17:26:46 | web | 202606100926469244188008268d9d6cL9xUIhV | 200 |       708.1µs |       127.0.0.1 |     GET /login?expired=true
+[GIN] 2026/06/10 - 17:26:47 | api | 202606100926472291141008268d9d6E5ZLPowq | 200 |            0s |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/10 - 17:26:48 | api | 202606100926483880514008268d9d67PrCg9xg | 200 |     64.5458ms |       127.0.0.1 |    POST /api/user/login?turnstile=
+[GIN] 2026/06/10 - 17:26:48 | api | 202606100926485791971008268d9d61lhF76LR | 200 |      1.1119ms |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/10 - 17:26:48 | api | 202606100926485791971008268d9d6ZTpmTeUO | 200 |      8.8836ms |       127.0.0.1 |     GET /api/data/?username=&start_timestamp=1780243200&end_timestamp=1781083608&default_time=hour
+[GIN] 2026/06/10 - 17:26:48 | api | 202606100926486656826008268d9d6QqE99dQ4 | 200 |      1.5702ms |       127.0.0.1 |     GET /api/data/users?start_timestamp=1780243200&end_timestamp=1781083608
+[GIN] 2026/06/10 - 17:26:50 | api | 202606100926503360518008268d9d6zkpna34K | 200 |      3.6595ms |       127.0.0.1 |     GET /api/log/?p=1&page_size=100&type=0&username=&token_name=&model_name=&start_timestamp=1781020800&end_timestamp=1781087210&channel=&request_id=&exclude_model_test=false
+[GIN] 2026/06/10 - 17:26:50 | api | 202606100926503796874008268d9d6B7JC3M5M | 200 |            0s |       127.0.0.1 |     GET /api/log/stat?type=0&username=&token_name=&model_name=&start_timestamp=1781020800&end_timestamp=1781087210&channel=&exclude_model_test=false
+[GIN] 2026/06/10 - 17:26:55 | api | 202606100926555243063008268d9d6vVSF3Uoe | 200 |    197.3377ms |       127.0.0.1 |     GET /api/log/stat?type=0&username=&token_name=&model_name=&start_timestamp=1778515200&end_timestamp=1781107199&channel=&exclude_model_test=false
+[GIN] 2026/06/10 - 17:26:55 | api | 202606100926555243063008268d9d6hRhTCevm | 200 |    202.3211ms |       127.0.0.1 |     GET /api/log/?p=1&page_size=100&type=0&username=&token_name=&model_name=&start_timestamp=1778515200&end_timestamp=1781107199&channel=&request_id=&exclude_model_test=false
+[GIN] 2026/06/10 - 17:26:57 | api | 202606100926575547197008268d9d6Z3RuAiuh | 200 |     20.4882ms |       127.0.0.1 |     GET /api/log/stat?type=0&username=&token_name=&model_name=&start_timestamp=1778515200&end_timestamp=1781107199&channel=&exclude_model_test=true
+[GIN] 2026/06/10 - 17:26:57 | api | 202606100926575557196008268d9d6s2nZeYk2 | 200 |     66.5795ms |       127.0.0.1 |     GET /api/log/?p=1&page_size=100&type=0&username=&token_name=&model_name=&start_timestamp=1778515200&end_timestamp=1781107199&channel=&request_id=&exclude_model_test=true
+[SYS] 2026/06/10 - 17:27:44 | syncing options from database 
+[SYS] 2026/06/10 - 17:28:44 | syncing options from database 
+[SYS] 2026/06/10 - 17:29:44 | syncing options from database 
+[SYS] 2026/06/10 - 17:30:44 | syncing options from database 
+[SYS] 2026/06/10 - 17:31:44 | 正在更新数据看板数据... 
+[SYS] 2026/06/10 - 17:31:44 | 保存数据看板数据成功，共保存0条数据 
+[SYS] 2026/06/10 - 17:31:44 | syncing options from database 
+[SYS] 2026/06/10 - 17:32:44 | syncing options from database 
+[SYS] 2026/06/10 - 17:33:44 | syncing options from database 

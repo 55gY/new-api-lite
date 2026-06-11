@@ -1,0 +1,32 @@
+[SYS] 2026/06/05 - 15:25:35 | initializing token encoders 
+[SYS] 2026/06/05 - 15:25:35 | token encoders initialized 
+[SYS] 2026/06/05 - 15:25:35 | SQL_DSN not set, using SQLite as database 
+[SYS] 2026/06/05 - 15:25:35 | database migration started 
+[SYS] 2026/06/05 - 15:25:35 | system is already initialized at: 2026-06-03 10:51:16 +0800 CST 
+[SYS] 2026/06/05 - 15:25:35 | REDIS_CONN_STRING not set, Redis is not enabled 
+[SYS] 2026/06/05 - 15:25:35 | i18n initialized with languages: zh-CN, zh-TW, en 
+[SYS] 2026/06/05 - 15:25:35 | Loaded 0 custom OAuth providers 
+[SYS] 2026/06/05 - 15:25:35 | New API v0.0.0 started 
+[SYS] 2026/06/05 - 15:25:35 | 正在更新数据看板数据... 
+[SYS] 2026/06/05 - 15:25:35 | upstream model update task started: interval=30m0s 
+[INFO] 2026/06/05 - 15:25:35 | SYSTEM | codex credential auto-refresh task started: tick=10m0s threshold=24h0m0s 
+[SYS] 2026/06/05 - 15:25:35 | 保存数据看板数据成功，共保存0条数据 
+
+  [32mNew API v0.0.0[0m  ready in 232 ms
+
+  ➜  [1mLocal:[0m   http://localhost:3000/
+  ➜  [1mNetwork:[0m http://192.168.10.35:3000/
+
+[GIN] 2026/06/05 - 15:25:36 | web | 202606050725362349937008268d9d6b39A6lyz | 200 |       522.2µs |       127.0.0.1 |     GET /models
+[GIN] 2026/06/05 - 15:25:36 | api | 202606050725363842363008268d9d6G8nrBtVv | 401 |      1.7746ms |       127.0.0.1 |     GET /api/channel/models_enabled
+[GIN] 2026/06/05 - 15:25:36 | api | 202606050725363855415008268d9d6i7JNXppQ | 200 |      1.1057ms |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/05 - 15:25:36 | web | 202606050725364108283008268d9d6HRcTyJrR | 200 |            0s |       127.0.0.1 |     GET /login?expired=true
+[GIN] 2026/06/05 - 15:25:36 | api | 202606050725365582163008268d9d64X3hf7n1 | 200 |            0s |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/05 - 15:25:37 | api | 202606050725375935741008268d9d6If5HGCs8 | 200 |      57.805ms |       127.0.0.1 |    POST /api/user/login?turnstile=
+[GIN] 2026/06/05 - 15:25:37 | api | 202606050725377204132008268d9d6ZRloRoTK | 200 |       999.8µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/05 - 15:25:37 | api | 202606050725377447406008268d9d6qB6ADCp2 | 200 |      1.0005ms |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/05 - 15:25:37 | api | 202606050725377479827008268d9d6WWGKNuuB | 200 |      1.1914ms |       127.0.0.1 |     GET /api/data/?username=&start_timestamp=1780557937&end_timestamp=1780647937&default_time=hour
+[GIN] 2026/06/05 - 15:25:37 | api | 202606050725377833373008268d9d6lpxifnZJ | 200 |       593.9µs |       127.0.0.1 |     GET /api/data/users?start_timestamp=1780557937&end_timestamp=1780647937
+[GIN] 2026/06/05 - 15:25:39 | api | 202606050725393112572008268d9d6flV33CSo | 200 |      1.0274ms |       127.0.0.1 |     GET /api/channel/models_enabled
+[SYS] 2026/06/05 - 15:25:50 | 任务进度轮询开始 
+[SYS] 2026/06/05 - 15:25:50 | 任务进度轮询完成 

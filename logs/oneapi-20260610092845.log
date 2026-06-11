@@ -1,0 +1,19 @@
+[SYS] 2026/06/10 - 09:28:45 | initializing token encoders 
+[SYS] 2026/06/10 - 09:28:45 | token encoders initialized 
+[SYS] 2026/06/10 - 09:28:45 | using SQLite as database 
+[SYS] 2026/06/10 - 09:28:45 | database migration started 
+[SYS] 2026/06/10 - 09:28:45 | system is already initialized at: 2026-03-24 08:57:55 +0800 CST 
+[SYS] 2026/06/10 - 09:28:45 | REDIS_CONN_STRING not set, Redis is not enabled 
+[SYS] 2026/06/10 - 09:28:45 | i18n initialized with languages: zh-CN, zh-TW, en 
+[SYS] 2026/06/10 - 09:28:45 | New API v0.0.0 started 
+[SYS] 2026/06/10 - 09:28:45 | 正在更新数据看板数据... 
+[SYS] 2026/06/10 - 09:28:45 | 保存数据看板数据成功，共保存0条数据 
+[INFO] 2026/06/10 - 09:28:45 | SYSTEM | codex credential auto-refresh task started: tick=10m0s threshold=24h0m0s 
+[SYS] 2026/06/10 - 09:28:45 | upstream model update task started: interval=30m0s 
+
+  [32mNew API v0.0.0[0m  ready in 246 ms
+
+  ➜  [1mLocal:[0m   http://localhost:3000/
+  ➜  [1mNetwork:[0m http://192.168.10.35:3000/
+
+[FATAL] 2026/06/10 - 09:28:45 | [failed to start HTTP server: listen tcp :3000: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted.] 

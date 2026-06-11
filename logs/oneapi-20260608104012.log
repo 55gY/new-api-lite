@@ -1,0 +1,56 @@
+[SYS] 2026/06/08 - 10:40:12 | initializing token encoders 
+[SYS] 2026/06/08 - 10:40:12 | token encoders initialized 
+[SYS] 2026/06/08 - 10:40:12 | SQL_DSN not set, using SQLite as database 
+[SYS] 2026/06/08 - 10:40:12 | database migration started 
+[SYS] 2026/06/08 - 10:40:12 | system is already initialized at: 2026-03-24 08:57:55 +0800 CST 
+[SYS] 2026/06/08 - 10:40:12 | REDIS_CONN_STRING not set, Redis is not enabled 
+[SYS] 2026/06/08 - 10:40:12 | i18n initialized with languages: zh-CN, zh-TW, en 
+[SYS] 2026/06/08 - 10:40:12 | Loaded 0 custom OAuth providers 
+[SYS] 2026/06/08 - 10:40:12 | New API v0.0.0 started 
+[SYS] 2026/06/08 - 10:40:12 | 正在更新数据看板数据... 
+[SYS] 2026/06/08 - 10:40:12 | upstream model update task started: interval=30m0s 
+[INFO] 2026/06/08 - 10:40:12 | SYSTEM | codex credential auto-refresh task started: tick=10m0s threshold=24h0m0s 
+[SYS] 2026/06/08 - 10:40:12 | 保存数据看板数据成功，共保存0条数据 
+[SYS] 2026/06/08 - 10:40:12 | upstream model update task done: checked_channels=6 changed_channels=2 detected_add_models=12 detected_remove_models=93 failed_channels=0 auto_added_models=0 
+[SYS] 2026/06/08 - 10:40:12 | upstream model update notifications sent: 0 
+
+  [32mNew API v0.0.0[0m  ready in 232 ms
+
+  ➜  [1mLocal:[0m   http://localhost:3000/
+  ➜  [1mNetwork:[0m http://192.168.10.35:3000/
+
+[GIN] 2026/06/08 - 10:40:14 | api | 202606080240143550403008268d9d6vDSx9pHV | 401 |       602.5µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/08 - 10:40:14 | api | 202606080240143551255008268d9d6sbEEikaE | 401 |       517.3µs |       127.0.0.1 |     GET /api/user/?p=0&page_size=10
+[GIN] 2026/06/08 - 10:40:14 | web | 202606080240143726433008268d9d6Ga7gSbJ3 | 200 |            0s |       127.0.0.1 |     GET /login?expired=true
+[GIN] 2026/06/08 - 10:40:14 | api | 202606080240145384068008268d9d6PIXctMkn | 200 |            0s |       127.0.0.1 |     GET /api/status
+[GIN] 2026/06/08 - 10:40:15 | api | 202606080240155275310008268d9d6yrI0FBKk | 200 |     57.6674ms |       127.0.0.1 |    POST /api/user/login?turnstile=
+[GIN] 2026/06/08 - 10:40:15 | api | 202606080240156815488008268d9d658XFKhWU | 200 |       558.2µs |       127.0.0.1 |     GET /api/user/self
+[GIN] 2026/06/08 - 10:40:15 | api | 202606080240156815488008268d9d6lSIuqZID | 200 |      1.0699ms |       127.0.0.1 |     GET /api/data/?username=&start_timestamp=1780243200&end_timestamp=1780886415&default_time=hour
+[GIN] 2026/06/08 - 10:40:15 | api | 202606080240157050173008268d9d6TQtojh3E | 200 |            0s |       127.0.0.1 |     GET /api/data/users?start_timestamp=1780243200&end_timestamp=1780886415
+[GIN] 2026/06/08 - 10:40:16 | api | 202606080240165677412008268d9d6T1eIfXIq | 200 |       1.022ms |       127.0.0.1 |     GET /api/channel/models
+[GIN] 2026/06/08 - 10:40:16 | api | 202606080240165687785008268d9d6OSosSU5r | 200 |      1.0396ms |       127.0.0.1 |     GET /api/models
+[GIN] 2026/06/08 - 10:40:16 | api | 202606080240165682493008268d9d64DfNV4XL | 200 |      3.1277ms |       127.0.0.1 |     GET /api/channel/?p=1&page_size=10&id_sort=false&tag_mode=false
+[GIN] 2026/06/08 - 10:40:16 | api | 202606080240165692963008268d9d6lmRRbd6v | 200 |     13.9447ms |       127.0.0.1 |     GET /api/option/
+[SYS] 2026/06/08 - 10:40:23 | testing channel 51 with model gpt-5.5 , info RelayInfo{ RelayFormat: openai, RelayMode: 1, IsStream: false, IsPlayground: false, RequestURLPath: "/v1/chat/completions", OriginModelName: "gpt-5.5", EstimatePromptTokens: 0, ShouldIncludeUsage: false, DisablePing: false, SendResponseCount: 0, FinalPreConsumedQuota: 0, User{ Id: 1, Email: "***masked***", Group: "default", UsingGroup: "default", Quota: 499999356861381 }, Token{ Id: 0, Unlimited: false, Key: ***masked*** }, Timing{ Start: 2026-06-08T10:40:23.1564203+08:00, FirstResponse: 2026-06-08T10:40:22.1564203+08:00, LatencyMs: -1000 }, ChannelMeta{ Type: 1, Id: 51, IsMultiKey: false, MultiKeyIndex: 0, BaseURL: "https://aiapi1.cc.cd", ApiType: 0, ApiVersion: "", Organization: "", CreateTime: 1778997572, UpstreamModelName: "gpt-5.5", IsModelMapped: false, SupportStreamOptions: true, ApiKey: ***masked*** }, }  
+[SYS] 2026/06/08 - 10:40:23 | channel test bad response: channel_id=51 name=https://aiapi1.cc.cd type=1 model=gpt-5.5 endpoint_type= status=401 err=bad response status code 401, message: Invalid token (request id: 202606080240244345173078268d9d6c7a2th73), body: {"error":{"code":"","message":"Invalid token (request id: 202606080240244345173078268d9d6c7a2th73)","type":"new_api_error"}} 
+[GIN] 2026/06/08 - 10:40:23 | api | 202606080240231553839008268d9d65a26aFNX | 200 |    647.4708ms |       127.0.0.1 |     GET /api/channel/test/51?model=gpt-5.5
+[SYS] 2026/06/08 - 10:40:26 | testing channel 51 with model gpt-5.4 , info RelayInfo{ RelayFormat: openai, RelayMode: 1, IsStream: false, IsPlayground: false, RequestURLPath: "/v1/chat/completions", OriginModelName: "gpt-5.4", EstimatePromptTokens: 0, ShouldIncludeUsage: false, DisablePing: false, SendResponseCount: 0, FinalPreConsumedQuota: 0, User{ Id: 1, Email: "***masked***", Group: "default", UsingGroup: "default", Quota: 499999356861381 }, Token{ Id: 0, Unlimited: false, Key: ***masked*** }, Timing{ Start: 2026-06-08T10:40:26.6077516+08:00, FirstResponse: 2026-06-08T10:40:25.6077516+08:00, LatencyMs: -1000 }, ChannelMeta{ Type: 1, Id: 51, IsMultiKey: false, MultiKeyIndex: 0, BaseURL: "https://aiapi1.cc.cd", ApiType: 0, ApiVersion: "", Organization: "", CreateTime: 1778997572, UpstreamModelName: "gpt-5.4", IsModelMapped: false, SupportStreamOptions: true, ApiKey: ***masked*** }, }  
+[SYS] 2026/06/08 - 10:40:26 | channel test bad response: channel_id=51 name=https://aiapi1.cc.cd type=1 model=gpt-5.4 endpoint_type= status=401 err=bad response status code 401, message: Invalid token (request id: 202606080240274480105488268d9d6UiP9HvAn), body: {"error":{"code":"","message":"Invalid token (request id: 202606080240274480105488268d9d6UiP9HvAn)","type":"new_api_error"}} 
+[GIN] 2026/06/08 - 10:40:26 | api | 202606080240266066781008268d9d62m8uQY4I | 200 |    209.9661ms |       127.0.0.1 |     GET /api/channel/test/51?model=gpt-5.4
+[SYS] 2026/06/08 - 10:40:27 | 任务进度轮询开始 
+[SYS] 2026/06/08 - 10:40:27 | 任务进度轮询完成 
+[SYS] 2026/06/08 - 10:40:31 | testing channel 50 with model gpt-5.5 , info RelayInfo{ RelayFormat: openai, RelayMode: 1, IsStream: false, IsPlayground: false, RequestURLPath: "/v1/chat/completions", OriginModelName: "gpt-5.5", EstimatePromptTokens: 0, ShouldIncludeUsage: false, DisablePing: false, SendResponseCount: 0, FinalPreConsumedQuota: 0, User{ Id: 1, Email: "***masked***", Group: "default", UsingGroup: "default", Quota: 499999356861381 }, Token{ Id: 0, Unlimited: false, Key: ***masked*** }, Timing{ Start: 2026-06-08T10:40:31.1824155+08:00, FirstResponse: 2026-06-08T10:40:30.1824155+08:00, LatencyMs: -1000 }, ChannelMeta{ Type: 1, Id: 50, IsMultiKey: false, MultiKeyIndex: 0, BaseURL: "https://api.freemodel.dev", ApiType: 0, ApiVersion: "", Organization: "", CreateTime: 1778381370, UpstreamModelName: "gpt-5.5", IsModelMapped: false, SupportStreamOptions: true, ApiKey: ***masked*** }, }  
+[ERR] 2026/06/08 - 10:40:36 | SYSTEM | do request failed: Post "https://api.freemodel.dev/v1/chat/completions": EOF 
+[GIN] 2026/06/08 - 10:40:36 | api | 202606080240311813653008268d9d6axQgLJpB | 200 |    5.0032765s |       127.0.0.1 |     GET /api/channel/test/50?model=gpt-5.5
+[SYS] 2026/06/08 - 10:40:42 | 任务进度轮询开始 
+[SYS] 2026/06/08 - 10:40:42 | 任务进度轮询完成 
+[SYS] 2026/06/08 - 10:40:53 | testing channel 51 with model gpt-5.3-codex , info RelayInfo{ RelayFormat: openai_responses, RelayMode: 33, IsStream: false, IsPlayground: false, RequestURLPath: "/v1/responses", OriginModelName: "gpt-5.3-codex", EstimatePromptTokens: 0, ShouldIncludeUsage: false, DisablePing: false, SendResponseCount: 0, FinalPreConsumedQuota: 0, User{ Id: 1, Email: "***masked***", Group: "default", UsingGroup: "default", Quota: 499999356861381 }, Token{ Id: 0, Unlimited: false, Key: ***masked*** }, Timing{ Start: 2026-06-08T10:40:53.3801139+08:00, FirstResponse: 2026-06-08T10:40:52.3801139+08:00, LatencyMs: -1000 }, ChannelMeta{ Type: 1, Id: 51, IsMultiKey: false, MultiKeyIndex: 0, BaseURL: "https://aiapi1.cc.cd", ApiType: 0, ApiVersion: "", Organization: "", CreateTime: 1778997572, UpstreamModelName: "gpt-5.3-codex", IsModelMapped: false, SupportStreamOptions: true, ApiKey: ***masked*** }, }  
+[SYS] 2026/06/08 - 10:40:53 | channel test bad response: channel_id=51 name=https://aiapi1.cc.cd type=1 model=gpt-5.3-codex endpoint_type= status=401 err=bad response status code 401, message: Invalid token (request id: 202606080240542249335408268d9d6h2wTarIe), body: {"error":{"code":"","message":"Invalid token (request id: 202606080240542249335408268d9d6h2wTarIe)","type":"new_api_error"}} 
+[GIN] 2026/06/08 - 10:40:53 | api | 202606080240533786837008268d9d6fOYBzS3a | 200 |    218.5298ms |       127.0.0.1 |     GET /api/channel/test/51?model=gpt-5.3-codex
+[SYS] 2026/06/08 - 10:40:57 | 任务进度轮询开始 
+[SYS] 2026/06/08 - 10:40:57 | 任务进度轮询完成 
+[GIN] 2026/06/08 - 10:40:58 | api | 202606080240589978956008268d9d69OqQRj7V | 200 |       1.202ms |       127.0.0.1 |     GET /api/channel/51
+[GIN] 2026/06/08 - 10:40:58 | api | 202606080240589978956008268d9d6QMdpf8fk | 200 |      2.0023ms |       127.0.0.1 |     GET /api/channel/models
+[GIN] 2026/06/08 - 10:40:59 | api | 202606080240591005566008268d9d6Q96VUpxz | 200 |      1.0617ms |       127.0.0.1 |     GET /api/prefill_group/?type=model
+[GIN] 2026/06/08 - 10:41:01 | api | 202606080241016893786008268d9d6ICjRAq3g | 200 |    214.7539ms |       127.0.0.1 |     GET /api/channel/fetch_models/51
+[GIN] 2026/06/08 - 10:41:03 | api | 202606080241031812204008268d9d6b9zNDleW | 200 |    433.8265ms |       127.0.0.1 |     GET /api/channel/fetch_models/51
