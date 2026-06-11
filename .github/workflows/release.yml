@@ -258,4 +258,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ needs.prepare_release.outputs.version }}
-        run: gh workflow run docker-build.yml --ref "$GITHUB_REF_NAME" -f tag="$VERSION"
+        run: gh workflow run docker-build.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" -f tag="$VERSION"
