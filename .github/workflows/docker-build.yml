@@ -31,9 +31,6 @@ jobs:
             platform: linux/arm64
             runner: ubuntu-24.04-arm
     runs-on: ${{ matrix.runner }}
-    outputs:
-      tag: ${{ steps.version.outputs.tag }}
-      push_latest: ${{ steps.version.outputs.push_latest }}
 
     permissions:
       packages: write
@@ -73,8 +70,6 @@ jobs:
           fi
           echo "TAG=${TAG}" >> $GITHUB_ENV
           echo "PUSH_LATEST=${PUSH_LATEST}" >> $GITHUB_ENV
-          echo "tag=${TAG}" >> $GITHUB_OUTPUT
-          echo "push_latest=${PUSH_LATEST}" >> $GITHUB_OUTPUT
           echo "${TAG}" > VERSION
           echo "Building tag: ${TAG} for ${{ matrix.arch }}"
           echo "Push latest: ${PUSH_LATEST}"
@@ -145,13 +140,30 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
 
     steps:
-      - name: Set version
+      - name: Resolve tag independently
+        env:
+          INPUT_TAG: ${{ github.event.inputs.tag }}
         run: |
+          git init tmp && cd tmp && git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git" && git fetch --tags --force origin
+          if [ -n "$INPUT_TAG" ]; then
+            TAG="$INPUT_TAG"
+          else
+            TAG=${GITHUB_REF#refs/tags/}
+          fi
+          LATEST_TAG=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1 || true)
+          PUSH_LATEST=false
+          if [ "$TAG" = "$LATEST_TAG" ]; then
+            PUSH_LATEST=true
+          fi
           IMAGE="ghcr.io/${GITHUB_REPOSITORY_OWNER}/new-api-lite"
           IMAGE="$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')"
-          echo "TAG=${{ needs.build_single_arch.outputs.tag }}" >> $GITHUB_ENV
-          echo "PUSH_LATEST=${{ needs.build_single_arch.outputs.push_latest }}" >> $GITHUB_ENV
+          echo "TAG=${TAG}" >> $GITHUB_ENV
+          echo "PUSH_LATEST=${PUSH_LATEST}" >> $GITHUB_ENV
           echo "IMAGE=${IMAGE}" >> $GITHUB_ENV
+          echo "Tag: ${TAG}, Push latest: ${PUSH_LATEST}, Image: ${IMAGE}"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
