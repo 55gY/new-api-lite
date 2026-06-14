@@ -644,6 +644,19 @@ func shouldUseStreamForAutomaticChannelTest(channel *model.Channel) bool {
 	return channel != nil && channel.Type == constant.ChannelTypeCodex
 }
 
+func autoDisableChannelIfAllModelsUnavailable(channel *model.Channel, testedModel string, testError string) {
+	if channel == nil || !channel.GetAutoBan() {
+		return
+	}
+	reason := fmt.Sprintf("all channel models are unavailable after testing model %s", testedModel)
+	if strings.TrimSpace(testError) != "" {
+		reason = fmt.Sprintf("%s: %s", reason, testError)
+	}
+	if _, err := model.AutoDisableChannelIfAllModelsUnavailable(channel.Id, reason); err != nil {
+		common.SysError(fmt.Sprintf("auto disable channel by model availability failed: channel_id=%d, error=%v", channel.Id, err))
+	}
+}
+
 func detectErrorMessageFromJSONBytes(jsonBytes []byte) string {
 	if len(jsonBytes) == 0 {
 		return ""
@@ -841,6 +854,7 @@ func TestChannel(c *gin.Context) {
 	}
 	if result.localErr != nil {
 		_ = model.UpdateAbilityTestResultAndStatus(channel.Id, testedModel, model.AbilityTestStatusUnavailable, 0, result.localErr.Error(), "", common.ChannelStatusAutoDisabled)
+		autoDisableChannelIfAllModelsUnavailable(channel, testedModel, result.localErr.Error())
 		resp := gin.H{
 			"success": false,
 			"message": result.localErr.Error(),
@@ -858,6 +872,7 @@ func TestChannel(c *gin.Context) {
 	consumedTime := float64(milliseconds) / 1000.0
 	if result.newAPIError != nil {
 		_ = model.UpdateAbilityTestResultAndStatus(channel.Id, testedModel, model.AbilityTestStatusUnavailable, int(milliseconds), result.newAPIError.Error(), "", common.ChannelStatusAutoDisabled)
+		autoDisableChannelIfAllModelsUnavailable(channel, testedModel, result.newAPIError.Error())
 		c.JSON(http.StatusOK, gin.H{
 			"success":    false,
 			"message":    result.newAPIError.Error(),
@@ -921,9 +936,18 @@ func testAllChannels(notify bool) error {
 				testableModels = append(testableModels, ability.Model)
 			}
 			if len(testableModels) == 0 {
+				allAbilities, err := model.GetChannelAbilities(channel.Id)
+				if err != nil {
+					common.SysError(fmt.Sprintf("get channel abilities failed: channel_id=%d, error=%v", channel.Id, err))
+					continue
+				}
+				if len(allAbilities) > 0 {
+					continue
+				}
 				testableModels = channel.GetModels()
 			}
 			maxMilliseconds := int64(0)
+			lastUnavailableReason := ""
 			for _, testModel := range testableModels {
 				testModel = strings.TrimSpace(testModel)
 				if testModel == "" {
@@ -942,11 +966,14 @@ func testAllChannels(notify bool) error {
 				}
 				if result.localErr != nil {
 					_ = model.UpdateAbilityTestResultAndStatus(channel.Id, testedModel, model.AbilityTestStatusUnavailable, int(milliseconds), result.localErr.Error(), "", common.ChannelStatusAutoDisabled)
+					lastUnavailableReason = result.localErr.Error()
 				} else if result.newAPIError != nil {
 					_ = model.UpdateAbilityTestResultAndStatus(channel.Id, testedModel, model.AbilityTestStatusUnavailable, int(milliseconds), result.newAPIError.Error(), "", common.ChannelStatusAutoDisabled)
+					lastUnavailableReason = result.newAPIError.Error()
 				} else if common.AutomaticDisableChannelEnabled && milliseconds > disableThreshold {
 					err := fmt.Errorf("响应时间 %.2fs 超过阈值 %.2fs", float64(milliseconds)/1000.0, float64(disableThreshold)/1000.0)
 					_ = model.UpdateAbilityTestResultAndStatus(channel.Id, testedModel, model.AbilityTestStatusUnavailable, int(milliseconds), err.Error(), result.responseText, common.ChannelStatusAutoDisabled)
+					lastUnavailableReason = err.Error()
 				} else {
 					_ = model.UpdateAbilityTestResultAndStatus(channel.Id, testedModel, model.AbilityTestStatusAvailable, int(milliseconds), "", result.responseText, common.ChannelStatusEnabled)
 				}
@@ -955,6 +982,9 @@ func testAllChannels(notify bool) error {
 			}
 			if maxMilliseconds > 0 {
 				channel.UpdateResponseTime(maxMilliseconds)
+			}
+			if lastUnavailableReason != "" {
+				autoDisableChannelIfAllModelsUnavailable(channel, channel.Name, lastUnavailableReason)
 			}
 		}
 

@@ -152,6 +152,62 @@ func UpdateAbilityTestResultAndStatus(channelId int, modelName string, testStatu
 	return DB.Model(&Ability{}).Where("channel_id = ? AND model = ?", channelId, modelName).Updates(updates).Error
 }
 
+func IsChannelAllModelsUnavailable(channelId int) (bool, error) {
+	if channelId <= 0 {
+		return false, nil
+	}
+	abilities, err := GetChannelAbilities(channelId)
+	if err != nil {
+		return false, err
+	}
+	modelUnavailable := make(map[string]bool, len(abilities))
+	for _, ability := range abilities {
+		modelName := strings.TrimSpace(ability.Model)
+		if modelName == "" {
+			continue
+		}
+		unavailable := ability.Status != common.ChannelStatusEnabled || ability.TestStatus == AbilityTestStatusUnavailable
+		if current, ok := modelUnavailable[modelName]; ok {
+			modelUnavailable[modelName] = current && unavailable
+			continue
+		}
+		modelUnavailable[modelName] = unavailable
+	}
+	if len(modelUnavailable) == 0 {
+		return false, nil
+	}
+	for _, unavailable := range modelUnavailable {
+		if !unavailable {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+func AutoDisableChannelIfAllModelsUnavailable(channelId int, reason string) (bool, error) {
+	if channelId <= 0 || !common.AutomaticDisableChannelEnabled {
+		return false, nil
+	}
+	var channel Channel
+	if err := DB.Select("status").First(&channel, "id = ?", channelId).Error; err != nil {
+		return false, err
+	}
+	if channel.Status == common.ChannelStatusManuallyDisabled || channel.Status == common.ChannelStatusAutoDisabled {
+		return false, nil
+	}
+	allUnavailable, err := IsChannelAllModelsUnavailable(channelId)
+	if err != nil {
+		return false, err
+	}
+	if !allUnavailable {
+		return false, nil
+	}
+	if strings.TrimSpace(reason) == "" {
+		reason = "All channel models are unavailable"
+	}
+	return UpdateChannelStatus(channelId, "", common.ChannelStatusAutoDisabled, reason), nil
+}
+
 func GetChannelAbilities(channelId int) ([]Ability, error) {
 	var abilities []Ability
 	err := DB.Where("channel_id = ?", channelId).Order(commonGroupCol + " asc").Order("model asc").Find(&abilities).Error
