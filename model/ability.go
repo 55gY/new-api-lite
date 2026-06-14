@@ -184,6 +184,26 @@ func IsChannelAllModelsUnavailable(channelId int) (bool, error) {
 	return true, nil
 }
 
+func IsChannelAnyModelAvailable(channelId int) (bool, error) {
+	if channelId <= 0 {
+		return false, nil
+	}
+	abilities, err := GetChannelAbilities(channelId)
+	if err != nil {
+		return false, err
+	}
+	for _, ability := range abilities {
+		modelName := strings.TrimSpace(ability.Model)
+		if modelName == "" {
+			continue
+		}
+		if ability.Status == common.ChannelStatusEnabled && ability.TestStatus == AbilityTestStatusAvailable {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func AutoDisableChannelIfAllModelsUnavailable(channelId int, reason string) (bool, error) {
 	if channelId <= 0 || !common.AutomaticDisableChannelEnabled {
 		return false, nil
@@ -206,6 +226,30 @@ func AutoDisableChannelIfAllModelsUnavailable(channelId int, reason string) (boo
 		reason = "All channel models are unavailable"
 	}
 	return UpdateChannelStatus(channelId, "", common.ChannelStatusAutoDisabled, reason), nil
+}
+
+func AutoEnableChannelIfAnyModelAvailable(channelId int, reason string) (bool, error) {
+	if channelId <= 0 || !common.AutomaticDisableChannelEnabled {
+		return false, nil
+	}
+	var channel Channel
+	if err := DB.Select("status").First(&channel, "id = ?", channelId).Error; err != nil {
+		return false, err
+	}
+	if channel.Status != common.ChannelStatusAutoDisabled {
+		return false, nil
+	}
+	anyAvailable, err := IsChannelAnyModelAvailable(channelId)
+	if err != nil {
+		return false, err
+	}
+	if !anyAvailable {
+		return false, nil
+	}
+	if strings.TrimSpace(reason) == "" {
+		reason = "At least one channel model is available"
+	}
+	return UpdateChannelStatus(channelId, "", common.ChannelStatusEnabled, reason), nil
 }
 
 func GetChannelAbilities(channelId int) ([]Ability, error) {

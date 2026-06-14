@@ -657,6 +657,16 @@ func autoDisableChannelIfAllModelsUnavailable(channel *model.Channel, testedMode
 	}
 }
 
+func autoEnableChannelIfAnyModelAvailable(channel *model.Channel, testedModel string) {
+	if channel == nil || !channel.GetAutoBan() {
+		return
+	}
+	reason := fmt.Sprintf("channel model %s is available after testing", testedModel)
+	if _, err := model.AutoEnableChannelIfAnyModelAvailable(channel.Id, reason); err != nil {
+		common.SysError(fmt.Sprintf("auto enable channel by model availability failed: channel_id=%d, error=%v", channel.Id, err))
+	}
+}
+
 func detectErrorMessageFromJSONBytes(jsonBytes []byte) string {
 	if len(jsonBytes) == 0 {
 		return ""
@@ -882,6 +892,7 @@ func TestChannel(c *gin.Context) {
 		return
 	}
 	_ = model.UpdateAbilityTestResultAndStatus(channel.Id, testedModel, model.AbilityTestStatusAvailable, int(milliseconds), "", result.responseText, common.ChannelStatusEnabled)
+	autoEnableChannelIfAnyModelAvailable(channel, testedModel)
 	c.JSON(http.StatusOK, gin.H{
 		"success":  true,
 		"message":  "",
@@ -976,6 +987,7 @@ func testAllChannels(notify bool) error {
 					lastUnavailableReason = err.Error()
 				} else {
 					_ = model.UpdateAbilityTestResultAndStatus(channel.Id, testedModel, model.AbilityTestStatusAvailable, int(milliseconds), "", result.responseText, common.ChannelStatusEnabled)
+					autoEnableChannelIfAnyModelAvailable(channel, testedModel)
 				}
 
 				time.Sleep(common.RequestInterval)
