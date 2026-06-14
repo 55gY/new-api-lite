@@ -28,11 +28,48 @@ import {
   Select,
   Switch,
   Banner,
+  Tooltip,
 } from '@douyinfe/semi-ui';
 import { IconSearch, IconInfoCircle } from '@douyinfe/semi-icons';
 import { Settings } from 'lucide-react';
-import { copy, showError, showInfo, showSuccess } from '../../../../helpers';
+import { API, copy, showError, showInfo, showSuccess } from '../../../../helpers';
 import { MODEL_TABLE_PAGE_SIZE } from '../../../../constants';
+
+const MODEL_TEST_STATUS = {
+  untested: 0,
+  available: 1,
+  unavailable: 2,
+};
+
+const MODEL_STATUS = {
+  enabled: 1,
+  disabled: 2,
+  autoDisabled: 3,
+};
+
+const getModelStatusText = (status, t) => {
+  if (status === MODEL_STATUS.disabled) return t('已禁用');
+  if (status === MODEL_STATUS.autoDisabled) return t('自动禁用');
+  return t('已启用');
+};
+
+const getModelStatusColor = (status) => {
+  if (status === MODEL_STATUS.disabled) return 'red';
+  if (status === MODEL_STATUS.autoDisabled) return 'orange';
+  return 'green';
+};
+
+const getModelTestStatusText = (status, t) => {
+  if (status === MODEL_TEST_STATUS.available) return t('可用');
+  if (status === MODEL_TEST_STATUS.unavailable) return t('不可用');
+  return t('未测试');
+};
+
+const getModelTestStatusColor = (status) => {
+  if (status === MODEL_TEST_STATUS.available) return 'green';
+  if (status === MODEL_TEST_STATUS.unavailable) return 'red';
+  return 'grey';
+};
 
 const ModelTestModal = ({
   showModelTestModal,
@@ -58,6 +95,9 @@ const ModelTestModal = ({
   t,
 }) => {
   const hasChannel = Boolean(currentTestChannel);
+  const [abilities, setAbilities] = React.useState([]);
+  const [abilitiesLoading, setAbilitiesLoading] = React.useState(false);
+  const [updatingStatusKeys, setUpdatingStatusKeys] = React.useState(new Set());
   const streamToggleDisabled = [
     'embeddings',
     'image-generation',
@@ -71,13 +111,125 @@ const ModelTestModal = ({
     }
   }, [streamToggleDisabled, isStreamTest, setIsStreamTest]);
 
-  const filteredModels = hasChannel
+  const fetchAbilities = React.useCallback(async () => {
+    if (!showModelTestModal || !currentTestChannel?.id) {
+      setAbilities([]);
+      return;
+    }
+    setAbilitiesLoading(true);
+    try {
+      const res = await API.get(`/api/channel/${currentTestChannel.id}/abilities`);
+      const { success, message, data } = res.data;
+      if (!success) {
+        showError(message);
+        return;
+      }
+      setAbilities(Array.isArray(data) ? data : []);
+    } catch (error) {
+      showError(error.message || t('获取模型状态失败'));
+    } finally {
+      setAbilitiesLoading(false);
+    }
+  }, [currentTestChannel?.id, showModelTestModal, t]);
+
+  React.useEffect(() => {
+    fetchAbilities();
+  }, [fetchAbilities]);
+
+  const abilityByModel = React.useMemo(() => {
+    const map = new Map();
+    abilities.forEach((ability) => {
+      if (ability?.model) {
+        map.set(ability.model, ability);
+      }
+    });
+    return map;
+  }, [abilities]);
+
+  const channelModels = hasChannel && currentTestChannel.models
     ? currentTestChannel.models
         .split(',')
+        .map((model) => model.trim())
+        .filter(Boolean)
+    : [];
+
+  const filteredModels = channelModels
         .filter((model) =>
           model.toLowerCase().includes(modelSearchKeyword.toLowerCase()),
-        )
-    : [];
+        );
+
+  const renderModelStatus = (status) => (
+    <Tag color={getModelStatusColor(status)} shape='circle'>
+      {getModelStatusText(status, t)}
+    </Tag>
+  );
+
+  const renderPersistedTestStatus = (record) => {
+    const statusText = getModelTestStatusText(record.testStatus, t);
+    const lines = [statusText];
+    if (record.testTime) {
+      lines.push(`${t('测试时间')}：${new Date(record.testTime * 1000).toLocaleString()}`);
+    }
+    if (record.responseTime) {
+      lines.push(
+        `${t('请求时长: ${time}s').replace('${time}', (record.responseTime / 1000).toFixed(2))}`,
+      );
+    }
+    if (record.testError) {
+      lines.push(`${t('错误信息')}：${record.testError}`);
+    }
+    if (record.testResponse) {
+      lines.push(`${t('返回信息')}：${record.testResponse}`);
+    }
+    return (
+      <Tooltip content={<pre className='whitespace-pre-wrap mb-0'>{lines.join('\n')}</pre>}>
+        <Tag color={getModelTestStatusColor(record.testStatus)} shape='circle'>
+          {statusText}
+        </Tag>
+      </Tooltip>
+    );
+  };
+
+  const updateModelStatus = async (record, status) => {
+    const statusKey = `${currentTestChannel.id}-${record.model}`;
+    setUpdatingStatusKeys((prev) => new Set([...prev, statusKey]));
+    try {
+      const res = await API.put(`/api/channel/${currentTestChannel.id}/abilities`, {
+        model: record.model,
+        status,
+      });
+      const { success, message } = res.data;
+      if (!success) {
+        showError(message);
+        return;
+      }
+      showSuccess(t('操作成功'));
+      await fetchAbilities();
+    } catch (error) {
+      showError(error.message || t('操作失败'));
+    } finally {
+      setUpdatingStatusKeys((prev) => {
+        const next = new Set(prev);
+        next.delete(statusKey);
+        return next;
+      });
+    }
+  };
+
+  const runModelTest = async (record) => {
+    await testChannel(
+      currentTestChannel,
+      record.model,
+      selectedEndpointType,
+      isStreamTest,
+    );
+    await fetchAbilities();
+  };
+
+  const runBatchTestModels = async () => {
+    await batchTestModels();
+    await fetchAbilities();
+  };
 
   const endpointTypeOptions = [
     { value: '', label: t('自动检测') },
@@ -121,8 +273,7 @@ const ModelTestModal = ({
 
   const handleSelectSuccess = () => {
     if (!currentTestChannel) return;
-    const successKeys = currentTestChannel.models
-      .split(',')
+    const successKeys = channelModels
       .filter((m) => m.toLowerCase().includes(modelSearchKeyword.toLowerCase()))
       .filter((m) => {
         const result = modelTestResults[`${currentTestChannel.id}-${m}`];
@@ -145,8 +296,14 @@ const ModelTestModal = ({
       ),
     },
     {
-      title: t('状态'),
-      dataIndex: 'status',
+      title: t('模型状态'),
+      dataIndex: 'modelStatus',
+      width: 120,
+      render: renderModelStatus,
+    },
+    {
+      title: t('测试状态'),
+      dataIndex: 'testStatus',
       render: (text, record) => {
         const testResult =
           modelTestResults[`${currentTestChannel.id}-${record.model}`];
@@ -161,11 +318,7 @@ const ModelTestModal = ({
         }
 
         if (!testResult) {
-          return (
-            <Tag color='grey' shape='circle'>
-              {t('未开始')}
-            </Tag>
-          );
+          return renderPersistedTestStatus(record);
         }
 
         return (
@@ -226,22 +379,30 @@ const ModelTestModal = ({
       dataIndex: 'operate',
       render: (text, record) => {
         const isTesting = testingModels.has(record.model);
+        const statusKey = `${currentTestChannel.id}-${record.model}`;
+        const nextStatus =
+          record.modelStatus !== MODEL_STATUS.enabled
+            ? MODEL_STATUS.enabled
+            : MODEL_STATUS.disabled;
         return (
-          <Button
-            type='tertiary'
-            onClick={() =>
-              testChannel(
-                currentTestChannel,
-                record.model,
-                selectedEndpointType,
-                isStreamTest,
-              )
-            }
-            loading={isTesting}
-            size='small'
-          >
-            {t('测试')}
-          </Button>
+          <div className='flex items-center gap-2'>
+            <Button
+              type='tertiary'
+              onClick={() => updateModelStatus(record, nextStatus)}
+              loading={updatingStatusKeys.has(statusKey)}
+              size='small'
+            >
+              {nextStatus === MODEL_STATUS.enabled ? t('启用') : t('禁用')}
+            </Button>
+            <Button
+              type='tertiary'
+              onClick={() => runModelTest(record)}
+              loading={isTesting}
+              size='small'
+            >
+              {t('测试')}
+            </Button>
+          </div>
         );
       },
     },
@@ -251,10 +412,19 @@ const ModelTestModal = ({
     if (!hasChannel) return [];
     const start = (modelTablePage - 1) * MODEL_TABLE_PAGE_SIZE;
     const end = start + MODEL_TABLE_PAGE_SIZE;
-    return filteredModels.slice(start, end).map((model) => ({
-      model,
-      key: model,
-    }));
+    return filteredModels.slice(start, end).map((model) => {
+      const ability = abilityByModel.get(model) || {};
+      return {
+        model,
+        key: model,
+        modelStatus: ability.status ?? MODEL_STATUS.enabled,
+        testStatus: ability.test_status ?? MODEL_TEST_STATUS.untested,
+        testTime: ability.test_time ?? 0,
+        responseTime: ability.response_time ?? 0,
+        testError: ability.test_error || '',
+        testResponse: ability.test_response || '',
+      };
+    });
   })();
 
   return (
@@ -270,7 +440,7 @@ const ModelTestModal = ({
                 {currentTestChannel.name} {t('渠道的模型测试')}
               </Typography.Text>
               <Typography.Text type='tertiary' size='small'>
-                {t('共')} {currentTestChannel.models.split(',').length}{' '}
+                {t('共')} {channelModels.length}{' '}
                 {t('个模型')}
               </Typography.Text>
             </div>
@@ -292,9 +462,9 @@ const ModelTestModal = ({
               </Button>
             )}
             <Button
-              onClick={batchTestModels}
+              onClick={runBatchTestModels}
               loading={isBatchTesting}
-              disabled={isBatchTesting}
+              disabled={isBatchTesting || abilitiesLoading}
             >
               {isBatchTesting
                 ? t('测试中...')
@@ -346,7 +516,7 @@ const ModelTestModal = ({
             icon={<IconInfoCircle />}
             className='!rounded-lg mb-2'
             description={t(
-              '说明：本页测试为非流式请求；若渠道仅支持流式返回，可能出现测试失败，请以实际使用为准。',
+              '说明：本页可切换流式测试；若渠道仅支持特定返回方式，可能出现测试失败，请以实际使用为准。',
             )}
           />
 
@@ -375,6 +545,7 @@ const ModelTestModal = ({
           <Table
             columns={columns}
             dataSource={dataSource}
+            loading={abilitiesLoading}
             rowSelection={{
               selectedRowKeys: selectedModelKeys,
               onChange: (keys) => {

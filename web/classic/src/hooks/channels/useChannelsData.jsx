@@ -618,13 +618,14 @@ export const useChannelsData = () => {
     setTestingModels((prev) => new Set([...prev, model]));
 
     try {
-      let url = `/api/channel/test/${record.id}?model=${model}`;
+      const params = new URLSearchParams({ model });
       if (endpointType) {
-        url += `&endpoint_type=${endpointType}`;
+        params.set('endpoint_type', endpointType);
       }
       if (stream) {
-        url += `&stream=true`;
+        params.set('stream', 'true');
       }
+      const url = `/api/channel/test/${record.id}?${params.toString()}`;
       const res = await API.get(url);
 
       // 检查是否在请求期间被停止

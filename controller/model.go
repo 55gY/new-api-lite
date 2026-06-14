@@ -168,6 +168,7 @@ type enabledModelChannelInfo struct {
 	Name         string `json:"name"`
 	Type         int    `json:"type"`
 	TypeName     string `json:"type_name"`
+	Status       int    `json:"status"`
 	TestStatus   int    `json:"test_status"`
 	TestTime     int64  `json:"test_time"`
 	ResponseTime int    `json:"response_time"`
@@ -180,6 +181,7 @@ type enabledModelMappingInfo struct {
 	ChannelName  string `json:"channel_name"`
 	Source       string `json:"source"`
 	Target       string `json:"target"`
+	Status       int    `json:"status"`
 	TestStatus   int    `json:"test_status"`
 	TestTime     int64  `json:"test_time"`
 	ResponseTime int    `json:"response_time"`
@@ -322,7 +324,7 @@ func parseChannelModelMapping(modelMapping *string) map[string]string {
 }
 
 func EnabledListModelDetails(c *gin.Context) {
-	enabledChannels, err := model.GetEnabledModelChannels()
+	enabledChannels, err := model.GetModelChannels()
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -360,6 +362,7 @@ func EnabledListModelDetails(c *gin.Context) {
 				Name:         item.ChannelName,
 				Type:         item.ChannelType,
 				TypeName:     constant.GetChannelTypeName(item.ChannelType),
+				Status:       model.NormalizeAbilityStatus(item.Status, item.Enabled),
 				TestStatus:   item.TestStatus,
 				TestTime:     item.TestTime,
 				ResponseTime: item.ResponseTime,
@@ -384,6 +387,7 @@ func EnabledListModelDetails(c *gin.Context) {
 				ChannelName:  item.ChannelName,
 				Source:       source,
 				Target:       target,
+				Status:       model.NormalizeAbilityStatus(item.Status, item.Enabled),
 				TestStatus:   item.TestStatus,
 				TestTime:     item.TestTime,
 				ResponseTime: item.ResponseTime,

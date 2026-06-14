@@ -91,6 +91,24 @@ const MODEL_TEST_STATUS = {
   unavailable: 2,
 };
 
+const MODEL_STATUS = {
+  enabled: 1,
+  disabled: 2,
+  autoDisabled: 3,
+};
+
+const getModelStatusText = (status, t) => {
+  if (status === MODEL_STATUS.disabled) return t('已禁用');
+  if (status === MODEL_STATUS.autoDisabled) return t('自动禁用');
+  return t('已启用');
+};
+
+const getModelStatusColor = (status) => {
+  if (status === MODEL_STATUS.disabled) return 'red';
+  if (status === MODEL_STATUS.autoDisabled) return 'orange';
+  return 'green';
+};
+
 const getModelTestStatusText = (status, t) => {
   if (status === MODEL_TEST_STATUS.available) return t('可用');
   if (status === MODEL_TEST_STATUS.unavailable) return t('不可用');
@@ -135,6 +153,7 @@ const getTestItems = (record) => {
         responseTime: mapping.response_time ?? 0,
         testError: mapping.test_error || '',
         testResponse: mapping.test_response || '',
+        status: mapping.status ?? MODEL_STATUS.enabled,
       };
     });
   }
@@ -153,6 +172,7 @@ const getTestItems = (record) => {
     responseTime: channel.response_time ?? 0,
     testError: channel.test_error || '',
     testResponse: channel.test_response || '',
+    status: channel.status ?? MODEL_STATUS.enabled,
   }));
 };
 
@@ -175,6 +195,7 @@ const Models = () => {
   const [isBatchTesting, setIsBatchTesting] = useState(false);
   const [modelTestResults, setModelTestResults] = useState({});
   const [testingItemKeys, setTestingItemKeys] = useState(new Set());
+  const [updatingStatusKeys, setUpdatingStatusKeys] = useState(new Set());
   const allSelectingRef = useRef(false);
   const batchTestingRef = useRef(false);
 
@@ -292,6 +313,7 @@ const Models = () => {
         responseTime: channel.response_time ?? 0,
         testError: channel.test_error || '',
         testResponse: channel.test_response || '',
+        status: channel.status ?? MODEL_STATUS.enabled,
       };
     });
 
@@ -309,6 +331,7 @@ const Models = () => {
         responseTime: mapping.response_time ?? 0,
         testError: mapping.test_error || '',
         testResponse: mapping.test_response || '',
+        status: mapping.status ?? MODEL_STATUS.enabled,
       }));
 
     return [...channelRows, ...orphanMappingRows];
@@ -378,6 +401,32 @@ const Models = () => {
       showError(error.message || t('保存失败'));
     } finally {
       setSavingMappingKeys((prev) => {
+        const next = new Set(prev);
+        next.delete(inputKey);
+        return next;
+      });
+    }
+  };
+
+  const updateModelStatus = async (row, status) => {
+    const inputKey = getMappingInputKey(row);
+    setUpdatingStatusKeys((prev) => new Set([...prev, inputKey]));
+    try {
+      const res = await API.put(`/api/channel/${row.channelId}/abilities`, {
+        model: row.sourceModel,
+        status,
+      });
+      const { success, message } = res.data;
+      if (!success) {
+        showError(message);
+        return;
+      }
+      showSuccess(t('操作成功'));
+      await fetchModels();
+    } catch (error) {
+      showError(error.message || t('操作失败'));
+    } finally {
+      setUpdatingStatusKeys((prev) => {
         const next = new Set(prev);
         next.delete(inputKey);
         return next;
@@ -469,6 +518,7 @@ const Models = () => {
         next.delete(testKey);
         return next;
       });
+      await fetchModels();
     }
   };
 
@@ -630,6 +680,12 @@ const Models = () => {
     );
   };
 
+  const renderModelStatus = (status) => (
+    <Tag color={getModelStatusColor(status)} shape='circle'>
+      {getModelStatusText(status, t)}
+    </Tag>
+  );
+
   const renderEditTable = (record) => {
     const editRows = getEditRows(record);
     if (editRows.length === 0) {
@@ -666,7 +722,13 @@ const Models = () => {
               ),
             },
             {
-              title: t('状态'),
+              title: t('模型状态'),
+              dataIndex: 'status',
+              width: 120,
+              render: renderModelStatus,
+            },
+            {
+              title: t('测试状态'),
               dataIndex: 'testStatus',
               width: 120,
               render: (_, row) => renderPersistedTestStatus(row),
@@ -674,18 +736,31 @@ const Models = () => {
             {
               title: '',
               dataIndex: 'operate',
-              width: 120,
+              width: 220,
               render: (_, row) => {
                 const inputKey = getMappingInputKey(row);
+                const nextStatus = row.status === MODEL_STATUS.disabled
+                  ? MODEL_STATUS.enabled
+                  : MODEL_STATUS.disabled;
                 return (
-                  <Button
-                    size='small'
-                    type='primary'
-                    loading={savingMappingKeys.has(inputKey)}
-                    onClick={() => saveMapping(row)}
-                  >
-                    {t('保存映射')}
-                  </Button>
+                  <div className='flex items-center gap-2'>
+                    <Button
+                      size='small'
+                      type='tertiary'
+                      loading={updatingStatusKeys.has(inputKey)}
+                      onClick={() => updateModelStatus(row, nextStatus)}
+                    >
+                      {nextStatus === MODEL_STATUS.enabled ? t('启用') : t('禁用')}
+                    </Button>
+                    <Button
+                      size='small'
+                      type='primary'
+                      loading={savingMappingKeys.has(inputKey)}
+                      onClick={() => saveMapping(row)}
+                    >
+                      {t('保存映射')}
+                    </Button>
+                  </div>
                 );
               },
             },
@@ -1070,8 +1145,13 @@ const Models = () => {
                   render: (channelName, item) => `${channelName} (#${item.channelId})`,
                 },
                 {
-                  title: t('状态'),
-                  dataIndex: 'status',
+                  title: t('模型状态'),
+                  dataIndex: 'modelStatus',
+                  render: (_, item) => renderModelStatus(item.status),
+                },
+                {
+                  title: t('测试状态'),
+                  dataIndex: 'testStatus',
                   render: (_, item) => renderTestStatus(item),
                 },
                 {

@@ -26,6 +26,7 @@ type Ability struct {
 	Group        string `json:"group" gorm:"type:varchar(64);primaryKey;autoIncrement:false"`
 	Model        string `json:"model" gorm:"type:varchar(255);primaryKey;autoIncrement:false"`
 	ChannelId    int    `json:"channel_id" gorm:"primaryKey;autoIncrement:false;index"`
+	Status       int    `json:"status" gorm:"default:1"`
 	Enabled      bool   `json:"enabled"`
 	Priority     *int64 `json:"priority" gorm:"bigint;default:0;index"`
 	Weight       uint   `json:"weight" gorm:"default:0;index"`
@@ -34,6 +35,21 @@ type Ability struct {
 	ResponseTime int    `json:"response_time" gorm:"default:0"`
 	TestError    string `json:"test_error" gorm:"type:text"`
 	TestResponse string `json:"test_response" gorm:"type:text"`
+}
+
+func NormalizeAbilityStatus(status int, enabled bool) int {
+	switch status {
+	case common.ChannelStatusEnabled, common.ChannelStatusManuallyDisabled, common.ChannelStatusAutoDisabled:
+		return status
+	}
+	if enabled {
+		return common.ChannelStatusEnabled
+	}
+	return common.ChannelStatusManuallyDisabled
+}
+
+func AbilityEnabledForChannelStatus(abilityStatus int, channelStatus int) bool {
+	return abilityStatus == common.ChannelStatusEnabled && channelStatus == common.ChannelStatusEnabled
 }
 
 type AbilityWithChannel struct {
@@ -47,6 +63,8 @@ type EnabledModelChannel struct {
 	ChannelName  string  `json:"channel_name"`
 	ChannelType  int     `json:"channel_type"`
 	ModelMapping *string `json:"model_mapping"`
+	Status       int     `json:"status"`
+	Enabled      bool    `json:"enabled"`
 	TestStatus   int     `json:"test_status"`
 	TestTime     int64   `json:"test_time"`
 	ResponseTime int     `json:"response_time"`
@@ -64,10 +82,20 @@ func GetAllEnableAbilityWithChannels() ([]AbilityWithChannel, error) {
 	return abilities, err
 }
 
+func GetModelChannels() ([]EnabledModelChannel, error) {
+	var channels []EnabledModelChannel
+	err := DB.Table("abilities").
+		Select("abilities.model, channels.id as channel_id, channels.name as channel_name, channels.type as channel_type, channels.model_mapping, abilities.status, abilities.enabled, abilities.test_status, abilities.test_time, abilities.response_time, abilities.test_error, abilities.test_response").
+		Joins("left join channels on abilities.channel_id = channels.id").
+		Where("channels.status != ?", common.ChannelStatusManuallyDisabled).
+		Scan(&channels).Error
+	return channels, err
+}
+
 func GetEnabledModelChannels() ([]EnabledModelChannel, error) {
 	var channels []EnabledModelChannel
 	err := DB.Table("abilities").
-		Select("abilities.model, channels.id as channel_id, channels.name as channel_name, channels.type as channel_type, channels.model_mapping, abilities.test_status, abilities.test_time, abilities.response_time, abilities.test_error, abilities.test_response").
+		Select("abilities.model, channels.id as channel_id, channels.name as channel_name, channels.type as channel_type, channels.model_mapping, abilities.status, abilities.enabled, abilities.test_status, abilities.test_time, abilities.response_time, abilities.test_error, abilities.test_response").
 		Joins("left join channels on abilities.channel_id = channels.id").
 		Where("abilities.enabled = ?", true).
 		Scan(&channels).Error
@@ -99,6 +127,85 @@ func UpdateAbilityTestResult(channelId int, modelName string, status int, respon
 		"test_response": truncateAbilityTestText(testResponse),
 	}
 	return DB.Model(&Ability{}).Where("channel_id = ? AND model = ?", channelId, modelName).Updates(updates).Error
+}
+
+func UpdateAbilityTestResultAndStatus(channelId int, modelName string, testStatus int, responseTime int, testError string, testResponse string, abilityStatus int) error {
+	modelName = strings.TrimSpace(modelName)
+	if channelId <= 0 || modelName == "" {
+		return nil
+	}
+	channelStatus := common.ChannelStatusEnabled
+	var channel Channel
+	if err := DB.Select("status").First(&channel, "id = ?", channelId).Error; err == nil {
+		channelStatus = channel.Status
+	}
+	abilityStatus = NormalizeAbilityStatus(abilityStatus, abilityStatus == common.ChannelStatusEnabled)
+	updates := map[string]interface{}{
+		"status":        abilityStatus,
+		"enabled":       AbilityEnabledForChannelStatus(abilityStatus, channelStatus),
+		"test_status":   testStatus,
+		"test_time":     time.Now().Unix(),
+		"response_time": responseTime,
+		"test_error":    truncateAbilityTestText(testError),
+		"test_response": truncateAbilityTestText(testResponse),
+	}
+	return DB.Model(&Ability{}).Where("channel_id = ? AND model = ?", channelId, modelName).Updates(updates).Error
+}
+
+func GetChannelAbilities(channelId int) ([]Ability, error) {
+	var abilities []Ability
+	err := DB.Where("channel_id = ?", channelId).Order(commonGroupCol + " asc").Order("model asc").Find(&abilities).Error
+	for i := range abilities {
+		abilities[i].Status = NormalizeAbilityStatus(abilities[i].Status, abilities[i].Enabled)
+	}
+	return abilities, err
+}
+
+func GetChannelTestableAbilities(channelId int) ([]Ability, error) {
+	abilities, err := GetChannelAbilities(channelId)
+	if err != nil {
+		return nil, err
+	}
+	testable := make([]Ability, 0, len(abilities))
+	seen := make(map[string]struct{}, len(abilities))
+	for _, ability := range abilities {
+		if ability.Status == common.ChannelStatusManuallyDisabled {
+			continue
+		}
+		modelName := strings.TrimSpace(ability.Model)
+		if modelName == "" {
+			continue
+		}
+		if _, ok := seen[modelName]; ok {
+			continue
+		}
+		seen[modelName] = struct{}{}
+		testable = append(testable, ability)
+	}
+	return testable, nil
+}
+
+func UpdateChannelModelStatus(channelId int, modelName string, group string, status int) error {
+	modelName = strings.TrimSpace(modelName)
+	group = strings.TrimSpace(group)
+	if channelId <= 0 || modelName == "" {
+		return nil
+	}
+	status = NormalizeAbilityStatus(status, status == common.ChannelStatusEnabled)
+	channelStatus := common.ChannelStatusEnabled
+	var channel Channel
+	if err := DB.Select("status").First(&channel, "id = ?", channelId).Error; err == nil {
+		channelStatus = channel.Status
+	}
+	updates := map[string]interface{}{
+		"status":  status,
+		"enabled": AbilityEnabledForChannelStatus(status, channelStatus),
+	}
+	query := DB.Model(&Ability{}).Where("channel_id = ? AND model = ?", channelId, modelName)
+	if group != "" {
+		query = query.Where(commonGroupCol+" = ?", group)
+	}
+	return query.Updates(updates).Error
 }
 
 func GetGroupEnabledModels(group string) []string {
@@ -230,6 +337,7 @@ func (channel *Channel) AddAbilities(tx *gorm.DB) error {
 				Group:     group,
 				Model:     model,
 				ChannelId: channel.Id,
+				Status:    common.ChannelStatusEnabled,
 				Enabled:   channel.Status == common.ChannelStatusEnabled,
 				Priority:  channel.Priority,
 				Weight:    uint(channel.GetWeight()),
@@ -276,16 +384,19 @@ func (channel *Channel) UpdateAbilities(tx *gorm.DB) error {
 		}()
 	}
 
-	// First delete all abilities of this channel
-	err := tx.Where("channel_id = ?", channel.Id).Delete(&Ability{}).Error
+	var existingAbilities []Ability
+	err := tx.Where("channel_id = ?", channel.Id).Find(&existingAbilities).Error
 	if err != nil {
 		if isNewTx {
 			tx.Rollback()
 		}
 		return err
 	}
+	existingByKey := make(map[string]Ability, len(existingAbilities))
+	for _, ability := range existingAbilities {
+		existingByKey[ability.Group+"|"+ability.Model] = ability
+	}
 
-	// Then add new abilities
 	models_ := strings.Split(channel.Models, ",")
 	groups_ := strings.Split(channel.Group, ",")
 	abilitySet := make(map[string]struct{})
@@ -297,16 +408,36 @@ func (channel *Channel) UpdateAbilities(tx *gorm.DB) error {
 				continue
 			}
 			abilitySet[key] = struct{}{}
+			abilityStatus := common.ChannelStatusEnabled
 			ability := Ability{
 				Group:     group,
 				Model:     model,
 				ChannelId: channel.Id,
-				Enabled:   channel.Status == common.ChannelStatusEnabled,
+				Status:    abilityStatus,
+				Enabled:   AbilityEnabledForChannelStatus(abilityStatus, channel.Status),
 				Priority:  channel.Priority,
 				Weight:    uint(channel.GetWeight()),
 			}
+			if existing, ok := existingByKey[key]; ok {
+				abilityStatus = NormalizeAbilityStatus(existing.Status, existing.Enabled)
+				ability.Status = abilityStatus
+				ability.Enabled = AbilityEnabledForChannelStatus(abilityStatus, channel.Status)
+				ability.TestStatus = existing.TestStatus
+				ability.TestTime = existing.TestTime
+				ability.ResponseTime = existing.ResponseTime
+				ability.TestError = existing.TestError
+				ability.TestResponse = existing.TestResponse
+			}
 			abilities = append(abilities, ability)
 		}
+	}
+
+	err = tx.Where("channel_id = ?", channel.Id).Delete(&Ability{}).Error
+	if err != nil {
+		if isNewTx {
+			tx.Rollback()
+		}
+		return err
 	}
 
 	if len(abilities) > 0 {
@@ -330,7 +461,12 @@ func (channel *Channel) UpdateAbilities(tx *gorm.DB) error {
 }
 
 func UpdateAbilityStatus(channelId int, status bool) error {
-	return DB.Model(&Ability{}).Where("channel_id = ?", channelId).Select("enabled").Update("enabled", status).Error
+	if !status {
+		return DB.Model(&Ability{}).Where("channel_id = ?", channelId).Select("enabled").Update("enabled", false).Error
+	}
+	return DB.Model(&Ability{}).
+		Where("channel_id = ? AND (status = ? OR status = ?)", channelId, common.ChannelStatusEnabled, 0).
+		Select("enabled").Update("enabled", true).Error
 }
 
 var fixLock = sync.Mutex{}

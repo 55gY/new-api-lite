@@ -860,6 +860,65 @@ func UpdateChannel(c *gin.Context) {
 	return
 }
 
+type channelAbilityStatusRequest struct {
+	Model  string `json:"model"`
+	Group  string `json:"group"`
+	Status int    `json:"status"`
+}
+
+func GetChannelAbilities(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil || id <= 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "参数错误",
+		})
+		return
+	}
+	abilities, err := model.GetChannelAbilities(id)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    abilities,
+	})
+}
+
+func UpdateChannelAbilityStatus(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil || id <= 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "参数错误",
+		})
+		return
+	}
+	req := channelAbilityStatusRequest{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	req.Model = strings.TrimSpace(req.Model)
+	if req.Model == "" || (req.Status != common.ChannelStatusEnabled && req.Status != common.ChannelStatusManuallyDisabled) {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "参数错误",
+		})
+		return
+	}
+	if err := model.UpdateChannelModelStatus(id, req.Model, req.Group, req.Status); err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	model.InitChannelCache()
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+	})
+}
+
 func FetchModels(c *gin.Context) {
 	var req struct {
 		BaseURL string `json:"base_url"`
