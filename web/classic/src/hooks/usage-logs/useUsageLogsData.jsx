@@ -35,6 +35,8 @@ import { ITEMS_PER_PAGE } from '../../constants';
 import { useTableCompactMode } from '../common/useTableCompactMode';
 import ParamOverrideEntry from '../../components/table/usage-logs/components/ParamOverrideEntry';
 
+const MODEL_TEST_FILTER_STORAGE_KEY = 'usage-logs-model-test-filter';
+
 export const useLogsData = () => {
   const { t } = useTranslation();
 
@@ -93,7 +95,8 @@ export const useLogsData = () => {
       timestamp2string(now.getTime() / 1000 + 3600),
     ],
     logType: '0',
-    model_test_filter: 'show',
+    model_test_filter:
+      localStorage.getItem(MODEL_TEST_FILTER_STORAGE_KEY) || 'show',
   };
 
   // Get default column visibility based on user role

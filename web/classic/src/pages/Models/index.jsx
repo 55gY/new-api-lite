@@ -196,6 +196,7 @@ const Models = () => {
   const [modelTestResults, setModelTestResults] = useState({});
   const [testingItemKeys, setTestingItemKeys] = useState(new Set());
   const [updatingStatusKeys, setUpdatingStatusKeys] = useState(new Set());
+  const [deletingModelKeys, setDeletingModelKeys] = useState(new Set());
   const allSelectingRef = useRef(false);
   const batchTestingRef = useRef(false);
 
@@ -432,6 +433,45 @@ const Models = () => {
         return next;
       });
     }
+  };
+
+  const deleteModelFromChannel = (row) => {
+    const inputKey = getMappingInputKey(row);
+    Modal.confirm({
+      title: t('删除模型'),
+      content: t('确定要从渠道 ${channel} 中删除模型 ${model} 吗？')
+        .replace('${channel}', row.channelName)
+        .replace('${model}', row.sourceModel),
+      onOk: async () => {
+        setDeletingModelKeys((prev) => new Set([...prev, inputKey]));
+        try {
+          const res = await API.delete(`/api/channel/${row.channelId}/models`, {
+            data: { model: row.sourceModel },
+          });
+          const { success, message } = res.data;
+          if (!success) {
+            showError(message);
+            return;
+          }
+          showSuccess(t('删除成功'));
+          setSelectedTestItemKeys((prev) => prev.filter((key) => key !== row.key));
+          setModelTestResults((prev) => {
+            const next = { ...prev };
+            delete next[row.key];
+            return next;
+          });
+          await fetchModels();
+        } catch (error) {
+          showError(error.message || t('删除失败'));
+        } finally {
+          setDeletingModelKeys((prev) => {
+            const next = new Set(prev);
+            next.delete(inputKey);
+            return next;
+          });
+        }
+      },
+    });
   };
 
   const endpointTypeOptions = [
@@ -1155,18 +1195,30 @@ const Models = () => {
                   render: (_, item) => renderTestStatus(item),
                 },
                 {
-                  title: t('测试'),
+                  title: t('操作'),
                   dataIndex: 'operate',
-                  width: 100,
+                  width: 160,
                   render: (_, item) => (
-                    <Button
-                      type='tertiary'
-                      size='small'
-                      loading={testingItemKeys.has(item.key)}
-                      onClick={() => testItem(item)}
-                    >
-                      {t('测试')}
-                    </Button>
+                    <div className='flex items-center gap-2'>
+                      <Button
+                        type='tertiary'
+                        size='small'
+                        loading={testingItemKeys.has(item.key)}
+                        onClick={() => testItem(item)}
+                      >
+                        {t('测试')}
+                      </Button>
+                      <Button
+                        type='danger'
+                        theme='light'
+                        size='small'
+                        loading={deletingModelKeys.has(getMappingInputKey(item))}
+                        disabled={testingItemKeys.has(item.key) || isBatchTesting}
+                        onClick={() => deleteModelFromChannel(item)}
+                      >
+                        {t('删除')}
+                      </Button>
+                    </div>
                   ),
                 },
               ]}

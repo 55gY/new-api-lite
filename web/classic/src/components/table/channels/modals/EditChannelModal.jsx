@@ -408,6 +408,7 @@ const EditChannelModal = (props) => {
   };
   const formContainerRef = useRef(null);
   const doubaoApiClickCountRef = useRef(0);
+  const baseUrlManuallyChangedRef = useRef(false);
   const initialBaseUrlRef = useRef('');
   const initialModelsRef = useRef([]);
   const initialModelMappingRef = useRef('');
@@ -551,6 +552,9 @@ const EditChannelModal = (props) => {
     if (formApiRef.current) {
       formApiRef.current.setValue(name, value);
     }
+    if (name === 'base_url') {
+      baseUrlManuallyChangedRef.current = true;
+    }
     if (name === 'models' && Array.isArray(value)) {
       value = Array.from(new Set(value.map((m) => (m || '').trim())));
     }
@@ -566,7 +570,22 @@ const EditChannelModal = (props) => {
       });
       return;
     }
-    setInputs((inputs) => ({ ...inputs, [name]: value }));
+    if (name === 'name') {
+      const trimmedName = String(value || '').trim();
+      const shouldFillBaseUrl =
+        /^https?:\/\//i.test(trimmedName) &&
+        !baseUrlManuallyChangedRef.current;
+      setInputs((inputs) => ({
+        ...inputs,
+        [name]: value,
+        ...(shouldFillBaseUrl ? { base_url: trimmedName } : {}),
+      }));
+      if (shouldFillBaseUrl && formApiRef.current) {
+        formApiRef.current.setValue('base_url', trimmedName);
+      }
+    } else {
+      setInputs((inputs) => ({ ...inputs, [name]: value }));
+    }
     if (name === 'type') {
       let localModels = [];
       switch (value) {
@@ -874,6 +893,7 @@ const EditChannelModal = (props) => {
       }
 
       initialBaseUrlRef.current = data.base_url || '';
+      baseUrlManuallyChangedRef.current = false;
       setInputs(data);
       if (formApiRef.current) {
         formApiRef.current.setValues(data);
@@ -1152,6 +1172,7 @@ const EditChannelModal = (props) => {
     fetchModels().then();
     if (!isEdit) {
       initialBaseUrlRef.current = '';
+      baseUrlManuallyChangedRef.current = false;
       setInputs(originInputs);
       if (formApiRef.current) {
         formApiRef.current.setValues(originInputs);

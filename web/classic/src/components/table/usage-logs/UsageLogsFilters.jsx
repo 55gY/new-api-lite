@@ -23,6 +23,8 @@ import { IconSearch } from '@douyinfe/semi-icons';
 
 import { DATE_RANGE_PRESETS } from '../../../constants/console.constants';
 
+const MODEL_TEST_FILTER_STORAGE_KEY = 'usage-logs-model-test-filter';
+
 const LogsFilters = ({
   formInitValues,
   setFormApi,
@@ -145,7 +147,11 @@ const LogsFilters = ({
                 placeholder={t('模型测试日志')}
                 className='w-full sm:w-auto min-w-[140px]'
                 pure
-                onChange={() => {
+                onChange={(value) => {
+                  localStorage.setItem(
+                    MODEL_TEST_FILTER_STORAGE_KEY,
+                    value || 'show',
+                  );
                   setTimeout(() => {
                     refresh();
                   }, 0);
@@ -175,6 +181,7 @@ const LogsFilters = ({
               type='tertiary'
               onClick={() => {
                 if (formApi) {
+                  localStorage.setItem(MODEL_TEST_FILTER_STORAGE_KEY, 'show');
                   formApi.reset();
                   setLogType(0);
                   setTimeout(() => {
