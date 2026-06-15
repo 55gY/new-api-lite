@@ -368,9 +368,13 @@ const Models = () => {
     }
   };
 
-  const saveMapping = async (row) => {
+  const saveMapping = async (row, value) => {
     const inputKey = getMappingInputKey(row);
-    const nextActualModel = (mappingInputs[inputKey] ?? row.targetModel ?? '').trim();
+    const nextActualModel = (value ?? mappingInputs[inputKey] ?? row.targetModel ?? '').trim();
+    const currentActualModel = (row.targetModel ?? '').trim();
+    if (savingMappingKeys.has(inputKey) || nextActualModel === currentActualModel) {
+      return;
+    }
     setSavingMappingKeys((prev) => new Set([...prev, inputKey]));
     try {
       const channelRes = await API.get(`/api/channel/${row.channelId}`);
@@ -749,25 +753,40 @@ const Models = () => {
           pagination={false}
           rowKey='key'
           dataSource={editRows}
+          scroll={{ x: 830 }}
           columns={[
             {
               title: t('请求模型'),
               dataIndex: 'sourceModel',
-              render: (sourceModel) => <Text strong>{sourceModel}</Text>,
+              width: 150,
+              render: (sourceModel) => (
+                <Text strong ellipsis={{ showTooltip: true }} className='models-edit-table-text'>
+                  {sourceModel}
+                </Text>
+              ),
             },
             {
               title: t('所属渠道'),
               dataIndex: 'channelName',
-              render: (channelName, row) => `${channelName} (#${row.channelId})`,
+              width: 150,
+              render: (channelName, row) => (
+                <Text ellipsis={{ showTooltip: true }} className='models-edit-table-text'>
+                  {`${channelName} (#${row.channelId})`}
+                </Text>
+              ),
             },
             {
               title: t('实际模型'),
               dataIndex: 'targetModel',
+              width: 190,
               render: (targetModel, row) => (
                 <Input
+                  className='models-edit-mapping-input'
                   placeholder={t('留空则不设置模型映射')}
                   value={mappingInputs[getMappingInputKey(row)] ?? targetModel}
                   onChange={(value) => setMappingValue(row, value)}
+                  onBlur={(e) => saveMapping(row, e.target.value)}
+                  disabled={savingMappingKeys.has(getMappingInputKey(row))}
                 />
               ),
             },
@@ -786,7 +805,7 @@ const Models = () => {
             {
               title: '',
               dataIndex: 'operate',
-              width: 220,
+              width: 100,
               render: (_, row) => {
                 const inputKey = getMappingInputKey(row);
                 const nextStatus = row.status === MODEL_STATUS.disabled
@@ -801,14 +820,6 @@ const Models = () => {
                       onClick={() => updateModelStatus(row, nextStatus)}
                     >
                       {nextStatus === MODEL_STATUS.enabled ? t('启用') : t('禁用')}
-                    </Button>
-                    <Button
-                      size='small'
-                      type='primary'
-                      loading={savingMappingKeys.has(inputKey)}
-                      onClick={() => saveMapping(row)}
-                    >
-                      {t('保存映射')}
                     </Button>
                   </div>
                 );

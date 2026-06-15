@@ -92,7 +92,7 @@ export default function DataDashboard(props) {
     refForm.current.setValues(currentInputs);
     localStorage.setItem(
       'data_export_default_time',
-      String(inputs.DataExportDefaultTime),
+      String(currentInputs.DataExportDefaultTime || 'day'),
     );
   }, [props.options]);
 

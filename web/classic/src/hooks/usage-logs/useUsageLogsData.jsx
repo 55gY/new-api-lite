@@ -37,6 +37,10 @@ import ParamOverrideEntry from '../../components/table/usage-logs/components/Par
 
 const MODEL_TEST_FILTER_STORAGE_KEY = 'usage-logs-model-test-filter';
 
+const getSavedModelTestFilter = () => {
+  return localStorage.getItem(MODEL_TEST_FILTER_STORAGE_KEY) || 'show';
+};
+
 export const useLogsData = () => {
   const { t } = useTranslation();
 
@@ -95,8 +99,7 @@ export const useLogsData = () => {
       timestamp2string(now.getTime() / 1000 + 3600),
     ],
     logType: '0',
-    model_test_filter:
-      localStorage.getItem(MODEL_TEST_FILTER_STORAGE_KEY) || 'show',
+    model_test_filter: getSavedModelTestFilter(),
   };
 
   // Get default column visibility based on user role
@@ -230,7 +233,8 @@ export const useLogsData = () => {
       channel: formValues.channel || '',
       request_id: formValues.request_id || '',
       logType: formValues.logType ? parseInt(formValues.logType) : 0,
-      exclude_model_test: formValues.model_test_filter === 'hide',
+      exclude_model_test:
+        (formValues.model_test_filter || getSavedModelTestFilter()) === 'hide',
     };
   };
 

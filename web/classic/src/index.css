@@ -1082,6 +1082,29 @@ html.dark .with-pastel-balls::before {
   padding: 12px;
   border-radius: 10px;
   background-color: var(--semi-color-fill-0);
+  overflow-x: auto;
+}
+
+.models-edit-panel .semi-table-container,
+.models-edit-panel .semi-table-body {
+  overflow-x: auto !important;
+  scrollbar-width: thin;
+}
+
+.models-edit-panel .semi-table-thead > .semi-table-row > .semi-table-row-head,
+.models-edit-panel .semi-table-tbody > .semi-table-row > .semi-table-row-cell {
+  white-space: normal;
+  word-break: normal;
+}
+
+.models-edit-table-text {
+  display: block;
+  max-width: 100%;
+}
+
+.models-edit-mapping-input {
+  width: 100%;
+  min-width: 160px;
 }
 
 .models-edit-sidesheet {

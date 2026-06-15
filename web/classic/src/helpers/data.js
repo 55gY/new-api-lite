@@ -27,10 +27,12 @@ export function setStatusData(data) {
   localStorage.setItem('display_in_currency', data.display_in_currency);
   localStorage.setItem('quota_display_type', data.quota_display_type || 'USD');
   localStorage.setItem('enable_data_export', data.enable_data_export);
-  localStorage.setItem(
-    'data_export_default_time',
-    data.data_export_default_time,
-  );
+  if (!localStorage.getItem('data_export_default_time')) {
+    localStorage.setItem(
+      'data_export_default_time',
+      data.data_export_default_time || 'day',
+    );
+  }
   localStorage.setItem(
     'default_collapse_sidebar',
     data.default_collapse_sidebar,
