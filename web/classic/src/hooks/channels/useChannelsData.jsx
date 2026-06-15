@@ -921,6 +921,7 @@ export const useChannelsData = () => {
     modelSearchKeyword,
     setModelSearchKeyword,
     modelTestResults,
+    setModelTestResults,
     testingModels,
     selectedModelKeys,
     setSelectedModelKeys,
