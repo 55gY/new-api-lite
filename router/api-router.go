@@ -108,7 +108,6 @@ func SetApiRouter(router *gin.Engine) {
 			channelRoute.GET("/models_enabled_details", controller.EnabledListModelDetails)
 			channelRoute.GET("/:id/abilities", controller.GetChannelAbilities)
 			channelRoute.PUT("/:id/abilities", controller.UpdateChannelAbilityStatus)
-			channelRoute.DELETE("/:id/models", controller.DeleteChannelModel)
 			channelRoute.GET("/:id", controller.GetChannel)
 			channelRoute.GET("/test", controller.TestAllChannels)
 			channelRoute.GET("/test/:id", controller.TestChannel)

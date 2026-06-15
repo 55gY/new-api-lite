@@ -87,9 +87,9 @@ func TestChannelUpstreamModelUpdateSelectFieldsIncludeModelMapping(t *testing.T)
 
 func TestNormalizeChannelModelMapping(t *testing.T) {
 	modelMapping := `{
-		" upstream-model ": " alias-model ",
+		" DeepSeek-V4 ": " gpt-5.5 ",
 		"": "invalid",
-		"invalid-target": ""
+		"invalid-request": ""
 	}`
 	channel := &model.Channel{
 		ModelMapping: &modelMapping,
@@ -97,7 +97,7 @@ func TestNormalizeChannelModelMapping(t *testing.T) {
 
 	result := normalizeChannelModelMapping(channel)
 	require.Equal(t, map[string]string{
-		"upstream-model": "alias-model",
+		"DeepSeek-V4": "gpt-5.5",
 	}, result)
 }
 

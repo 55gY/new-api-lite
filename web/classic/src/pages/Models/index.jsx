@@ -80,9 +80,11 @@ const getChannelName = (channel) =>
 
 const getMappingDisplayName = (mapping, modelName) => {
   if (!mapping) return '';
-  if (mapping.source === modelName) return mapping.target;
-  if (mapping.target === modelName) return mapping.source;
-  return mapping.target || mapping.source || '';
+  const actualModel = mapping.actual_model || mapping.source || '';
+  const requestModel = mapping.request_model || mapping.target || '';
+  if (actualModel === modelName) return requestModel;
+  if (requestModel === modelName) return actualModel;
+  return requestModel || actualModel || '';
 };
 
 const MODEL_TEST_STATUS = {
@@ -135,18 +137,20 @@ const getTestItems = (record) => {
 
   if (mappings.length > 0) {
     return mappings.map((mapping) => {
+      const actualModel = mapping.actual_model || mapping.source || '';
+      const requestModel = mapping.request_model || mapping.target || '';
       const channel = channelById.get(mapping.channel_id) || {
         id: mapping.channel_id,
         name: mapping.channel_name || `#${mapping.channel_id}`,
       };
       return {
-        key: `${mapping.channel_id}-${mapping.source}-${mapping.target}`,
+        key: `${mapping.channel_id}-${actualModel}-${requestModel}`,
         channel,
         channelId: mapping.channel_id,
         channelName: mapping.channel_name || getChannelName(channel),
-        sourceModel: mapping.target || mapping.source,
-        targetModel: mapping.source,
-        displayModel: mapping.source || mapping.target,
+        sourceModel: requestModel || actualModel,
+        targetModel: actualModel,
+        displayModel: actualModel || requestModel,
         mapped: true,
         testStatus: mapping.test_status ?? 0,
         testTime: mapping.test_time ?? 0,
@@ -292,7 +296,7 @@ const Models = () => {
     const normalizeChannelId = (channelId) => String(channelId ?? '');
     const mappingByChannelId = new Map(
       mappings
-        .filter((mapping) => mapping.target === record.model_name)
+        .filter((mapping) => (mapping.request_model || mapping.target) === record.model_name)
         .map((mapping) => [normalizeChannelId(mapping.channel_id), mapping]),
     );
     const channelIds = new Set(
@@ -307,8 +311,8 @@ const Models = () => {
         channelId,
         channelName: mapping?.channel_name || getChannelName(channel),
         sourceModel: record.model_name,
-        targetModel: mapping?.source || '',
-        originalSourceModel: mapping?.source || '',
+        targetModel: mapping?.actual_model || mapping?.source || '',
+        originalSourceModel: mapping?.actual_model || mapping?.source || '',
         testStatus: channel.test_status ?? 0,
         testTime: channel.test_time ?? 0,
         responseTime: channel.response_time ?? 0,
@@ -320,20 +324,24 @@ const Models = () => {
 
     const orphanMappingRows = mappings
       .filter((mapping) => !channelIds.has(normalizeChannelId(mapping.channel_id)))
-      .map((mapping) => ({
-        key: `${mapping.channel_id}-${mapping.target || mapping.source}`,
-        channelId: mapping.channel_id,
-        channelName: mapping.channel_name || `#${mapping.channel_id}`,
-        sourceModel: mapping.target || mapping.source,
-        targetModel: mapping.source,
-        originalSourceModel: mapping.source,
-        testStatus: mapping.test_status ?? 0,
-        testTime: mapping.test_time ?? 0,
-        responseTime: mapping.response_time ?? 0,
-        testError: mapping.test_error || '',
-        testResponse: mapping.test_response || '',
-        status: mapping.status ?? MODEL_STATUS.enabled,
-      }));
+      .map((mapping) => {
+        const actualModel = mapping.actual_model || mapping.source || '';
+        const requestModel = mapping.request_model || mapping.target || '';
+        return {
+          key: `${mapping.channel_id}-${requestModel || actualModel}`,
+          channelId: mapping.channel_id,
+          channelName: mapping.channel_name || `#${mapping.channel_id}`,
+          sourceModel: requestModel || actualModel,
+          targetModel: actualModel,
+          originalSourceModel: actualModel,
+          testStatus: mapping.test_status ?? 0,
+          testTime: mapping.test_time ?? 0,
+          responseTime: mapping.response_time ?? 0,
+          testError: mapping.test_error || '',
+          testResponse: mapping.test_response || '',
+          status: mapping.status ?? MODEL_STATUS.enabled,
+        };
+      });
 
     return [...channelRows, ...orphanMappingRows];
   };
@@ -362,7 +370,7 @@ const Models = () => {
 
   const saveMapping = async (row) => {
     const inputKey = getMappingInputKey(row);
-    const nextUpstreamModel = (mappingInputs[inputKey] ?? row.targetModel ?? '').trim();
+    const nextActualModel = (mappingInputs[inputKey] ?? row.targetModel ?? '').trim();
     setSavingMappingKeys((prev) => new Set([...prev, inputKey]));
     try {
       const channelRes = await API.get(`/api/channel/${row.channelId}`);
@@ -377,8 +385,8 @@ const Models = () => {
       if (row.originalSourceModel) {
         delete modelMapping[row.originalSourceModel];
       }
-      if (nextUpstreamModel) {
-        modelMapping[nextUpstreamModel] = row.sourceModel;
+      if (nextActualModel) {
+        modelMapping[nextActualModel] = row.sourceModel;
       }
 
       const updateRes = await API.put('/api/channel/', {
@@ -640,7 +648,9 @@ const Models = () => {
     const mappingText = mappings
       .map((mapping) => {
         const channelName = mapping.channel_name || `#${mapping.channel_id}`;
-        return `${channelName}: ${mapping.source} -> ${mapping.target}`;
+        const actualModel = mapping.actual_model || mapping.source || '';
+        const requestModel = mapping.request_model || mapping.target || '';
+        return `${channelName}: ${t('实际模型')} ${actualModel} -> ${t('请求模型')} ${requestModel}`;
       })
       .join('\n');
 
@@ -649,7 +659,7 @@ const Models = () => {
         <div className='flex flex-wrap gap-1'>
           {visibleMappings.map((mapping) => (
             <Tag
-              key={`${mapping.channel_id}-${mapping.source}-${mapping.target}`}
+              key={`${mapping.channel_id}-${mapping.actual_model || mapping.source}-${mapping.request_model || mapping.target}`}
               size='small'
               color='blue'
             >
@@ -741,7 +751,7 @@ const Models = () => {
           dataSource={editRows}
           columns={[
             {
-              title: t('模型名称'),
+              title: t('请求模型'),
               dataIndex: 'sourceModel',
               render: (sourceModel) => <Text strong>{sourceModel}</Text>,
             },
@@ -751,7 +761,7 @@ const Models = () => {
               render: (channelName, row) => `${channelName} (#${row.channelId})`,
             },
             {
-              title: t('实际上游模型'),
+              title: t('实际模型'),
               dataIndex: 'targetModel',
               render: (targetModel, row) => (
                 <Input

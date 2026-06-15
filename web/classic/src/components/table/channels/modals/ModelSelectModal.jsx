@@ -324,7 +324,7 @@ const ModelSelectModal = ({
                     {redirectOnlySet.has(normalizeModelName(model)) && (
                       <Tooltip
                         position='top'
-                        content={t('来自模型重定向，尚未加入模型列表')}
+                        content={t('来自模型重定向的请求模型，尚未加入实际模型列表')}
                       >
                         <IconInfoCircle
                           size='small'

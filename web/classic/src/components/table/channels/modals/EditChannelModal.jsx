@@ -84,7 +84,7 @@ import {
 const { Text, Title } = Typography;
 
 const MODEL_MAPPING_EXAMPLE = {
-  'gpt-3.5-turbo-0125': 'gpt-3.5-turbo',
+  'DeepSeek-V4': 'gpt-5.5',
 };
 
 const STATUS_CODE_MAPPING_EXAMPLE = {
@@ -1319,7 +1319,7 @@ const EditChannelModal = (props) => {
           <div className='text-sm leading-6'>
             <div>
               {t(
-                '模型重定向里的下列模型尚未添加到“模型”列表，调用时会因为缺少可用模型而失败：',
+                '模型重定向里的下列实际模型尚未添加到“模型”列表，调用时会因为缺少可用实际模型而失败：',
               )}
             </div>
             <div className='font-mono text-xs break-all text-red-600 mt-1'>
@@ -3330,7 +3330,7 @@ const EditChannelModal = (props) => {
                     label={t('模型重定向')}
                     placeholder={
                       t(
-                        '此项可选，用于设置模型映射，为一个 JSON 字符串，键为实际上游模型名称，值为对外请求模型名称，例如：',
+                        '此项可选，用于设置模型映射，为一个 JSON 字符串，键为实际模型名称，值为请求模型名称，例如：',
                       ) +
                       `\n${JSON.stringify(MODEL_MAPPING_EXAMPLE, null, 2)}`
                     }
@@ -3364,7 +3364,7 @@ const EditChannelModal = (props) => {
                       );
                     }}
                     extraText={t(
-                      '键为实际上游模型名称，值为对外请求模型名称；例如配置 {"a":"b"} 表示请求 b 时实际发送到上游模型 a',
+                      '键为实际模型名称，值为请求模型名称；例如配置 {"DeepSeek-V4":"gpt-5.5"} 表示请求 gpt-5.5 时实际发送到上游模型 DeepSeek-V4',
                     )}
                   />
 

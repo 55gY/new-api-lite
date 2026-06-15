@@ -179,6 +179,8 @@ type enabledModelChannelInfo struct {
 type enabledModelMappingInfo struct {
 	ChannelId    int    `json:"channel_id"`
 	ChannelName  string `json:"channel_name"`
+	ActualModel  string `json:"actual_model"`
+	RequestModel string `json:"request_model"`
 	Source       string `json:"source"`
 	Target       string `json:"target"`
 	Status       int    `json:"status"`
@@ -312,13 +314,13 @@ func parseChannelModelMapping(modelMapping *string) map[string]string {
 		return nil
 	}
 	normalized := make(map[string]string, len(parsed))
-	for source, target := range parsed {
-		normalizedSource := strings.TrimSpace(source)
-		normalizedTarget := strings.TrimSpace(target)
-		if normalizedSource == "" || normalizedTarget == "" {
+	for actualModel, requestModel := range parsed {
+		normalizedActualModel := strings.TrimSpace(actualModel)
+		normalizedRequestModel := strings.TrimSpace(requestModel)
+		if normalizedActualModel == "" || normalizedRequestModel == "" {
 			continue
 		}
-		normalized[normalizedSource] = normalizedTarget
+		normalized[normalizedActualModel] = normalizedRequestModel
 	}
 	return normalized
 }
@@ -337,16 +339,12 @@ func EnabledListModelDetails(c *gin.Context) {
 	channelSetByModel := make(map[string]map[int]struct{})
 	mappingSetByModel := make(map[string]map[string]struct{})
 
-	for _, item := range enabledChannels {
-		modelName := strings.TrimSpace(item.Model)
-		if modelName == "" {
-			continue
-		}
+	getOrCreateDetail := func(modelName string, channelType int) *enabledModelDetail {
 		detail, ok := detailMap[modelName]
 		if !ok {
 			detail = &enabledModelDetail{
 				ModelName: modelName,
-				OwnedBy:   channelOwnerName(item.ChannelType),
+				OwnedBy:   channelOwnerName(channelType),
 				Channels:  []enabledModelChannelInfo{},
 				Mappings:  []enabledModelMappingInfo{},
 			}
@@ -354,6 +352,15 @@ func EnabledListModelDetails(c *gin.Context) {
 			channelSetByModel[modelName] = make(map[int]struct{})
 			mappingSetByModel[modelName] = make(map[string]struct{})
 		}
+		return detail
+	}
+
+	for _, item := range enabledChannels {
+		modelName := strings.TrimSpace(item.Model)
+		if modelName == "" {
+			continue
+		}
+		detail := getOrCreateDetail(modelName, item.ChannelType)
 
 		if _, exists := channelSetByModel[modelName][item.ChannelId]; !exists {
 			channelSetByModel[modelName][item.ChannelId] = struct{}{}
@@ -372,28 +379,34 @@ func EnabledListModelDetails(c *gin.Context) {
 		}
 
 		modelMapping := parseChannelModelMapping(item.ModelMapping)
-		for source, target := range modelMapping {
-			if source != modelName && target != modelName {
+		for actualModel, requestModel := range modelMapping {
+			if actualModel != modelName && requestModel != modelName {
 				continue
 			}
-			mappingKey := fmt.Sprintf("%d|%s|%s", item.ChannelId, source, target)
-			if _, exists := mappingSetByModel[modelName][mappingKey]; exists {
-				continue
-			}
-			mappingSetByModel[modelName][mappingKey] = struct{}{}
-			detail.Mapped = true
-			detail.Mappings = append(detail.Mappings, enabledModelMappingInfo{
+			mappingInfo := enabledModelMappingInfo{
 				ChannelId:    item.ChannelId,
 				ChannelName:  item.ChannelName,
-				Source:       source,
-				Target:       target,
+				ActualModel:  actualModel,
+				RequestModel: requestModel,
+				Source:       actualModel,
+				Target:       requestModel,
 				Status:       model.NormalizeAbilityStatus(item.Status, item.Enabled),
 				TestStatus:   item.TestStatus,
 				TestTime:     item.TestTime,
 				ResponseTime: item.ResponseTime,
 				TestError:    item.TestError,
 				TestResponse: item.TestResponse,
-			})
+			}
+			for _, mappedModelName := range []string{actualModel, requestModel} {
+				mappedDetail := getOrCreateDetail(mappedModelName, item.ChannelType)
+				mappingKey := fmt.Sprintf("%d|%s|%s", item.ChannelId, actualModel, requestModel)
+				if _, exists := mappingSetByModel[mappedModelName][mappingKey]; exists {
+					continue
+				}
+				mappingSetByModel[mappedModelName][mappingKey] = struct{}{}
+				mappedDetail.Mapped = true
+				mappedDetail.Mappings = append(mappedDetail.Mappings, mappingInfo)
+			}
 		}
 	}
 
@@ -404,7 +417,7 @@ func EnabledListModelDetails(c *gin.Context) {
 		})
 		sort.Slice(detail.Mappings, func(i, j int) bool {
 			if detail.Mappings[i].ChannelId == detail.Mappings[j].ChannelId {
-				return detail.Mappings[i].Source < detail.Mappings[j].Source
+				return detail.Mappings[i].ActualModel < detail.Mappings[j].ActualModel
 			}
 			return detail.Mappings[i].ChannelId < detail.Mappings[j].ChannelId
 		})

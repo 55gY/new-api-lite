@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -312,14 +313,14 @@ func GetGroupEnabledModels(group string) []string {
 	var models []string
 	// Find distinct models
 	DB.Table("abilities").Where(commonGroupCol+" = ? and enabled = ?", group, true).Distinct("model").Pluck("model", &models)
-	return models
+	return appendMappedRequestModels(models, group)
 }
 
 func GetEnabledModels() []string {
 	var models []string
 	// Find distinct models
 	DB.Table("abilities").Where("enabled = ?", true).Distinct("model").Pluck("model", &models)
-	return models
+	return appendMappedRequestModels(models, "")
 }
 
 func GetAllEnableAbilities() []Ability {
@@ -386,38 +387,197 @@ func getChannelQuery(group string, model string, retry int) (*gorm.DB, error) {
 }
 
 func GetChannel(group string, model string, retry int) (*Channel, error) {
-	var abilities []Ability
+	directAbilities, err := getCandidateAbilities(group, model)
+	if err != nil {
+		return nil, err
+	}
+	directPriorityCount, err := countAbilityPriorities(directAbilities)
+	if err != nil {
+		return nil, err
+	}
+	if retry < directPriorityCount {
+		return getChannelFromAbilities(directAbilities, retry)
+	}
 
-	var err error = nil
-	channelQuery, err := getChannelQuery(group, model, retry)
+	mappedAbilities, err := getMappedCandidateAbilities(group, model)
 	if err != nil {
 		return nil, err
 	}
-	err = channelQuery.Order("weight DESC").Find(&abilities).Error
+	return getChannelFromAbilities(mappedAbilities, retry-directPriorityCount)
+}
+
+func parseModelMapping(modelMapping *string) map[string]string {
+	if modelMapping == nil {
+		return nil
+	}
+	rawMapping := strings.TrimSpace(*modelMapping)
+	if rawMapping == "" || rawMapping == "{}" {
+		return nil
+	}
+	parsed := make(map[string]string)
+	if err := common.UnmarshalJsonStr(rawMapping, &parsed); err != nil {
+		return nil
+	}
+	normalized := make(map[string]string, len(parsed))
+	for actualModel, requestModel := range parsed {
+		actualModel = strings.TrimSpace(actualModel)
+		requestModel = strings.TrimSpace(requestModel)
+		if actualModel == "" || requestModel == "" {
+			continue
+		}
+		normalized[actualModel] = requestModel
+	}
+	return normalized
+}
+
+func appendMappedRequestModels(models []string, group string) []string {
+	modelSet := make(map[string]struct{}, len(models))
+	for _, modelName := range models {
+		modelName = strings.TrimSpace(modelName)
+		if modelName == "" {
+			continue
+		}
+		modelSet[modelName] = struct{}{}
+	}
+
+	type abilityMapping struct {
+		Model        string  `gorm:"column:model"`
+		ModelMapping *string `gorm:"column:model_mapping"`
+	}
+	var mappings []abilityMapping
+	query := DB.Table("abilities").
+		Select("abilities.model, channels.model_mapping").
+		Joins("left join channels on abilities.channel_id = channels.id").
+		Where("abilities.enabled = ?", true)
+	if group != "" {
+		query = query.Where("abilities."+commonGroupCol+" = ?", group)
+	}
+	if err := query.Scan(&mappings).Error; err != nil {
+		return models
+	}
+	for _, item := range mappings {
+		actualModel := strings.TrimSpace(item.Model)
+		if actualModel == "" {
+			continue
+		}
+		mapping := parseModelMapping(item.ModelMapping)
+		requestModel := strings.TrimSpace(mapping[actualModel])
+		if requestModel == "" {
+			continue
+		}
+		modelSet[requestModel] = struct{}{}
+	}
+
+	merged := make([]string, 0, len(modelSet))
+	for modelName := range modelSet {
+		merged = append(merged, modelName)
+	}
+	sort.Strings(merged)
+	return merged
+}
+
+func getCandidateAbilities(group string, model string) ([]Ability, error) {
+	var abilities []Ability
+	query := DB.Model(&Ability{}).Where("model = ? and enabled = ?", model, true).Order("weight DESC")
+	if group != "" {
+		query = query.Where(commonGroupCol+" = ?", group)
+	}
+	return abilities, query.Find(&abilities).Error
+}
+
+func getMappedCandidateAbilities(group string, requestModel string) ([]Ability, error) {
+	type mappedAbility struct {
+		Ability
+		ModelMapping *string `gorm:"column:model_mapping"`
+	}
+	var mappedAbilities []mappedAbility
+	query := DB.Table("abilities").
+		Select("abilities.*, channels.model_mapping").
+		Joins("left join channels on abilities.channel_id = channels.id").
+		Where("abilities.enabled = ?", true).
+		Order("abilities.weight DESC")
+	if group != "" {
+		query = query.Where("abilities."+commonGroupCol+" = ?", group)
+	}
+	if err := query.Scan(&mappedAbilities).Error; err != nil {
+		return nil, err
+	}
+
+	abilities := make([]Ability, 0, len(mappedAbilities))
+	for _, item := range mappedAbilities {
+		actualModel := strings.TrimSpace(item.Model)
+		mapping := parseModelMapping(item.ModelMapping)
+		if strings.TrimSpace(mapping[actualModel]) != requestModel {
+			continue
+		}
+		abilities = append(abilities, item.Ability)
+	}
+	return abilities, nil
+}
+
+func abilityPriority(ability Ability) int {
+	if ability.Priority == nil {
+		return 0
+	}
+	return int(*ability.Priority)
+}
+
+func countAbilityPriorities(abilities []Ability) (int, error) {
+	priorities, err := getSortedAbilityPriorities(abilities)
+	if err != nil {
+		return 0, err
+	}
+	return len(priorities), nil
+}
+
+func getSortedAbilityPriorities(abilities []Ability) ([]int, error) {
+	uniquePriorities := make(map[int]struct{})
+	for _, ability := range abilities {
+		uniquePriorities[abilityPriority(ability)] = struct{}{}
+	}
+	priorities := make([]int, 0, len(uniquePriorities))
+	for priority := range uniquePriorities {
+		priorities = append(priorities, priority)
+	}
+	sort.Sort(sort.Reverse(sort.IntSlice(priorities)))
+	return priorities, nil
+}
+
+func getChannelFromAbilities(abilities []Ability, retry int) (*Channel, error) {
+	priorities, err := getSortedAbilityPriorities(abilities)
 	if err != nil {
 		return nil, err
 	}
-	channel := Channel{}
-	if len(abilities) > 0 {
-		// Randomly choose one
-		weightSum := uint(0)
-		for _, ability_ := range abilities {
-			weightSum += ability_.Weight + 10
-		}
-		// Randomly choose one
-		weight := common.GetRandomInt(int(weightSum))
-		for _, ability_ := range abilities {
-			weight -= int(ability_.Weight) + 10
-			//log.Printf("weight: %d, ability weight: %d", weight, *ability_.Weight)
-			if weight <= 0 {
-				channel.Id = ability_.ChannelId
-				break
-			}
-		}
-	} else {
+	if retry >= len(priorities) {
 		return nil, nil
 	}
-	err = DB.First(&channel, "id = ?", channel.Id).Error
+	targetPriority := priorities[retry]
+	targetAbilities := make([]Ability, 0, len(abilities))
+	weightSum := uint(0)
+	for _, ability := range abilities {
+		if abilityPriority(ability) != targetPriority {
+			continue
+		}
+		targetAbilities = append(targetAbilities, ability)
+		weightSum += ability.Weight + 10
+	}
+	if len(targetAbilities) == 0 {
+		return nil, nil
+	}
+	weight := common.GetRandomInt(int(weightSum))
+	channelId := 0
+	for _, ability := range targetAbilities {
+		weight -= int(ability.Weight) + 10
+		if weight <= 0 {
+			channelId = ability.ChannelId
+			break
+		}
+	}
+	if channelId == 0 {
+		return nil, errors.New("channel not found")
+	}
+	channel := Channel{}
+	err = DB.First(&channel, "id = ?", channelId).Error
 	return &channel, err
 }
 

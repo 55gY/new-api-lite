@@ -34,23 +34,23 @@ func ModelMappedHelper(c *gin.Context, info *common.RelayInfo, request dto.Reque
 			return fmt.Errorf("unmarshal_model_mapping_failed")
 		}
 
-		reversedModelMap := make(map[string]string, len(modelMap))
-		for upstreamModel, requestModel := range modelMap {
-			upstreamModel = strings.TrimSpace(upstreamModel)
+		requestToActualModelMap := make(map[string]string, len(modelMap))
+		for actualModel, requestModel := range modelMap {
+			actualModel = strings.TrimSpace(actualModel)
 			requestModel = strings.TrimSpace(requestModel)
-			if upstreamModel == "" || requestModel == "" {
+			if actualModel == "" || requestModel == "" {
 				continue
 			}
-			reversedModelMap[requestModel] = upstreamModel
+			requestToActualModelMap[requestModel] = actualModel
 		}
 
-		// 支持链式模型重定向：配置为上游模型 -> 对外请求模型，运行时从请求模型反向追溯到链头上游模型
+		// 支持链式模型重定向：配置为实际模型 -> 请求模型，运行时从请求模型反向追溯到链头实际模型
 		currentModel := mappingModelName
 		visitedModels := map[string]bool{
 			currentModel: true,
 		}
 		for {
-			if mappedModel, exists := reversedModelMap[currentModel]; exists && mappedModel != "" {
+			if mappedModel, exists := requestToActualModelMap[currentModel]; exists && mappedModel != "" {
 				// 模型重定向循环检测，避免无限循环
 				if visitedModels[mappedModel] {
 					if mappedModel == currentModel {

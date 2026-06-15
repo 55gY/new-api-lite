@@ -866,10 +866,6 @@ type channelAbilityStatusRequest struct {
 	Status int    `json:"status"`
 }
 
-type channelModelRemoveRequest struct {
-	Model string `json:"model"`
-}
-
 func GetChannelAbilities(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil || id <= 0 {
@@ -920,82 +916,6 @@ func UpdateChannelAbilityStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
-	})
-}
-
-func DeleteChannelModel(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil || id <= 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "参数错误",
-		})
-		return
-	}
-	modelName := strings.TrimSpace(c.Query("model"))
-	if modelName == "" {
-		req := channelModelRemoveRequest{}
-		if err := c.ShouldBindJSON(&req); err != nil && err != io.EOF {
-			common.ApiError(c, err)
-			return
-		}
-		modelName = strings.TrimSpace(req.Model)
-	}
-	if modelName == "" {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "参数错误",
-		})
-		return
-	}
-
-	channel, err := model.GetChannelById(id, true)
-	if err != nil {
-		common.ApiError(c, err)
-		return
-	}
-	models := strings.Split(channel.Models, ",")
-	nextModels := make([]string, 0, len(models))
-	removed := false
-	for _, item := range models {
-		item = strings.TrimSpace(item)
-		if item == "" {
-			continue
-		}
-		if item == modelName {
-			removed = true
-			continue
-		}
-		nextModels = append(nextModels, item)
-	}
-	if !removed {
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"message": "",
-			"data":    channel,
-		})
-		return
-	}
-
-	channel.Models = strings.Join(nextModels, ",")
-	if channel.Models == "" {
-		if err := model.DB.Model(channel).Update("models", "").Error; err != nil {
-			common.ApiError(c, err)
-			return
-		}
-	}
-	if err := channel.Update(); err != nil {
-		common.ApiError(c, err)
-		return
-	}
-	model.InitChannelCache()
-	service.ResetProxyClientCache()
-	channel.Key = ""
-	clearChannelInfo(channel)
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data":    channel,
 	})
 }
 

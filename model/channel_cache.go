@@ -16,7 +16,8 @@ import (
 )
 
 var group2model2channels map[string]map[string][]int // enabled channel
-var channelsIDM map[int]*Channel                     // all channels include disabled
+var group2mappedModel2channels map[string]map[string][]int
+var channelsIDM map[int]*Channel // all channels include disabled
 var channelSyncLock sync.RWMutex
 
 func InitChannelCache() {
@@ -36,19 +37,31 @@ func InitChannelCache() {
 		groups[ability.Group] = true
 	}
 	allModelChannelSeen := make(map[string]map[int]bool)
+	allMappedModelChannelSeen := make(map[string]map[int]bool)
 	newGroup2model2channels := make(map[string]map[string][]int)
+	newGroup2mappedModel2channels := make(map[string]map[string][]int)
 	newGroup2model2channels[""] = make(map[string][]int)
+	newGroup2mappedModel2channels[""] = make(map[string][]int)
 	for group := range groups {
 		newGroup2model2channels[group] = make(map[string][]int)
+		newGroup2mappedModel2channels[group] = make(map[string][]int)
 	}
 	for _, channel := range channels {
 		if channel.Status != common.ChannelStatusEnabled {
 			continue // skip disabled channels
 		}
 		groups := strings.Split(channel.Group, ",")
+		channelModelSet := make(map[string]struct{})
+		for _, model := range strings.Split(channel.Models, ",") {
+			model = strings.TrimSpace(model)
+			if model != "" {
+				channelModelSet[model] = struct{}{}
+			}
+		}
+		modelMapping := parseModelMapping(channel.ModelMapping)
 		for _, group := range groups {
-			models := strings.Split(channel.Models, ",")
-			for _, model := range models {
+			group = strings.TrimSpace(group)
+			for model := range channelModelSet {
 				if _, ok := newGroup2model2channels[""][model]; !ok {
 					newGroup2model2channels[""][model] = make([]int, 0)
 				}
@@ -64,6 +77,25 @@ func InitChannelCache() {
 				}
 				newGroup2model2channels[group][model] = append(newGroup2model2channels[group][model], channel.Id)
 			}
+			for actualModel, requestModel := range modelMapping {
+				if _, ok := channelModelSet[actualModel]; !ok {
+					continue
+				}
+				if _, ok := newGroup2mappedModel2channels[""][requestModel]; !ok {
+					newGroup2mappedModel2channels[""][requestModel] = make([]int, 0)
+				}
+				if _, ok := allMappedModelChannelSeen[requestModel]; !ok {
+					allMappedModelChannelSeen[requestModel] = make(map[int]bool)
+				}
+				if !allMappedModelChannelSeen[requestModel][channel.Id] {
+					newGroup2mappedModel2channels[""][requestModel] = append(newGroup2mappedModel2channels[""][requestModel], channel.Id)
+					allMappedModelChannelSeen[requestModel][channel.Id] = true
+				}
+				if _, ok := newGroup2mappedModel2channels[group][requestModel]; !ok {
+					newGroup2mappedModel2channels[group][requestModel] = make([]int, 0)
+				}
+				newGroup2mappedModel2channels[group][requestModel] = append(newGroup2mappedModel2channels[group][requestModel], channel.Id)
+			}
 		}
 	}
 
@@ -76,9 +108,18 @@ func InitChannelCache() {
 			newGroup2model2channels[group][model] = channels
 		}
 	}
+	for group, model2channels := range newGroup2mappedModel2channels {
+		for model, channels := range model2channels {
+			sort.Slice(channels, func(i, j int) bool {
+				return newChannelId2channel[channels[i]].GetPriority() > newChannelId2channel[channels[j]].GetPriority()
+			})
+			newGroup2mappedModel2channels[group][model] = channels
+		}
+	}
 
 	channelSyncLock.Lock()
 	group2model2channels = newGroup2model2channels
+	group2mappedModel2channels = newGroup2mappedModel2channels
 	//channelsIDM = newChannelId2channel
 	for i, channel := range newChannelId2channel {
 		if channel.ChannelInfo.IsMultiKey {
@@ -115,20 +156,54 @@ func GetRandomSatisfiedChannel(group string, model string, retry int) (*Channel,
 	channelSyncLock.RLock()
 	defer channelSyncLock.RUnlock()
 
-	// First, try to find channels with the exact model name.
-	channels := group2model2channels[group][model]
-
-	// If no channels found, try to find channels with the normalized model name.
-	if len(channels) == 0 {
-		normalizedModel := ratio_setting.FormatMatchingModelName(model)
-		channels = group2model2channels[group][normalizedModel]
+	directChannels := getChannelsForModel(group2model2channels, group, model)
+	directPriorityCount, err := countChannelPriorities(directChannels)
+	if err != nil {
+		return nil, err
 	}
+	if retry < directPriorityCount {
+		return getRandomChannelFromIDs(directChannels, retry, group, model)
+	}
+	mappedChannels := getChannelsForModel(group2mappedModel2channels, group, model)
+	return getRandomChannelFromIDs(mappedChannels, retry-directPriorityCount, group, model)
+}
 
+func getChannelsForModel(groupModelChannels map[string]map[string][]int, group string, model string) []int {
+	if groupModelChannels == nil || groupModelChannels[group] == nil {
+		return nil
+	}
+	channels := groupModelChannels[group][model]
+	if len(channels) != 0 {
+		return channels
+	}
+	normalizedModel := ratio_setting.FormatMatchingModelName(model)
+	if normalizedModel == "" || normalizedModel == model {
+		return nil
+	}
+	return groupModelChannels[group][normalizedModel]
+}
+
+func countChannelPriorities(channels []int) (int, error) {
+	uniquePriorities := make(map[int]bool)
+	for _, channelId := range channels {
+		if channel, ok := channelsIDM[channelId]; ok {
+			uniquePriorities[int(channel.GetPriority())] = true
+		} else {
+			return 0, fmt.Errorf("数据库一致性错误，渠道# %d 不存在，请联系管理员修复", channelId)
+		}
+	}
+	return len(uniquePriorities), nil
+}
+
+func getRandomChannelFromIDs(channels []int, retry int, group string, model string) (*Channel, error) {
 	if len(channels) == 0 {
 		return nil, nil
 	}
 
 	if len(channels) == 1 {
+		if retry > 0 {
+			return nil, nil
+		}
 		if channel, ok := channelsIDM[channels[0]]; ok {
 			return channel, nil
 		}
@@ -150,7 +225,7 @@ func GetRandomSatisfiedChannel(group string, model string, retry int) (*Channel,
 	sort.Sort(sort.Reverse(sort.IntSlice(sortedUniquePriorities)))
 
 	if retry >= len(uniquePriorities) {
-		retry = len(uniquePriorities) - 1
+		return nil, nil
 	}
 	targetPriority := int64(sortedUniquePriorities[retry])
 
@@ -252,6 +327,16 @@ func CacheUpdateChannelStatus(id int, status int) {
 					if channelId == id {
 						// remove the channel from the slice
 						group2model2channels[group][model] = append(channels[:i], channels[i+1:]...)
+						break
+					}
+				}
+			}
+		}
+		for group, model2channels := range group2mappedModel2channels {
+			for model, channels := range model2channels {
+				for i, channelId := range channels {
+					if channelId == id {
+						group2mappedModel2channels[group][model] = append(channels[:i], channels[i+1:]...)
 						break
 					}
 				}

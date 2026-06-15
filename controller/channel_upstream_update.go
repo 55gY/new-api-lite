@@ -159,13 +159,13 @@ func normalizeChannelModelMapping(channel *model.Channel) map[string]string {
 		return nil
 	}
 	normalized := make(map[string]string, len(parsed))
-	for source, target := range parsed {
-		normalizedSource := strings.TrimSpace(source)
-		normalizedTarget := strings.TrimSpace(target)
-		if normalizedSource == "" || normalizedTarget == "" {
+	for actualModel, requestModel := range parsed {
+		normalizedActualModel := strings.TrimSpace(actualModel)
+		normalizedRequestModel := strings.TrimSpace(requestModel)
+		if normalizedActualModel == "" || normalizedRequestModel == "" {
 			continue
 		}
-		normalized[normalizedSource] = normalizedTarget
+		normalized[normalizedActualModel] = normalizedRequestModel
 	}
 	if len(normalized) == 0 {
 		return nil
@@ -192,18 +192,18 @@ func collectPendingUpstreamModelChangesFromModels(
 
 	normalizedIgnoredModels := normalizeModelNames(ignoredModels)
 
-	mappedUpstreamSet := make(map[string]struct{}, len(modelMapping))
+	mappedActualSet := make(map[string]struct{}, len(modelMapping))
 	mappedRequestSet := make(map[string]struct{}, len(modelMapping))
-	for upstreamModel, requestModel := range modelMapping {
-		mappedUpstreamSet[upstreamModel] = struct{}{}
+	for actualModel, requestModel := range modelMapping {
+		mappedActualSet[actualModel] = struct{}{}
 		mappedRequestSet[requestModel] = struct{}{}
 	}
 
-	coveredUpstreamSet := make(map[string]struct{}, len(localSet)+len(mappedUpstreamSet))
+	coveredUpstreamSet := make(map[string]struct{}, len(localSet)+len(mappedActualSet))
 	for modelName := range localSet {
 		coveredUpstreamSet[modelName] = struct{}{}
 	}
-	for modelName := range mappedUpstreamSet {
+	for modelName := range mappedActualSet {
 		coveredUpstreamSet[modelName] = struct{}{}
 	}
 

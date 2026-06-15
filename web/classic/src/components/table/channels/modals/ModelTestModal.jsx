@@ -82,7 +82,6 @@ const ModelTestModal = ({
   selectedModelKeys,
   setSelectedModelKeys,
   modelTestResults,
-  setModelTestResults,
   testingModels,
   testChannel,
   modelTablePage,
@@ -93,8 +92,6 @@ const ModelTestModal = ({
   setIsStreamTest,
   allSelectingRef,
   isMobile,
-  refresh,
-  setCurrentTestChannel,
   t,
 }) => {
   const hasChannel = Boolean(currentTestChannel);
@@ -232,43 +229,6 @@ const ModelTestModal = ({
   const runBatchTestModels = async () => {
     await batchTestModels();
     await fetchAbilities();
-  };
-
-  const deleteModel = (record) => {
-    Modal.confirm({
-      title: t('删除模型'),
-      content: t('确定要从当前渠道中删除模型 ${model} 吗？').replace(
-        '${model}',
-        record.model,
-      ),
-      onOk: async () => {
-        try {
-          const res = await API.delete(`/api/channel/${currentTestChannel.id}/models`, {
-            data: { model: record.model },
-          });
-          const { success, message, data } = res.data;
-          if (!success) {
-            showError(message);
-            return;
-          }
-          showSuccess(t('删除成功'));
-          setCurrentTestChannel?.(data || {
-            ...currentTestChannel,
-            models: channelModels.filter((model) => model !== record.model).join(','),
-          });
-          setSelectedModelKeys((prev) => prev.filter((model) => model !== record.model));
-          setModelTestResults?.((prev) => {
-            const next = { ...prev };
-            delete next[`${currentTestChannel.id}-${record.model}`];
-            return next;
-          });
-          await refresh?.();
-          await fetchAbilities();
-        } catch (error) {
-          showError(error.message || t('删除失败'));
-        }
-      },
-    });
   };
 
   const endpointTypeOptions = [
@@ -441,15 +401,6 @@ const ModelTestModal = ({
               size='small'
             >
               {t('测试')}
-            </Button>
-            <Button
-              type='danger'
-              theme='light'
-              onClick={() => deleteModel(record)}
-              disabled={isTesting || isBatchTesting}
-              size='small'
-            >
-              {t('删除')}
             </Button>
           </div>
         );
