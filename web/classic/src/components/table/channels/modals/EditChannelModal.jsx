@@ -51,13 +51,13 @@ import {
   Dropdown,
 } from '@douyinfe/semi-ui';
 import {
-  getChannelModels,
   copy,
   getChannelIcon,
   getModelCategories,
   selectFilter,
 } from '../../../../helpers';
 import ModelSelectModal from './ModelSelectModal';
+import ModelTagInput from './ModelTagInput';
 import SingleModelSelectModal from './SingleModelSelectModal';
 import OllamaModelModal from './OllamaModelModal';
 import CodexOAuthModal from './CodexOAuthModal';
@@ -216,10 +216,6 @@ const EditChannelModal = (props) => {
   const [inputs, setInputs] = useState(originInputs);
   const [originModelOptions, setOriginModelOptions] = useState([]);
   const [modelOptions, setModelOptions] = useState([]);
-  const [basicModels, setBasicModels] = useState([]);
-  const [fullModels, setFullModels] = useState([]);
-  const [customModel, setCustomModel] = useState('');
-  const [modelSearchValue, setModelSearchValue] = useState('');
   const [modalImageUrl, setModalImageUrl] = useState('');
   const [isModalOpenurl, setIsModalOpenurl] = useState(false);
   const [modelModalVisible, setModelModalVisible] = useState(false);
@@ -295,25 +291,6 @@ const EditChannelModal = (props) => {
   );
   const upstreamDetectedModelsOmittedCount =
     upstreamDetectedModels.length - upstreamDetectedModelsPreview.length;
-  const modelSearchMatchedCount = useMemo(() => {
-    const keyword = modelSearchValue.trim();
-    if (!keyword) {
-      return modelOptions.length;
-    }
-    return modelOptions.reduce(
-      (count, option) => count + (selectFilter(keyword, option) ? 1 : 0),
-      0,
-    );
-  }, [modelOptions, modelSearchValue]);
-  const modelSearchHintText = useMemo(() => {
-    const keyword = modelSearchValue.trim();
-    if (!keyword || modelSearchMatchedCount !== 0) {
-      return '';
-    }
-    return t('未匹配到模型，按回车键可将「{{name}}」作为自定义模型名添加', {
-      name: keyword,
-    });
-  }, [modelSearchMatchedCount, modelSearchValue, t]);
   const paramOverrideMeta = useMemo(() => {
     const raw =
       typeof inputs.param_override === 'string'
@@ -587,23 +564,12 @@ const EditChannelModal = (props) => {
       setInputs((inputs) => ({ ...inputs, [name]: value }));
     }
     if (name === 'type') {
-      let localModels = [];
-      switch (value) {
-        case 45:
-          localModels = getChannelModels(value);
-          setInputs((prevInputs) => ({
-            ...prevInputs,
-            base_url: 'https://ark.cn-beijing.volces.com',
-          }));
-          break;
-        default:
-          localModels = getChannelModels(value);
-          break;
+      if (value === 45) {
+        setInputs((prevInputs) => ({
+          ...prevInputs,
+          base_url: 'https://ark.cn-beijing.volces.com',
+        }));
       }
-      if (inputs.models.length === 0) {
-        setInputs((inputs) => ({ ...inputs, models: localModels }));
-      }
-      setBasicModels(localModels);
 
       // 重置手动输入模式状态
       setUseManualInput(false);
@@ -905,7 +871,6 @@ const EditChannelModal = (props) => {
       }
       // 同步企业账户状态
       setIsEnterpriseAccount(data.is_enterprise_account || false);
-      setBasicModels(getChannelModels(data.type));
       // 同步更新channelSettings状态显示
       setChannelSettings({
         force_format: data.force_format,
@@ -1077,14 +1042,6 @@ const EditChannelModal = (props) => {
         };
       });
       setOriginModelOptions(localModelOptions);
-      setFullModels(res.data.data.map((model) => model.id));
-      setBasicModels(
-        res.data.data
-          .filter((model) => {
-            return model.id.startsWith('gpt-') || model.id.startsWith('text-');
-          })
-          .map((model) => model.id),
-      );
     } catch (error) {
       showError(error.message);
     }
@@ -1177,9 +1134,6 @@ const EditChannelModal = (props) => {
       if (formApiRef.current) {
         formApiRef.current.setValues(originInputs);
       }
-      let localModels = getChannelModels(inputs.type);
-      setBasicModels(localModels);
-      setInputs((inputs) => ({ ...inputs, models: localModels }));
     }
   }, [props.editingChannel.id]);
 
@@ -1190,7 +1144,6 @@ const EditChannelModal = (props) => {
   }, [inputs]);
 
   useEffect(() => {
-    setModelSearchValue('');
     if (props.visible) {
       if (isEdit) {
         loadChannel();
@@ -1254,7 +1207,6 @@ const EditChannelModal = (props) => {
     // 重置豆包隐藏入口状态
     setDoubaoApiEditUnlocked(false);
     doubaoApiClickCountRef.current = 0;
-    setModelSearchValue('');
     // 重置高级设置折叠状态
     setAdvancedSettingsOpen(false);
     // 清空表单中的key_mode字段
@@ -1799,42 +1751,6 @@ const EditChannelModal = (props) => {
       showInfo(t('未发现重复密钥'));
     } else {
       showSuccess(message);
-    }
-  };
-
-  const addCustomModels = () => {
-    if (customModel.trim() === '') return;
-    const modelArray = customModel.split(',').map((model) => model.trim());
-
-    let localModels = [...inputs.models];
-    let localModelOptions = [...modelOptions];
-    const addedModels = [];
-
-    modelArray.forEach((model) => {
-      if (model && !localModels.includes(model)) {
-        localModels.push(model);
-        localModelOptions.push({
-          key: model,
-          label: model,
-          value: model,
-        });
-        addedModels.push(model);
-      }
-    });
-
-    setModelOptions(localModelOptions);
-    setCustomModel('');
-    handleInputChange('models', localModels);
-
-    if (addedModels.length > 0) {
-      showSuccess(
-        t('已新增 {{count}} 个模型：{{list}}', {
-          count: addedModels.length,
-          list: addedModels.join(', '),
-        }),
-      );
-    } else {
-      showInfo(t('未发现新增模型'));
     }
   };
 
@@ -3215,113 +3131,48 @@ const EditChannelModal = (props) => {
                   )}
 
                   {/* Model Selection - Part of Core Config */}
-                  <Form.Select
-                      field='models'
+                  <Form.Slot
                       label={t('模型')}
-                      placeholder={t('请选择该渠道所支持的模型')}
-                      rules={[{ required: true, message: t('请选择模型') }]}
-                      multiple
-                      filter={selectFilter}
-                      allowCreate
-                      autoClearSearchValue={false}
-                      searchPosition='dropdown'
-                      optionList={modelOptions}
-                      onSearch={(value) => setModelSearchValue(value)}
-                      innerBottomSlot={
-                        modelSearchHintText ? (
-                          <Text className='px-3 py-2 block text-xs !text-semi-color-text-2'>
-                            {modelSearchHintText}
-                          </Text>
-                        ) : null
-                      }
-                      style={{ width: '100%' }}
-                      onChange={(value) => handleInputChange('models', value)}
-                      renderSelectedItem={(optionNode) => {
-                        const modelName = String(optionNode?.value ?? '');
-                        return {
-                          isRenderInTag: true,
-                          content: (
-                            <span
-                              className='cursor-pointer select-none'
-                              role='button'
-                              tabIndex={0}
-                              title={t('点击复制模型名称')}
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                const ok = await copy(modelName);
-                                if (ok) {
-                                  showSuccess(
-                                    t('已复制：{{name}}', { name: modelName }),
-                                  );
-                                } else {
-                                  showError(t('复制失败'));
-                                }
-                              }}
-                            >
-                              {optionNode.label || modelName}
-                            </span>
-                          ),
-                        };
-                      }}
-                      extraText={
-                        <Space>
-                          <Button
-                            size='small'
-                            type='primary'
-                            onClick={() =>
-                              handleInputChange('models', basicModels)
-                            }
-                          >
-                            {t('填入相关模型')}
-                          </Button>
-                          {MODEL_FETCHABLE_CHANNEL_TYPES.has(inputs.type) && (
+                      rules={inputs.models.length === 0 ? [{ message: t('请选择模型') }] : []}
+                    >
+                      <ModelTagInput
+                        value={inputs.models}
+                        onChange={(models) => handleInputChange('models', models)}
+                        modelOptions={modelOptions}
+                        placeholder={t('输入模型名称，多个用逗号分隔，回车确认')}
+                        required
+                        actionButtons={
+                          <>
+                            {MODEL_FETCHABLE_CHANNEL_TYPES.has(inputs.type) && (
+                              <Button
+                                size='small'
+                                type='tertiary'
+                                onClick={() => fetchUpstreamModelList('models')}
+                              >
+                                {t('获取模型列表')}
+                              </Button>
+                            )}
                             <Button
                               size='small'
                               type='tertiary'
-                              onClick={() => fetchUpstreamModelList('models')}
-                            >
-                              {t('获取模型列表')}
-                            </Button>
-                          )}
-                          <Dropdown
-                            trigger='click'
-                            position='bottomRight'
-                            menu={[
-                              { node: 'item', name: t('填入所有模型'), onClick: () => handleInputChange('models', fullModels) },
-                              ...(inputs.type === 4 && isEdit ? [{ node: 'item', name: t('Ollama 模型管理'), onClick: () => setOllamaModalVisible(true) }] : []),
-                              { node: 'divider' },
-                              { node: 'item', name: t('复制所有模型'), onClick: () => {
+                              onClick={() => {
                                 if (inputs.models.length === 0) { showInfo(t('没有模型可以复制')); return; }
                                 try { copy(inputs.models.join(',')); showSuccess(t('模型列表已复制到剪贴板')); } catch (error) { showError(t('复制失败')); }
-                              }},
-                              { node: 'item', name: t('清除所有模型'), type: 'danger', onClick: () => handleInputChange('models', []) },
-                            ]}
-                          >
-                            <Button size='small' type='tertiary'>
-                              {t('更多')} <IconChevronDown size={12} />
+                              }}
+                            >
+                              {t('复制所有模型')}
                             </Button>
-                          </Dropdown>
-                        </Space>
-                      }
-                    />
-
-                  {/* Custom Model Name - Core Config */}
-                  <Form.Input
-                    field='custom_model'
-                    label={t('自定义模型名称')}
-                    placeholder={t('输入自定义模型名称')}
-                    onChange={(value) => setCustomModel(value.trim())}
-                    value={customModel}
-                    suffix={
-                      <Button
-                        size='small'
-                        type='primary'
-                        onClick={addCustomModels}
-                      >
-                        {t('填入')}
-                      </Button>
-                    }
-                  />
+                            <Button
+                              size='small'
+                              type='danger'
+                              onClick={() => handleInputChange('models', [])}
+                            >
+                              {t('清除所有模型')}
+                            </Button>
+                          </>
+                        }
+                      />
+                    </Form.Slot>
 
                   {/* Model Mapping - Core Config */}
                   <JSONEditor
