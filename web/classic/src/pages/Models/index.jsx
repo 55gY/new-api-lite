@@ -41,6 +41,7 @@ import {
 import {
   IconClose,
   IconCopy,
+  IconDelete,
   IconInfoCircle,
   IconRefresh,
   IconSearch,
@@ -201,17 +202,28 @@ const Models = () => {
   const [testingItemKeys, setTestingItemKeys] = useState(new Set());
   const [updatingStatusKeys, setUpdatingStatusKeys] = useState(new Set());
   const [deletingModelKeys, setDeletingModelKeys] = useState(new Set());
+  const [channelFilter, setChannelFilter] = useState('');
+  const [batchMappingModalVisible, setBatchMappingModalVisible] = useState(false);
+  const [batchMappingRequestModel, setBatchMappingRequestModel] = useState('');
+  const [batchSettingMapping, setBatchSettingMapping] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
+  const [deletingModelRecordKey, setDeletingModelRecordKey] = useState(null);
   const allSelectingRef = useRef(false);
   const batchTestingRef = useRef(false);
 
   const modelRows = useMemo(() => models.map(normalizeModelDetail), [models]);
 
   const filteredModels = useMemo(() => {
-    const keyword = searchValue.trim().toLowerCase();
-    return modelRows.filter(
-      (model) => !keyword || model.model_name.toLowerCase().includes(keyword),
-    );
-  }, [modelRows, searchValue]);
+    const nameKw = searchValue.trim().toLowerCase();
+    const channelKw = channelFilter.trim().toLowerCase();
+    return modelRows.filter((model) => {
+      const matchName = !nameKw || model.model_name.toLowerCase().includes(nameKw);
+      const matchChannel = !channelKw
+        || model.channels.some((c) => getChannelName(c).toLowerCase().includes(channelKw))
+        || model.mappings.some((m) => (m.channel_name || '').toLowerCase().includes(channelKw));
+      return matchName && matchChannel;
+    });
+  }, [modelRows, searchValue, channelFilter]);
 
   const currentEditingModel = useMemo(() => {
     if (!editingModelRecord) return null;
@@ -481,6 +493,199 @@ const Models = () => {
             next.delete(inputKey);
             return next;
           });
+        }
+      },
+    });
+  };
+
+  const deleteModelFromAllChannels = async (model, opts = {}) => {
+    const channels = Array.isArray(model.channels) ? model.channels : [];
+    if (channels.length === 0) {
+      if (!opts.silent) showError(t('该模型仅作为映射别名存在，无承载渠道'));
+      return { successCount: 0, failureCount: 0 };
+    }
+    let successCount = 0;
+    let failureCount = 0;
+    for (const channel of channels) {
+      const channelId = channel.id ?? channel.channel_id;
+      try {
+        const res = await API.delete(`/api/channel/${channelId}/models`, {
+          data: { model: model.model_name },
+        });
+        if (res.data.success) {
+          successCount++;
+        } else {
+          failureCount++;
+        }
+      } catch {
+        failureCount++;
+      }
+    }
+    if (!opts.silent) {
+      if (successCount > 0) showSuccess(t('批量操作完成: {{success}}个成功, {{failed}}个失败').replace('{{success}}', successCount).replace('{{failed}}', failureCount));
+      else showError(t('操作失败'));
+    }
+    await fetchModels();
+    return { successCount, failureCount };
+  };
+
+  const setRequestModelForAllChannels = async (model, requestModel) => {
+    const channels = Array.isArray(model.channels) ? model.channels : [];
+    if (channels.length === 0) {
+      return { successCount: 0, failureCount: 0 };
+    }
+    let successCount = 0;
+    let failureCount = 0;
+    for (const channel of channels) {
+      const channelId = channel.id ?? channel.channel_id;
+      try {
+        const channelRes = await API.get(`/api/channel/${channelId}`);
+        if (!channelRes.data.success) {
+          failureCount++;
+          continue;
+        }
+        const channelData = channelRes.data.data;
+        const modelMapping = parseModelMapping(channelData?.model_mapping);
+        if (modelMapping === null) {
+          failureCount++;
+          continue;
+        }
+        modelMapping[model.model_name] = requestModel;
+        const updateRes = await API.put('/api/channel/', {
+          id: channelId,
+          model_mapping: Object.keys(modelMapping).length
+            ? JSON.stringify(modelMapping, null, 2)
+            : '',
+        });
+        if (updateRes.data.success) {
+          successCount++;
+        } else {
+          failureCount++;
+        }
+      } catch {
+        failureCount++;
+      }
+    }
+    return { successCount, failureCount };
+  };
+
+  const confirmDeleteSingleModel = (record) => {
+    const channels = Array.isArray(record.channels) ? record.channels : [];
+    const channelCount = new Set(channels.map((c) => c.id ?? c.channel_id)).size;
+    Modal.confirm({
+      title: t('删除模型'),
+      content: t('确定要删除模型 ${model} 吗？将涉及 ${channelCount} 个渠道')
+        .replace('${model}', record.model_name)
+        .replace('${channelCount}', channelCount),
+      onOk: async () => {
+        setDeletingModelRecordKey(record.model_name);
+        try {
+          await deleteModelFromAllChannels(record);
+        } finally {
+          setDeletingModelRecordKey(null);
+        }
+      },
+    });
+  };
+
+  const openBatchMappingModal = () => {
+    if (selectedRowKeys.length === 0) {
+      showError(t('请先选择模型！'));
+      return;
+    }
+    setBatchMappingRequestModel('');
+    setBatchMappingModalVisible(true);
+  };
+
+  const batchMappingAffectedInfo = useMemo(() => {
+    const selectedKeySet = new Set(selectedRowKeys);
+    const selectedModels = filteredModels.filter((m) => selectedKeySet.has(m.model_name));
+    const channelIds = new Set();
+    let modelCount = 0;
+    for (const m of selectedModels) {
+      if (m.channels.length > 0) {
+        modelCount++;
+        for (const c of m.channels) {
+          channelIds.add(c.id ?? c.channel_id);
+        }
+      }
+    }
+    return { modelCount, channelCount: channelIds.size, selectedModels };
+  }, [selectedRowKeys, filteredModels]);
+
+  const setRequestModelForAllChannelsForBatch = async () => {
+    const { selectedModels } = batchMappingAffectedInfo;
+    const targets = selectedModels.filter((m) => m.channels.length > 0);
+    if (targets.length === 0) {
+      showError(t('当前所选模型没有承载渠道'));
+      return;
+    }
+    const requestModel = batchMappingRequestModel.trim();
+    Modal.confirm({
+      title: t('批量设置模型映射'),
+      content: t('确定要将选中的 ${count} 个实际模型批量映设为请求模型 ${target} 吗？')
+        .replace('${count}', targets.length)
+        .replace('${target}', requestModel),
+      onOk: async () => {
+        setBatchSettingMapping(true);
+        try {
+          let totalSuccess = 0;
+          let totalFailure = 0;
+          for (const model of targets) {
+            const { successCount, failureCount } = await setRequestModelForAllChannels(model, requestModel);
+            totalSuccess += successCount;
+            totalFailure += failureCount;
+          }
+          if (totalSuccess > 0) {
+            showSuccess(t('批量操作完成: {{success}}个成功, {{failed}}个失败').replace('{{success}}', totalSuccess).replace('{{failed}}', totalFailure));
+          } else {
+            showError(t('操作失败'));
+          }
+          await fetchModels();
+        } finally {
+          setBatchSettingMapping(false);
+          setBatchMappingModalVisible(false);
+        }
+      },
+    });
+  };
+
+  const openBatchDeleteConfirm = () => {
+    if (selectedRowKeys.length === 0) {
+      showError(t('请先选择模型！'));
+      return;
+    }
+    const selectedKeySet = new Set(selectedRowKeys);
+    const selectedModels = filteredModels.filter((m) => selectedKeySet.has(m.model_name));
+    const channelIds = new Set();
+    for (const m of selectedModels) {
+      for (const c of m.channels) {
+        channelIds.add(c.id ?? c.channel_id);
+      }
+    }
+    Modal.confirm({
+      title: t('批量删除所选模型'),
+      content: t('确定要删除选中的 ${count} 个模型吗？将涉及 ${channelCount} 个渠道')
+        .replace('${count}', selectedModels.length)
+        .replace('${channelCount}', channelIds.size),
+      onOk: async () => {
+        setBatchDeleting(true);
+        try {
+          let totalSuccess = 0;
+          let totalFailure = 0;
+          for (const model of selectedModels) {
+            const { successCount, failureCount } = await deleteModelFromAllChannels(model, { silent: true });
+            totalSuccess += successCount;
+            totalFailure += failureCount;
+          }
+          if (totalSuccess > 0) {
+            showSuccess(t('批量操作完成: {{success}}个成功, {{failed}}个失败').replace('{{success}}', totalSuccess).replace('{{failed}}', totalFailure));
+          } else if (totalFailure > 0) {
+            showError(t('操作失败'));
+          }
+          await fetchModels();
+        } finally {
+          setBatchDeleting(false);
         }
       },
     });
@@ -857,7 +1062,7 @@ const Models = () => {
     {
       title: '',
       dataIndex: 'operate',
-      width: 220,
+      width: 260,
       fixed: 'right',
       render: (_, record) => {
         const testing = getTestItems(record).some((item) => testingItemKeys.has(item.key));
@@ -882,6 +1087,17 @@ const Models = () => {
             </SplitButtonGroup>
             <Button type='tertiary' size='small' onClick={() => openEditModel(record)}>
               {t('编辑')}
+            </Button>
+            <Button
+              type='tertiary'
+              size='small'
+              theme='borderless'
+              danger
+              icon={<IconDelete />}
+              onClick={() => confirmDeleteSingleModel(record)}
+              loading={deletingModelRecordKey === record.model_name}
+            >
+              {t('删除')}
             </Button>
           </div>
         );
@@ -979,6 +1195,13 @@ const Models = () => {
           onChange={setSearchValue}
           showClear
         />
+        <Input
+          prefix={<IconSearch />}
+          placeholder={t('模糊搜索渠道')}
+          value={channelFilter}
+          onChange={setChannelFilter}
+          showClear
+        />
         <Button
           theme='outline'
           type='primary'
@@ -996,10 +1219,16 @@ const Models = () => {
               <Dropdown.Item onClick={batchTestSelectedModels} disabled={selectedRowKeys.length === 0}>
                 {t('测试所选模型')}
               </Dropdown.Item>
+              <Dropdown.Item onClick={openBatchMappingModal} disabled={selectedRowKeys.length === 0 || batchSettingMapping}>
+                {t('批量设置模型映射')}
+              </Dropdown.Item>
+              <Dropdown.Item type='danger' onClick={openBatchDeleteConfirm} disabled={selectedRowKeys.length === 0 || batchDeleting}>
+                {t('批量删除所选模型')}
+              </Dropdown.Item>
             </Dropdown.Menu>
           }
         >
-          <Button disabled={selectedRowKeys.length === 0} loading={isBatchTesting}>
+          <Button disabled={selectedRowKeys.length === 0} loading={isBatchTesting || batchDeleting}>
             {t('批量操作')}
           </Button>
         </Dropdown>
@@ -1278,6 +1507,28 @@ const Models = () => {
             />
           </div>
         )}
+      </Modal>
+
+      <Modal
+        title={t('批量设置模型映射')}
+        visible={batchMappingModalVisible}
+        onCancel={() => setBatchMappingModalVisible(false)}
+        onOk={setRequestModelForAllChannelsForBatch}
+        okText={t('确定')}
+        cancelText={t('取消')}
+        okButtonProps={{ loading: batchSettingMapping, disabled: !batchMappingRequestModel.trim() }}
+      >
+        <Banner type='info' closeIcon={null} icon={<IconInfoCircle />} className='!rounded-lg mb-3'>
+          {t('将批量设置 ${count} 个模型在 ${channelCount} 个渠道中的映射')
+            .replace('${count}', batchMappingAffectedInfo.modelCount)
+            .replace('${channelCount}', batchMappingAffectedInfo.channelCount)}
+        </Banner>
+        <Input
+          placeholder={t('统一请求模型名称')}
+          value={batchMappingRequestModel}
+          onChange={setBatchMappingRequestModel}
+          showClear
+        />
       </Modal>
     </>
   );
