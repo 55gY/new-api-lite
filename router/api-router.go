@@ -135,8 +135,10 @@ func SetApiRouter(router *gin.Engine) {
 			channelRoute.POST("/upstream_updates/apply", controller.ApplyChannelUpstreamModelUpdates)
 			channelRoute.POST("/upstream_updates/apply_all", controller.ApplyAllChannelUpstreamModelUpdates)
 			channelRoute.POST("/upstream_updates/detect", controller.DetectChannelUpstreamModelUpdates)
-			channelRoute.POST("/upstream_updates/detect_all", controller.DetectAllChannelUpstreamModelUpdates)		channelRoute.POST("/model/batch-delete", controller.DeleteChannelModelsBatch)
-		channelRoute.POST("/model-mapping/batch", controller.BatchUpdateModelMapping)		}
+			channelRoute.POST("/upstream_updates/detect_all", controller.DetectAllChannelUpstreamModelUpdates)
+			channelRoute.POST("/model/batch-delete", controller.DeleteChannelModelsBatch)
+			channelRoute.POST("/model-mapping/batch", controller.BatchUpdateModelMapping)
+		}
 		tokenRoute := apiRouter.Group("/token")
 		tokenRoute.Use(middleware.UserAuth())
 		{

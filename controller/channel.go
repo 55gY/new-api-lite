@@ -21,8 +21,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-	
-	jsoncommon "github.com/QuantumNous/new-api/common"
 )
 
 type OpenAIModel struct {
@@ -760,6 +758,10 @@ func DeleteChannelModelsBatch(c *gin.Context) {
 			"failures": failures,
 		},
 	})
+}
+
+type PatchChannel struct {
+	model.Channel
 	MultiKeyMode *string `json:"multi_key_mode"`
 	KeyMode      *string `json:"key_mode"` // 多key模式下密钥覆盖或者追加
 }
@@ -1071,7 +1073,7 @@ func BatchUpdateModelMapping(c *gin.Context) {
 			}
 
 			var mapping map[string]string
-			if err := jsoncommon.UnmarshalJsonStr(*channel.ModelMapping, &mapping); err != nil {
+			if err := common.UnmarshalJsonStr(*channel.ModelMapping, &mapping); err != nil {
 				failures = append(failures, fmt.Sprintf("channel #%d: %s (解析映射失败: %s)", op.ChannelID, op.ActualModel, err.Error()))
 				continue
 			}
@@ -1085,7 +1087,7 @@ func BatchUpdateModelMapping(c *gin.Context) {
 				empty := ""
 				channel.ModelMapping = &empty
 			} else {
-				newMapping, err := jsoncommon.Marshal(mapping)
+				newMapping, err := common.Marshal(mapping)
 				if err != nil {
 					failures = append(failures, fmt.Sprintf("channel #%d: %s (更新映射失败: %s)", op.ChannelID, op.ActualModel, err.Error()))
 					continue
@@ -1099,14 +1101,14 @@ func BatchUpdateModelMapping(c *gin.Context) {
 			if channel.ModelMapping == nil || *channel.ModelMapping == "" || *channel.ModelMapping == "{}" {
 				mapping = make(map[string]string)
 			} else {
-				if err := jsoncommon.UnmarshalJsonStr(*channel.ModelMapping, &mapping); err != nil {
+				if err := common.UnmarshalJsonStr(*channel.ModelMapping, &mapping); err != nil {
 					failures = append(failures, fmt.Sprintf("channel #%d: %s (解析映射失败: %s)", op.ChannelID, op.ActualModel, err.Error()))
 					continue
 				}
 			}
 
 			mapping[op.ActualModel] = op.RequestModel
-			newMapping, err := jsoncommon.Marshal(mapping)
+			newMapping, err := common.Marshal(mapping)
 			if err != nil {
 				failures = append(failures, fmt.Sprintf("channel #%d: %s (更新映射失败: %s)", op.ChannelID, op.ActualModel, err.Error()))
 				continue
