@@ -84,7 +84,7 @@ import {
 const { Text, Title } = Typography;
 
 const MODEL_MAPPING_EXAMPLE = {
-  'DeepSeek-V4': 'gpt-5.5',
+  'DeepSeek-V4': 'gpt-5.5,gpt-5.4',
 };
 
 const STATUS_CODE_MAPPING_EXAMPLE = {
@@ -128,6 +128,12 @@ const DEPRECATED_DOUBAO_CODING_PLAN_BASE_URL = 'doubao-coding-plan';
 const MODEL_FETCHABLE_TYPES = new Set([
   1, 4, 14, 34, 17, 26, 27, 24, 47, 25, 20, 23, 31, 40, 42, 48, 43,
 ]);
+
+const splitModelMappingValues = (value) =>
+  String(value ?? '')
+    .split(',')
+    .map((model) => model.trim())
+    .filter(Boolean);
 
 function type2secretPrompt(type) {
   // inputs.type === 15 ? '按照如下格式输入：APIKey|SecretKey' : (inputs.type === 18 ? '按照如下格式输入：APPID|APISecret|APIKey' : '请输入渠道对应的鉴权密钥')
@@ -248,9 +254,7 @@ const EditChannelModal = (props) => {
       if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
         return [];
       }
-      const values = Object.values(parsed)
-        .map((value) => (typeof value === 'string' ? value.trim() : undefined))
-        .filter((value) => value);
+      const values = Object.values(parsed).flatMap(splitModelMappingValues);
       return Array.from(new Set(values));
     } catch (error) {
       return [];
@@ -994,10 +998,7 @@ const EditChannelModal = (props) => {
     return null;
   };
 
-  const openModelMappingValueModal = async ({ pairKey, value }) => {
-    const mappingKey = String(pairKey ?? '').trim();
-    if (!mappingKey) return;
-
+  const openModelMappingKeyModal = async ({ pairKey, value }) => {
     if (!MODEL_FETCHABLE_CHANNEL_TYPES.has(inputs.type)) {
       return;
     }
@@ -1020,12 +1021,12 @@ const EditChannelModal = (props) => {
         modelsToUse.map((model) => String(model ?? '').trim()).filter(Boolean),
       ),
     );
-    const currentValue = String(value ?? '').trim();
+    const currentKey = String(pairKey ?? '').trim();
 
     setModelMappingValueModalModels(normalizedModelsToUse);
-    setModelMappingValueKey(mappingKey);
+    setModelMappingValueKey(currentKey);
     setModelMappingValueSelected(
-      normalizedModelsToUse.includes(currentValue) ? currentValue : '',
+      normalizedModelsToUse.includes(currentKey) ? currentKey : '',
     );
     setModelMappingValueModalVisible(true);
   };
@@ -3182,7 +3183,7 @@ const EditChannelModal = (props) => {
                     label={t('模型重定向')}
                     placeholder={
                       t(
-                        '此项可选，用于设置模型映射，为一个 JSON 字符串，键为实际模型名称，值为请求模型名称，例如：',
+                        '此项可选，用于设置模型映射，为一个 JSON 字符串，键为实际模型名称，值为请求模型名称，多个请求模型用英文逗号分隔，例如：',
                       ) +
                       `\n${JSON.stringify(MODEL_MAPPING_EXAMPLE, null, 2)}`
                     }
@@ -3194,11 +3195,12 @@ const EditChannelModal = (props) => {
                     templateLabel={t('填入模板')}
                     editorType='keyValue'
                     formApi={formApiRef.current}
-                    renderStringValueSuffix={({ pairKey, value }) => {
+                    keyPlaceholder={t('实际模型')}
+                    valuePlaceholder={t('请求模型1,请求模型2')}
+                    renderKeySuffix={({ pairKey, value }) => {
                       if (!MODEL_FETCHABLE_CHANNEL_TYPES.has(inputs.type)) {
                         return null;
                       }
-                      const disabled = !String(pairKey ?? '').trim();
                       return (
                         <Tooltip content={t('选择模型')}>
                           <Button
@@ -3206,17 +3208,16 @@ const EditChannelModal = (props) => {
                             theme='borderless'
                             size='small'
                             icon={<IconSearch size={14} />}
-                            disabled={disabled}
                             onClick={(e) => {
                               e.stopPropagation();
-                              openModelMappingValueModal({ pairKey, value });
+                              openModelMappingKeyModal({ pairKey, value });
                             }}
                           />
                         </Tooltip>
                       );
                     }}
                     extraText={t(
-                      '键为实际模型名称，值为请求模型名称；例如配置 {"DeepSeek-V4":"gpt-5.5"} 表示请求 gpt-5.5 时实际发送到上游模型 DeepSeek-V4',
+                      '实际模型为上游模型名称，请求模型为客户端调用名称；多个请求模型用英文逗号分隔。例如配置 {"DeepSeek-V4":"gpt-5.5,gpt-5.4"} 表示请求 gpt-5.5 或 gpt-5.4 时实际发送到上游模型 DeepSeek-V4',
                     )}
                   />
 
@@ -3409,10 +3410,6 @@ const EditChannelModal = (props) => {
           }
 
           const mappingKey = String(modelMappingValueKey ?? '').trim();
-          if (!mappingKey) {
-            setModelMappingValueModalVisible(false);
-            return;
-          }
 
           let parsed = {};
           const currentMapping = inputs.model_mapping;
@@ -3433,7 +3430,11 @@ const EditChannelModal = (props) => {
             parsed = {};
           }
 
-          parsed[mappingKey] = modelName;
+          const currentValue = mappingKey ? parsed[mappingKey] : '';
+          if (mappingKey && mappingKey !== modelName) {
+            delete parsed[mappingKey];
+          }
+          parsed[modelName] = currentValue || '';
           const nextMapping = JSON.stringify(parsed, null, 2);
           handleInputChange('model_mapping', nextMapping);
           if (formApiRef.current) {

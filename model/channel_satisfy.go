@@ -92,7 +92,7 @@ func isChannelMappedForGroupModelDB(group string, requestModel string, channelID
 	}
 	for _, ability := range abilities {
 		actualModel := ability.Model
-		if parseModelMapping(ability.ModelMapping)[actualModel] == requestModel {
+		if common.StringsContains(common.SplitModelMappingValues(parseModelMapping(ability.ModelMapping)[actualModel]), requestModel) {
 			return true
 		}
 	}

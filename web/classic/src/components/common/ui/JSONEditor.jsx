@@ -60,6 +60,9 @@ const JSONEditor = ({
   editorType = 'keyValue',
   rules = [],
   formApi = null,
+  keyPlaceholder,
+  valuePlaceholder,
+  renderKeySuffix,
   renderStringValueSuffix,
   ...props
 }) => {
@@ -386,7 +389,7 @@ const JSONEditor = ({
     // 字符串或其他原始类型
     return (
       <Input
-        placeholder={t('参数值')}
+        placeholder={valuePlaceholder || t('参数值')}
         value={String(value)}
         suffix={renderStringValueSuffix?.({ pairId, pairKey, value })}
         onChange={(newValue) => {
@@ -448,8 +451,13 @@ const JSONEditor = ({
               <Col span={10}>
                 <div className='relative'>
                   <Input
-                    placeholder={t('键名')}
+                    placeholder={keyPlaceholder || t('键名')}
                     value={pair.key}
+                    suffix={renderKeySuffix?.({
+                      pairId: pair.id,
+                      pairKey: pair.key,
+                      value: pair.value,
+                    })}
                     onChange={(newKey) => updateKey(pair.id, newKey)}
                     status={isDuplicate ? 'warning' : undefined}
                   />

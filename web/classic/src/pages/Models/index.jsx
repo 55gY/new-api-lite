@@ -88,6 +88,15 @@ const getMappingDisplayName = (mapping, modelName) => {
   return requestModel || actualModel || '';
 };
 
+const splitModelMappingValues = (value) =>
+  String(value ?? '')
+    .split(',')
+    .map((model) => model.trim())
+    .filter(Boolean)
+    .filter((model, index, models) => models.indexOf(model) === index);
+
+const joinModelMappingValues = (models) => splitModelMappingValues(models).join(',');
+
 const MODEL_TEST_STATUS = {
   untested: 0,
   available: 1,
@@ -306,25 +315,36 @@ const Models = () => {
     const channels = Array.isArray(record?.channels) ? record.channels : [];
     const mappings = Array.isArray(record?.mappings) ? record.mappings : [];
     const normalizeChannelId = (channelId) => String(channelId ?? '');
-    const mappingByChannelId = new Map(
-      mappings
-        .filter((mapping) => (mapping.request_model || mapping.target) === record.model_name)
-        .map((mapping) => [normalizeChannelId(mapping.channel_id), mapping]),
-    );
+    const mappingsByActual = new Map();
+    mappings.forEach((mapping) => {
+      const channelId = mapping.channel_id;
+      const actualModel = mapping.actual_model || mapping.source || '';
+      const requestModel = mapping.request_model || mapping.target || '';
+      if (!channelId || !actualModel || !requestModel) return;
+      const key = `${normalizeChannelId(channelId)}-${actualModel}`;
+      const current = mappingsByActual.get(key) || {
+        channelId,
+        channelName: mapping.channel_name || `#${channelId}`,
+        actualModel,
+        requestModels: [],
+        mapping,
+      };
+      current.requestModels = Array.from(new Set([...current.requestModels, requestModel]));
+      mappingsByActual.set(key, current);
+    });
     const channelIds = new Set(
       channels.map((channel) => normalizeChannelId(channel.id ?? channel.channel_id)),
     );
 
     const channelRows = channels.map((channel) => {
       const channelId = channel.id ?? channel.channel_id;
-      const mapping = mappingByChannelId.get(normalizeChannelId(channelId));
+      const mappingGroup = mappingsByActual.get(`${normalizeChannelId(channelId)}-${record.model_name}`);
       return {
         key: `${channelId}-${record.model_name}`,
         channelId,
-        channelName: mapping?.channel_name || getChannelName(channel),
-        sourceModel: record.model_name,
-        targetModel: mapping?.actual_model || mapping?.source || '',
-        originalSourceModel: mapping?.actual_model || mapping?.source || '',
+        channelName: mappingGroup?.channelName || getChannelName(channel),
+        actualModel: record.model_name,
+        requestModels: mappingGroup?.requestModels.join(',') || '',
         testStatus: channel.test_status ?? 0,
         testTime: channel.test_time ?? 0,
         responseTime: channel.response_time ?? 0,
@@ -336,16 +356,22 @@ const Models = () => {
 
     const orphanMappingRows = mappings
       .filter((mapping) => !channelIds.has(normalizeChannelId(mapping.channel_id)))
+      .filter((mapping, index, list) => {
+        const actualModel = mapping.actual_model || mapping.source || '';
+        return list.findIndex((item) =>
+          normalizeChannelId(item.channel_id) === normalizeChannelId(mapping.channel_id) &&
+          (item.actual_model || item.source || '') === actualModel,
+        ) === index;
+      })
       .map((mapping) => {
         const actualModel = mapping.actual_model || mapping.source || '';
-        const requestModel = mapping.request_model || mapping.target || '';
+        const mappingGroup = mappingsByActual.get(`${normalizeChannelId(mapping.channel_id)}-${actualModel}`);
         return {
-          key: `${mapping.channel_id}-${requestModel || actualModel}`,
+          key: `${mapping.channel_id}-${actualModel}`,
           channelId: mapping.channel_id,
           channelName: mapping.channel_name || `#${mapping.channel_id}`,
-          sourceModel: requestModel || actualModel,
-          targetModel: actualModel,
-          originalSourceModel: actualModel,
+          actualModel,
+          requestModels: mappingGroup?.requestModels.join(',') || '',
           testStatus: mapping.test_status ?? 0,
           testTime: mapping.test_time ?? 0,
           responseTime: mapping.response_time ?? 0,
@@ -358,7 +384,7 @@ const Models = () => {
     return [...channelRows, ...orphanMappingRows];
   };
 
-  const getMappingInputKey = (row) => `${row.channelId}-${row.sourceModel}`;
+  const getMappingInputKey = (row) => `${row.channelId}-${row.actualModel}`;
 
   const setMappingValue = (row, value) => {
     setMappingInputs((prev) => ({
@@ -382,9 +408,9 @@ const Models = () => {
 
   const saveMapping = async (row, value) => {
     const inputKey = getMappingInputKey(row);
-    const nextActualModel = (value ?? mappingInputs[inputKey] ?? row.targetModel ?? '').trim();
-    const currentActualModel = (row.targetModel ?? '').trim();
-    if (savingMappingKeys.has(inputKey) || nextActualModel === currentActualModel) {
+    const nextRequestModels = joinModelMappingValues(value ?? mappingInputs[inputKey] ?? row.requestModels ?? '');
+    const currentRequestModels = joinModelMappingValues(row.requestModels ?? '');
+    if (savingMappingKeys.has(inputKey) || nextRequestModels === currentRequestModels) {
       return;
     }
     setSavingMappingKeys((prev) => new Set([...prev, inputKey]));
@@ -398,11 +424,15 @@ const Models = () => {
 
       const modelMapping = parseModelMapping(data?.model_mapping);
       if (modelMapping === null) return;
-      if (row.originalSourceModel) {
-        delete modelMapping[row.originalSourceModel];
+      const actualModel = String(row.actualModel ?? '').trim();
+      if (!actualModel) {
+        showError(t('实际模型不能为空'));
+        return;
       }
-      if (nextActualModel) {
-        modelMapping[nextActualModel] = row.sourceModel;
+      if (nextRequestModels) {
+        modelMapping[actualModel] = nextRequestModels;
+      } else {
+        delete modelMapping[actualModel];
       }
 
       const updateRes = await API.put('/api/channel/', {
@@ -438,7 +468,7 @@ const Models = () => {
     setUpdatingStatusKeys((prev) => new Set([...prev, inputKey]));
     try {
       const res = await API.put(`/api/channel/${row.channelId}/abilities`, {
-        model: row.sourceModel,
+        model: row.actualModel,
         status,
       });
       const { success, message } = res.data;
@@ -465,12 +495,12 @@ const Models = () => {
       title: t('删除模型'),
       content: t('确定要从渠道 ${channel} 中删除模型 ${model} 吗？')
         .replace('${channel}', row.channelName)
-        .replace('${model}', row.sourceModel),
+        .replace('${model}', row.actualModel),
       onOk: async () => {
         setDeletingModelKeys((prev) => new Set([...prev, inputKey]));
         try {
           const res = await API.delete(`/api/channel/${row.channelId}/models`, {
-            data: { model: row.sourceModel },
+            data: { model: row.actualModel },
           });
           const { success, message } = res.data;
           if (!success) {
@@ -853,12 +883,29 @@ const Models = () => {
     const mappings = Array.isArray(record.mappings) ? record.mappings : [];
     if (!record.mapped || mappings.length === 0) return null;
 
-    const visibleMappings = mappings.slice(0, 3);
-    const mappingText = mappings
+    const groupedMappings = Array.from(
+      mappings.reduce((groups, mapping) => {
+        const actualModel = mapping.actual_model || mapping.source || '';
+        const requestModel = mapping.request_model || mapping.target || '';
+        const key = `${mapping.channel_id}-${actualModel}`;
+        const current = groups.get(key) || {
+          ...mapping,
+          actual_model: actualModel,
+          request_models: [],
+        };
+        if (requestModel && !current.request_models.includes(requestModel)) {
+          current.request_models.push(requestModel);
+        }
+        groups.set(key, current);
+        return groups;
+      }, new Map()).values(),
+    );
+    const visibleMappings = groupedMappings.slice(0, 3);
+    const mappingText = groupedMappings
       .map((mapping) => {
         const channelName = mapping.channel_name || `#${mapping.channel_id}`;
         const actualModel = mapping.actual_model || mapping.source || '';
-        const requestModel = mapping.request_model || mapping.target || '';
+        const requestModel = (mapping.request_models || []).join(',');
         return `${channelName}: ${t('实际模型')} ${actualModel} -> ${t('请求模型')} ${requestModel}`;
       })
       .join('\n');
@@ -868,16 +915,18 @@ const Models = () => {
         <div className='flex flex-wrap gap-1'>
           {visibleMappings.map((mapping) => (
             <Tag
-              key={`${mapping.channel_id}-${mapping.actual_model || mapping.source}-${mapping.request_model || mapping.target}`}
+              key={`${mapping.channel_id}-${mapping.actual_model || mapping.source}`}
               size='small'
               color='blue'
             >
-              {getMappingDisplayName(mapping, record.model_name)}
+              {(mapping.actual_model || mapping.source) === record.model_name
+                ? (mapping.request_models || []).join(',')
+                : getMappingDisplayName(mapping, record.model_name)}
             </Tag>
           ))}
-          {mappings.length > visibleMappings.length && (
+          {groupedMappings.length > visibleMappings.length && (
             <Tag size='small' color='blue'>
-              +{mappings.length - visibleMappings.length}
+              +{groupedMappings.length - visibleMappings.length}
             </Tag>
           )}
         </div>
@@ -961,12 +1010,12 @@ const Models = () => {
           scroll={{ x: 830 }}
           columns={[
             {
-              title: t('请求模型'),
-              dataIndex: 'sourceModel',
+              title: t('实际模型'),
+              dataIndex: 'actualModel',
               width: 150,
-              render: (sourceModel) => (
+              render: (actualModel) => (
                 <Text strong ellipsis={{ showTooltip: true }} className='models-edit-table-text'>
-                  {sourceModel}
+                  {actualModel}
                 </Text>
               ),
             },
@@ -981,14 +1030,14 @@ const Models = () => {
               ),
             },
             {
-              title: t('实际模型'),
-              dataIndex: 'targetModel',
+              title: t('请求模型1,请求模型2'),
+              dataIndex: 'requestModels',
               width: 190,
-              render: (targetModel, row) => (
+              render: (requestModels, row) => (
                 <Input
                   className='models-edit-mapping-input'
-                  placeholder={t('留空则不设置模型映射')}
-                  value={mappingInputs[getMappingInputKey(row)] ?? targetModel}
+                  placeholder={t('留空则不设置模型映射，多个请求模型用英文逗号分隔')}
+                  value={mappingInputs[getMappingInputKey(row)] ?? requestModels}
                   onChange={(value) => setMappingValue(row, value)}
                   onBlur={(e) => saveMapping(row, e.target.value)}
                   disabled={savingMappingKeys.has(getMappingInputKey(row))}

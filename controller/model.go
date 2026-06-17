@@ -379,33 +379,35 @@ func EnabledListModelDetails(c *gin.Context) {
 		}
 
 		modelMapping := parseChannelModelMapping(item.ModelMapping)
-		for actualModel, requestModel := range modelMapping {
-			if actualModel != modelName && requestModel != modelName {
-				continue
-			}
-			mappingInfo := enabledModelMappingInfo{
-				ChannelId:    item.ChannelId,
-				ChannelName:  item.ChannelName,
-				ActualModel:  actualModel,
-				RequestModel: requestModel,
-				Source:       actualModel,
-				Target:       requestModel,
-				Status:       model.NormalizeAbilityStatus(item.Status, item.Enabled),
-				TestStatus:   item.TestStatus,
-				TestTime:     item.TestTime,
-				ResponseTime: item.ResponseTime,
-				TestError:    item.TestError,
-				TestResponse: item.TestResponse,
-			}
-			for _, mappedModelName := range []string{actualModel, requestModel} {
-				mappedDetail := getOrCreateDetail(mappedModelName, item.ChannelType)
-				mappingKey := fmt.Sprintf("%d|%s|%s", item.ChannelId, actualModel, requestModel)
-				if _, exists := mappingSetByModel[mappedModelName][mappingKey]; exists {
+		for actualModel, requestModelsValue := range modelMapping {
+			for _, requestModel := range common.SplitModelMappingValues(requestModelsValue) {
+				if actualModel != modelName && requestModel != modelName {
 					continue
 				}
-				mappingSetByModel[mappedModelName][mappingKey] = struct{}{}
-				mappedDetail.Mapped = true
-				mappedDetail.Mappings = append(mappedDetail.Mappings, mappingInfo)
+				mappingInfo := enabledModelMappingInfo{
+					ChannelId:    item.ChannelId,
+					ChannelName:  item.ChannelName,
+					ActualModel:  actualModel,
+					RequestModel: requestModel,
+					Source:       actualModel,
+					Target:       requestModel,
+					Status:       model.NormalizeAbilityStatus(item.Status, item.Enabled),
+					TestStatus:   item.TestStatus,
+					TestTime:     item.TestTime,
+					ResponseTime: item.ResponseTime,
+					TestError:    item.TestError,
+					TestResponse: item.TestResponse,
+				}
+				for _, mappedModelName := range []string{actualModel, requestModel} {
+					mappedDetail := getOrCreateDetail(mappedModelName, item.ChannelType)
+					mappingKey := fmt.Sprintf("%d|%s|%s", item.ChannelId, actualModel, requestModel)
+					if _, exists := mappingSetByModel[mappedModelName][mappingKey]; exists {
+						continue
+					}
+					mappingSetByModel[mappedModelName][mappingKey] = struct{}{}
+					mappedDetail.Mapped = true
+					mappedDetail.Mappings = append(mappedDetail.Mappings, mappingInfo)
+				}
 			}
 		}
 	}

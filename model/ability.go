@@ -461,11 +461,9 @@ func appendMappedRequestModels(models []string, group string) []string {
 			continue
 		}
 		mapping := parseModelMapping(item.ModelMapping)
-		requestModel := strings.TrimSpace(mapping[actualModel])
-		if requestModel == "" {
-			continue
+		for _, requestModel := range common.SplitModelMappingValues(mapping[actualModel]) {
+			modelSet[requestModel] = struct{}{}
 		}
-		modelSet[requestModel] = struct{}{}
 	}
 
 	merged := make([]string, 0, len(modelSet))
@@ -507,7 +505,7 @@ func getMappedCandidateAbilities(group string, requestModel string) ([]Ability, 
 	for _, item := range mappedAbilities {
 		actualModel := strings.TrimSpace(item.Model)
 		mapping := parseModelMapping(item.ModelMapping)
-		if strings.TrimSpace(mapping[actualModel]) != requestModel {
+		if !common.StringsContains(common.SplitModelMappingValues(mapping[actualModel]), requestModel) {
 			continue
 		}
 		abilities = append(abilities, item.Ability)

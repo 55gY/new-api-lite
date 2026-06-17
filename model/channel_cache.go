@@ -77,24 +77,26 @@ func InitChannelCache() {
 				}
 				newGroup2model2channels[group][model] = append(newGroup2model2channels[group][model], channel.Id)
 			}
-			for actualModel, requestModel := range modelMapping {
+			for actualModel, requestModelsValue := range modelMapping {
 				if _, ok := channelModelSet[actualModel]; !ok {
 					continue
 				}
-				if _, ok := newGroup2mappedModel2channels[""][requestModel]; !ok {
-					newGroup2mappedModel2channels[""][requestModel] = make([]int, 0)
+				for _, requestModel := range common.SplitModelMappingValues(requestModelsValue) {
+					if _, ok := newGroup2mappedModel2channels[""][requestModel]; !ok {
+						newGroup2mappedModel2channels[""][requestModel] = make([]int, 0)
+					}
+					if _, ok := allMappedModelChannelSeen[requestModel]; !ok {
+						allMappedModelChannelSeen[requestModel] = make(map[int]bool)
+					}
+					if !allMappedModelChannelSeen[requestModel][channel.Id] {
+						newGroup2mappedModel2channels[""][requestModel] = append(newGroup2mappedModel2channels[""][requestModel], channel.Id)
+						allMappedModelChannelSeen[requestModel][channel.Id] = true
+					}
+					if _, ok := newGroup2mappedModel2channels[group][requestModel]; !ok {
+						newGroup2mappedModel2channels[group][requestModel] = make([]int, 0)
+					}
+					newGroup2mappedModel2channels[group][requestModel] = append(newGroup2mappedModel2channels[group][requestModel], channel.Id)
 				}
-				if _, ok := allMappedModelChannelSeen[requestModel]; !ok {
-					allMappedModelChannelSeen[requestModel] = make(map[int]bool)
-				}
-				if !allMappedModelChannelSeen[requestModel][channel.Id] {
-					newGroup2mappedModel2channels[""][requestModel] = append(newGroup2mappedModel2channels[""][requestModel], channel.Id)
-					allMappedModelChannelSeen[requestModel][channel.Id] = true
-				}
-				if _, ok := newGroup2mappedModel2channels[group][requestModel]; !ok {
-					newGroup2mappedModel2channels[group][requestModel] = make([]int, 0)
-				}
-				newGroup2mappedModel2channels[group][requestModel] = append(newGroup2mappedModel2channels[group][requestModel], channel.Id)
 			}
 		}
 	}

@@ -194,9 +194,11 @@ func collectPendingUpstreamModelChangesFromModels(
 
 	mappedActualSet := make(map[string]struct{}, len(modelMapping))
 	mappedRequestSet := make(map[string]struct{}, len(modelMapping))
-	for actualModel, requestModel := range modelMapping {
+	for actualModel, requestModelsValue := range modelMapping {
 		mappedActualSet[actualModel] = struct{}{}
-		mappedRequestSet[requestModel] = struct{}{}
+		for _, requestModel := range common.SplitModelMappingValues(requestModelsValue) {
+			mappedRequestSet[requestModel] = struct{}{}
+		}
 	}
 
 	coveredUpstreamSet := make(map[string]struct{}, len(localSet)+len(mappedActualSet))

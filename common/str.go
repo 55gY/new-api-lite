@@ -98,6 +98,24 @@ func StringsContains(strs []string, str string) bool {
 	return false
 }
 
+func SplitModelMappingValues(requestModels string) []string {
+	parts := strings.Split(requestModels, ",")
+	seen := make(map[string]struct{}, len(parts))
+	models := make([]string, 0, len(parts))
+	for _, part := range parts {
+		modelName := strings.TrimSpace(part)
+		if modelName == "" {
+			continue
+		}
+		if _, ok := seen[modelName]; ok {
+			continue
+		}
+		seen[modelName] = struct{}{}
+		models = append(models, modelName)
+	}
+	return models
+}
+
 // StringToByteSlice []byte only read, panic on append
 func StringToByteSlice(s string) []byte {
 	tmp1 := (*[2]uintptr)(unsafe.Pointer(&s))

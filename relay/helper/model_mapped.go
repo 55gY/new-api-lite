@@ -37,11 +37,13 @@ func ModelMappedHelper(c *gin.Context, info *common.RelayInfo, request dto.Reque
 		requestToActualModelMap := make(map[string]string, len(modelMap))
 		for actualModel, requestModel := range modelMap {
 			actualModel = strings.TrimSpace(actualModel)
-			requestModel = strings.TrimSpace(requestModel)
-			if actualModel == "" || requestModel == "" {
+			requestModels := jsoncommon.SplitModelMappingValues(requestModel)
+			if actualModel == "" || len(requestModels) == 0 {
 				continue
 			}
-			requestToActualModelMap[requestModel] = actualModel
+			for _, requestModel := range requestModels {
+				requestToActualModelMap[requestModel] = actualModel
+			}
 		}
 
 		// 支持链式模型重定向：配置为实际模型 -> 请求模型，运行时从请求模型反向追溯到链头实际模型
