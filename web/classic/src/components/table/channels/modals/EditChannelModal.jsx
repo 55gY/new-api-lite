@@ -1356,6 +1356,7 @@ const EditChannelModal = (props) => {
   const submit = async () => {
     const formValues = formApiRef.current ? formApiRef.current.getValues() : {};
     let localInputs = { ...formValues };
+    localInputs.models = inputs.models;
     localInputs.param_override = inputs.param_override;
 
     if (localInputs.type === 57) {
