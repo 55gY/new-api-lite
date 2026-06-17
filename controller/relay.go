@@ -224,7 +224,7 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 
 		// 模型级自动禁用：当特定模型错误时禁用该模型
 		if service.ShouldDisableModel(newAPIError) {
-			service.DisableModel(channel, relayInfo.UpstreamModelName, newAPIError.Error.Message)
+			service.DisableModel(channel, relayInfo.UpstreamModelName, newAPIError.Error())
 		}
 
 		processChannelError(c, *types.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, common.GetContextKeyString(c, constant.ContextKeyChannelKey), channel.GetAutoBan()), newAPIError)
