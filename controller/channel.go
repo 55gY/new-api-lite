@@ -1066,12 +1066,12 @@ func BatchUpdateModelMapping(c *gin.Context) {
 
 		// 空 request_model 表示删除映射
 		if op.RequestModel == "" {
-			if channel.ModelMapping == "" || channel.ModelMapping == "{}" {
+			if channel.ModelMapping == nil || *channel.ModelMapping == "" || *channel.ModelMapping == "{}" {
 				continue
 			}
 
 			var mapping map[string]string
-			if err := jsoncommon.UnmarshalJsonStr(channel.ModelMapping, &mapping); err != nil {
+			if err := jsoncommon.UnmarshalJsonStr(*channel.ModelMapping, &mapping); err != nil {
 				failures = append(failures, fmt.Sprintf("channel #%d: %s (解析映射失败: %s)", op.ChannelID, op.ActualModel, err.Error()))
 				continue
 			}
@@ -1082,22 +1082,24 @@ func BatchUpdateModelMapping(c *gin.Context) {
 			}
 
 			if len(mapping) == 0 {
-				channel.ModelMapping = ""
+				empty := ""
+				channel.ModelMapping = &empty
 			} else {
 				newMapping, err := jsoncommon.Marshal(mapping)
 				if err != nil {
 					failures = append(failures, fmt.Sprintf("channel #%d: %s (更新映射失败: %s)", op.ChannelID, op.ActualModel, err.Error()))
 					continue
 				}
-				channel.ModelMapping = string(newMapping)
+				s := string(newMapping)
+				channel.ModelMapping = &s
 			}
 		} else {
 			// 更新或添加映射
 			var mapping map[string]string
-			if channel.ModelMapping == "" || channel.ModelMapping == "{}" {
+			if channel.ModelMapping == nil || *channel.ModelMapping == "" || *channel.ModelMapping == "{}" {
 				mapping = make(map[string]string)
 			} else {
-				if err := jsoncommon.UnmarshalJsonStr(channel.ModelMapping, &mapping); err != nil {
+				if err := jsoncommon.UnmarshalJsonStr(*channel.ModelMapping, &mapping); err != nil {
 					failures = append(failures, fmt.Sprintf("channel #%d: %s (解析映射失败: %s)", op.ChannelID, op.ActualModel, err.Error()))
 					continue
 				}
@@ -1109,7 +1111,8 @@ func BatchUpdateModelMapping(c *gin.Context) {
 				failures = append(failures, fmt.Sprintf("channel #%d: %s (更新映射失败: %s)", op.ChannelID, op.ActualModel, err.Error()))
 				continue
 			}
-			channel.ModelMapping = string(newMapping)
+			s := string(newMapping)
+			channel.ModelMapping = &s
 			updated++
 		}
 

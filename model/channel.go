@@ -520,12 +520,12 @@ func BatchDeleteChannelModels(operations []ChannelModelOperation, deleteMappings
 // RemoveModelsFromMapping 从渠道的 model_mapping 中移除指定模型相关的映射
 // 返回被删除的映射条目数
 func RemoveModelsFromMapping(channel *Channel, modelNames []string) int {
-	if channel.ModelMapping == "" || channel.ModelMapping == "{}" {
+	if channel.ModelMapping == nil || *channel.ModelMapping == "" || *channel.ModelMapping == "{}" {
 		return 0
 	}
 
 	var mapping map[string]string
-	if err := common.UnmarshalJsonStr(channel.ModelMapping, &mapping); err != nil {
+	if err := common.UnmarshalJsonStr(*channel.ModelMapping, &mapping); err != nil {
 		return 0
 	}
 
@@ -555,13 +555,15 @@ func RemoveModelsFromMapping(channel *Channel, modelNames []string) int {
 	}
 
 	if len(mapping) == 0 {
-		channel.ModelMapping = ""
+		empty := ""
+		channel.ModelMapping = &empty
 	} else {
 		newMapping, err := json.Marshal(mapping)
 		if err != nil {
 			return deletedCount
 		}
-		channel.ModelMapping = string(newMapping)
+		s := string(newMapping)
+		channel.ModelMapping = &s
 	}
 
 	return deletedCount
