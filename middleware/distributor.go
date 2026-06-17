@@ -110,10 +110,11 @@ func Distribute() func(c *gin.Context) {
 
 				if channel == nil {
 					channel, selectGroup, err = service.CacheGetRandomSatisfiedChannel(&service.RetryParam{
-						Ctx:        c,
-						ModelName:  modelRequest.Model,
-						TokenGroup: usingGroup,
-						Retry:      common.GetPointer(0),
+						Ctx:           c,
+						ModelName:     modelRequest.Model,
+						TokenGroup:    usingGroup,
+						ActualRetry:   common.GetPointer(0),
+						IsMappedPhase: false,
 					})
 					if err != nil {
 						message := i18n.T(c, i18n.MsgDistributorGetChannelFailed, map[string]any{"Group": selectGroup, "Model": modelRequest.Model, "Error": err.Error()})

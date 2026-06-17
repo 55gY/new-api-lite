@@ -160,7 +160,7 @@ const getTestItems = (record) => {
         channelName: mapping.channel_name || getChannelName(channel),
         sourceModel: requestModel || actualModel,
         targetModel: actualModel,
-        displayModel: actualModel || requestModel,
+        displayModel: actualModel,
         mapped: true,
         testStatus: mapping.test_status ?? 0,
         testTime: mapping.test_time ?? 0,

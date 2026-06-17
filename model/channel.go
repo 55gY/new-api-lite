@@ -415,6 +415,7 @@ func BatchInsertChannels(channels []Channel) error {
 	return tx.Commit().Error
 }
 
+// BatchDeleteChannels 批量删除渠道（支持同时删除映射）
 func BatchDeleteChannels(ids []int) error {
 	if len(ids) == 0 {
 		return nil
@@ -435,6 +436,135 @@ func BatchDeleteChannels(ids []int) error {
 		}
 	}
 	return tx.Commit().Error
+}
+
+// ChannelModelOperation 批量模型操作的单条记录
+type ChannelModelOperation struct {
+	ChannelID int    `json:"channel_id"`
+	ModelName string `json:"model_name"`
+}
+
+// BatchDeleteChannelModels 批量删除渠道模型（支持同时删除映射）
+// 返回: 删除的模型数, 删除的映射数, 失败信息列表, 错误
+func BatchDeleteChannelModels(operations []ChannelModelOperation, deleteMappings bool) (deletedCount int, mappingDeletedCount int, failures []string, err error) {
+	if len(operations) == 0 {
+		return 0, 0, nil, nil
+	}
+
+	// 按 channel_id 分组，减少重复查询
+	channelOpsMap := make(map[int][]string) // channel_id -> model_names
+	for _, op := range operations {
+		channelOpsMap[op.ChannelID] = append(channelOpsMap[op.ChannelID], op.ModelName)
+	}
+
+	for channelID, modelNames := range channelOpsMap {
+		channel, getErr := GetChannelById(channelID, true)
+		if getErr != nil {
+			for _, name := range modelNames {
+				failures = append(failures, fmt.Sprintf("channel #%d: %s (%s)", channelID, name, getErr.Error()))
+			}
+			continue
+		}
+
+		modelSet := make(map[string]bool)
+		for _, m := range modelNames {
+			modelSet[m] = true
+		}
+
+		// 从 Models 列表中移除
+		currentModels := strings.Split(channel.Models, ",")
+		nextModels := make([]string, 0, len(currentModels))
+		removedModels := 0
+		for _, item := range currentModels {
+			item = strings.TrimSpace(item)
+			if item == "" {
+				continue
+			}
+			if modelSet[item] {
+				removedModels++
+				continue
+			}
+			nextModels = append(nextModels, item)
+		}
+		deletedCount += removedModels
+
+		if removedModels == 0 {
+			continue
+		}
+
+		channel.Models = strings.Join(nextModels, ",")
+
+		// 同时删除 model_mapping 中对应的映射
+		if deleteMappings {
+			mappingDeleted := RemoveModelsFromMapping(channel, modelNames)
+			mappingDeletedCount += mappingDeleted
+		}
+
+		if updateErr := channel.Update(); updateErr != nil {
+			for _, name := range modelNames {
+				failures = append(failures, fmt.Sprintf("channel #%d: %s (update failed: %s)", channelID, name, updateErr.Error()))
+			}
+			continue
+		}
+	}
+
+	// 删除对应的 abilities 记录
+	for _, op := range operations {
+		DB.Where("channel_id = ? AND model = ?", op.ChannelID, op.ModelName).Delete(&Ability{})
+	}
+
+	InitChannelCache()
+	return deletedCount, mappingDeletedCount, failures, nil
+}
+
+// RemoveModelsFromMapping 从渠道的 model_mapping 中移除指定模型相关的映射
+// 返回被删除的映射条目数
+func RemoveModelsFromMapping(channel *Channel, modelNames []string) int {
+	if channel.ModelMapping == "" || channel.ModelMapping == "{}" {
+		return 0
+	}
+
+	var mapping map[string]string
+	if err := common.UnmarshalJsonStr(channel.ModelMapping, &mapping); err != nil {
+		return 0
+	}
+
+	modelSet := make(map[string]bool)
+	for _, m := range modelNames {
+		modelSet[m] = true
+	}
+
+	deletedCount := 0
+	// 删除 key 为该模型的条目（实际模型作为 key）
+	for modelName := range modelSet {
+		if _, exists := mapping[modelName]; exists {
+			delete(mapping, modelName)
+			deletedCount++
+		}
+	}
+	// 删除 value 包含该模型的条目（映射值包含该模型名）
+	for key, value := range mapping {
+		valueModels := common.SplitModelMappingValues(value)
+		for _, vModel := range valueModels {
+			if modelSet[vModel] {
+				delete(mapping, key)
+				deletedCount++
+				break
+			}
+		}
+	}
+
+	if len(mapping) == 0 {
+		channel.ModelMapping = ""
+	} else {
+		newMapping, err := json.Marshal(mapping)
+		if err != nil {
+			return deletedCount
+		}
+		channel.ModelMapping = string(newMapping)
+	}
+
+	return deletedCount
 }
 
 func (channel *Channel) GetPriority() int64 {
@@ -789,7 +919,7 @@ func (channel *Channel) GetSetting() dto.ChannelSettings {
 		err := common.Unmarshal([]byte(*channel.Setting), &setting)
 		if err != nil {
 			common.SysLog(fmt.Sprintf("failed to unmarshal setting: channel_id=%d, error=%v", channel.Id, err))
-			channel.Setting = nil // 清空设置以避免后续错误
+			channel.Setting = nil // 渠道额外设置以避免后续错误
 			_ = channel.Save()    // 保存修改
 		}
 	}

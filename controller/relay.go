@@ -153,16 +153,36 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 	// common.SetContextKey(c, constant.ContextKeyTokenCountMeta, meta)
 
 	retryParam := &service.RetryParam{
-		Ctx:        c,
-		TokenGroup: relayInfo.TokenGroup,
-		ModelName:  relayInfo.OriginModelName,
-		Retry:      common.GetPointer(0),
+		Ctx:           c,
+		TokenGroup:    relayInfo.TokenGroup,
+		ModelName:     relayInfo.OriginModelName,
+		ActualRetry:   common.GetPointer(0),
+		MappedRetry:   nil,
+		IsMappedPhase: false,
 	}
 	relayInfo.RetryIndex = 0
 	relayInfo.LastError = nil
 
-	for ; retryParam.GetRetry() <= common.RetryTimes; retryParam.IncreaseRetry() {
-		relayInfo.RetryIndex = retryParam.GetRetry()
+	for {
+		relayInfo.RetryIndex = retryParam.GetActualRetry()
+		if retryParam.IsMappedPhase {
+			relayInfo.RetryIndex = retryParam.GetMappedRetry()
+		}
+
+		// 判断当前阶段是否已耗尽重试
+		if !retryParam.IsMappedPhase {
+			if retryParam.GetActualRetry() > common.RetryTimes {
+				// 实际模型重试耗尽，切换到映射模型阶段
+				retryParam.SwitchToMappedPhase()
+				continue
+			}
+		} else {
+			if retryParam.GetMappedRetry() > common.RetryTimes {
+				// 映射模型重试也耗尽，退出
+				break
+			}
+		}
+
 		channel, channelErr := getChannel(c, relayInfo, retryParam)
 		if channelErr != nil {
 			logger.LogError(c, channelErr.Error())
@@ -202,10 +222,25 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		newAPIError = service.NormalizePolicyViolationError(newAPIError)
 		relayInfo.LastError = newAPIError
 
+		// 模型级自动禁用：当特定模型错误时禁用该模型
+		if service.ShouldDisableModel(newAPIError) {
+			service.DisableModel(channel, relayInfo.UpstreamModelName, newAPIError.Error.Message)
+		}
+
 		processChannelError(c, *types.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, common.GetContextKeyString(c, constant.ContextKeyChannelKey), channel.GetAutoBan()), newAPIError)
 
-		if !shouldRetry(c, newAPIError, common.RetryTimes-retryParam.GetRetry()) {
+		remainingRetries := common.RetryTimes - retryParam.GetActualRetry()
+		if retryParam.IsMappedPhase {
+			remainingRetries = common.RetryTimes - retryParam.GetMappedRetry()
+		}
+		if !shouldRetry(c, newAPIError, remainingRetries) {
 			break
+		}
+
+		if !retryParam.IsMappedPhase {
+			retryParam.IncreaseActualRetry()
+		} else {
+			retryParam.IncreaseMappedRetry()
 		}
 	}
 

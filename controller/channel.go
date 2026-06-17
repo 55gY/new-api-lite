@@ -21,6 +21,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	
+	jsoncommon "github.com/QuantumNous/new-api/common"
 )
 
 type OpenAIModel struct {
@@ -699,6 +701,11 @@ type ChannelBatch struct {
 	Ids []int `json:"ids"`
 }
 
+type ChannelModelBatch struct {
+	Operations []model.ChannelModelOperation `json:"operations"`
+	DeleteMappings bool `json:"delete_mappings"`
+}
+
 func DeleteChannelBatch(c *gin.Context) {
 	channelBatch := ChannelBatch{}
 	err := c.ShouldBindJSON(&channelBatch)
@@ -706,7 +713,7 @@ func DeleteChannelBatch(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
 			"message": "参数错误",
-		})
+			})
 		return
 	}
 	err = model.BatchDeleteChannels(channelBatch.Ids)
@@ -719,12 +726,40 @@ func DeleteChannelBatch(c *gin.Context) {
 		"success": true,
 		"message": "",
 		"data":    len(channelBatch.Ids),
-	})
+		})
 	return
 }
 
-type PatchChannel struct {
-	model.Channel
+// DeleteChannelModelsBatch 批量删除渠道模型
+func DeleteChannelModelsBatch(c *gin.Context) {
+	batch := ChannelModelBatch{}
+	if err := c.ShouldBindJSON(&batch); err != nil || len(batch.Operations) == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "参数错误",
+		})
+		return
+	}
+
+	deletedCount, mappingDeletedCount, failures, err := model.BatchDeleteChannelModels(batch.Operations, batch.DeleteMappings)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+
+	if len(failures) > 0 {
+		common.SysLog(fmt.Sprintf("批量删除模型部分失败: %v", failures))
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data": gin.H{
+			"deleted_count": deletedCount,
+			"mapping_deleted_count": mappingDeletedCount,
+			"failures": failures,
+		},
+	})
 	MultiKeyMode *string `json:"multi_key_mode"`
 	KeyMode      *string `json:"key_mode"` // 多key模式下密钥覆盖或者追加
 }
@@ -996,6 +1031,108 @@ func DeleteChannelModel(c *gin.Context) {
 		"success": true,
 		"message": "",
 		"data":    channel,
+	})
+}
+
+type ChannelModelMappingBatch struct {
+	Operations []struct {
+		ChannelID    int    `json:"channel_id"`
+		ActualModel  string `json:"actual_model"`
+		RequestModel string `json:"request_model"`
+	} `json:"operations"`
+}
+
+// BatchUpdateModelMapping 批量更新模型映射
+func BatchUpdateModelMapping(c *gin.Context) {
+	batch := ChannelModelMappingBatch{}
+	if err := c.ShouldBindJSON(&batch); err != nil || len(batch.Operations) == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "参数错误",
+		})
+		return
+	}
+
+	updated := 0
+	deleted := 0
+	failures := make([]string, 0)
+
+	for _, op := range batch.Operations {
+		channel, err := model.GetChannelById(op.ChannelID, true)
+		if err != nil {
+			failures = append(failures, fmt.Sprintf("channel #%d: %s (%s)", op.ChannelID, op.ActualModel, err.Error()))
+			continue
+		}
+
+		// 空 request_model 表示删除映射
+		if op.RequestModel == "" {
+			if channel.ModelMapping == "" || channel.ModelMapping == "{}" {
+				continue
+			}
+
+			var mapping map[string]string
+			if err := jsoncommon.UnmarshalJsonStr(channel.ModelMapping, &mapping); err != nil {
+				failures = append(failures, fmt.Sprintf("channel #%d: %s (解析映射失败: %s)", op.ChannelID, op.ActualModel, err.Error()))
+				continue
+			}
+
+			if _, exists := mapping[op.ActualModel]; exists {
+				delete(mapping, op.ActualModel)
+				deleted++
+			}
+
+			if len(mapping) == 0 {
+				channel.ModelMapping = ""
+			} else {
+				newMapping, err := jsoncommon.Marshal(mapping)
+				if err != nil {
+					failures = append(failures, fmt.Sprintf("channel #%d: %s (更新映射失败: %s)", op.ChannelID, op.ActualModel, err.Error()))
+					continue
+				}
+				channel.ModelMapping = string(newMapping)
+			}
+		} else {
+			// 更新或添加映射
+			var mapping map[string]string
+			if channel.ModelMapping == "" || channel.ModelMapping == "{}" {
+				mapping = make(map[string]string)
+			} else {
+				if err := jsoncommon.UnmarshalJsonStr(channel.ModelMapping, &mapping); err != nil {
+					failures = append(failures, fmt.Sprintf("channel #%d: %s (解析映射失败: %s)", op.ChannelID, op.ActualModel, err.Error()))
+					continue
+				}
+			}
+
+			mapping[op.ActualModel] = op.RequestModel
+			newMapping, err := jsoncommon.Marshal(mapping)
+			if err != nil {
+				failures = append(failures, fmt.Sprintf("channel #%d: %s (更新映射失败: %s)", op.ChannelID, op.ActualModel, err.Error()))
+				continue
+			}
+			channel.ModelMapping = string(newMapping)
+			updated++
+		}
+
+		if err := channel.Update(); err != nil {
+			failures = append(failures, fmt.Sprintf("channel #%d: %s (保存失败: %s)", op.ChannelID, op.ActualModel, err.Error()))
+			continue
+		}
+	}
+
+	model.InitChannelCache()
+
+	if len(failures) > 0 {
+		common.SysLog(fmt.Sprintf("批量更新模型映射部分失败: %v", failures))
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data": gin.H{
+			"updated_count": updated,
+			"deleted_count": deleted,
+			"failures": failures,
+		},
 	})
 }
 

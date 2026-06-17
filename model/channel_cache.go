@@ -149,7 +149,7 @@ func SyncChannelCache(frequency int) {
 	}
 }
 
-func GetRandomSatisfiedChannel(group string, model string, retry int) (*Channel, error) {
+func GetRandomSatisfiedChannel(group string, model string, retry int, isMappedPhase bool) (*Channel, error) {
 	// if memory cache is disabled, get channel directly from database
 	if !common.MemoryCacheEnabled {
 		return GetChannel(group, model, retry)
@@ -158,7 +158,16 @@ func GetRandomSatisfiedChannel(group string, model string, retry int) (*Channel,
 	channelSyncLock.RLock()
 	defer channelSyncLock.RUnlock()
 
+	if isMappedPhase {
+		// 映射模型阶段：直接从 group2mappedModel2channels 获取，使用独立的 mappedRetry
+		mappedChannels := getChannelsForModel(group2mappedModel2channels, group, model)
+		mappedChannels = filterDisabledModels(mappedChannels, model)
+		return getRandomChannelFromIDs(mappedChannels, retry, group, model)
+	}
+
+	// 实际模型阶段：从 group2model2channels 获取，使用 actualRetry
 	directChannels := getChannelsForModel(group2model2channels, group, model)
+	directChannels = filterDisabledModels(directChannels, model)
 	directPriorityCount, err := countChannelPriorities(directChannels)
 	if err != nil {
 		return nil, err
@@ -166,8 +175,46 @@ func GetRandomSatisfiedChannel(group string, model string, retry int) (*Channel,
 	if retry < directPriorityCount {
 		return getRandomChannelFromIDs(directChannels, retry, group, model)
 	}
-	mappedChannels := getChannelsForModel(group2mappedModel2channels, group, model)
-	return getRandomChannelFromIDs(mappedChannels, retry-directPriorityCount, group, model)
+	// 实际模型重试耗尽，返回 nil 触发切换到映射模型阶段
+	return nil, nil
+}
+
+// filterDisabledModels 过滤掉已禁用或自动禁用的模型（基于 ability 表状态）
+func filterDisabledModels(channelIDs []int, model string) []int {
+	if len(channelIDs) == 0 {
+		return channelIDs
+	}
+	
+	filtered := make([]int, 0, len(channelIDs))
+	for _, channelID := range channelIDs {
+		channel, ok := channelsIDM[channelID]
+		if !ok {
+			continue
+		}
+		// 渠道已禁用，跳过
+		if channel.Status != common.ChannelStatusEnabled {
+			continue
+		}
+		// 检查 ability 表中该模型的状态
+		ability := getAbilityStatus(channelID, model)
+		if ability != nil && ability.TestStatus == AbilityTestStatusUnavailable {
+			// 该模型已标记为不可用（自动禁用），跳过
+			continue
+		}
+		filtered = append(filtered, channelID)
+	}
+	return filtered
+}
+
+// getAbilityStatus 获取指定渠道和模型的能力状态（从缓存或数据库）
+func getAbilityStatus(channelID int, model string) *Ability {
+	// 简化实现：直接查询数据库
+	var ability Ability
+	err := DB.Where("channel_id = ? AND model = ?", channelID, model).First(&ability).Error
+	if err != nil {
+		return nil
+	}
+	return &ability
 }
 
 func getChannelsForModel(groupModelChannels map[string]map[string][]int, group string, model string) []int {

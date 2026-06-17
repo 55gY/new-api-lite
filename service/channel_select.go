@@ -6,33 +6,62 @@ import (
 )
 
 type RetryParam struct {
-	Ctx          *gin.Context
-	TokenGroup   string
-	ModelName    string
-	Retry        *int
-	resetNextTry bool
+	Ctx           *gin.Context
+	TokenGroup    string
+	ModelName     string // 请求模型名称（未映射前）
+	ActualRetry   *int   // 实际模型重试次数（独立）
+	MappedRetry   *int   // 映射模型重试次数（独立）
+	IsMappedPhase bool   // 当前是否在映射模型阶段
+	resetNextTry  bool
 }
 
-func (p *RetryParam) GetRetry() int {
-	if p.Retry == nil {
+func (p *RetryParam) GetActualRetry() int {
+	if p.ActualRetry == nil {
 		return 0
 	}
-	return *p.Retry
+	return *p.ActualRetry
 }
 
-func (p *RetryParam) SetRetry(retry int) {
-	p.Retry = &retry
+func (p *RetryParam) GetMappedRetry() int {
+	if p.MappedRetry == nil {
+		return 0
+	}
+	return *p.MappedRetry
 }
 
-func (p *RetryParam) IncreaseRetry() {
+func (p *RetryParam) SetActualRetry(retry int) {
+	p.ActualRetry = &retry
+}
+
+func (p *RetryParam) SetMappedRetry(retry int) {
+	p.MappedRetry = &retry
+}
+
+func (p *RetryParam) IncreaseActualRetry() {
 	if p.resetNextTry {
 		p.resetNextTry = false
 		return
 	}
-	if p.Retry == nil {
-		p.Retry = new(int)
+	if p.ActualRetry == nil {
+		p.ActualRetry = new(int)
 	}
-	*p.Retry++
+	*p.ActualRetry++
+}
+
+func (p *RetryParam) IncreaseMappedRetry() {
+	if p.resetNextTry {
+		p.resetNextTry = false
+		return
+	}
+	if p.MappedRetry == nil {
+		p.MappedRetry = new(int)
+	}
+	*p.MappedRetry++
+}
+
+func (p *RetryParam) SwitchToMappedPhase() {
+	p.IsMappedPhase = true
+	p.MappedRetry = new(int)
 }
 
 func (p *RetryParam) ResetRetryNextTry() {
@@ -75,6 +104,10 @@ func (p *RetryParam) ResetRetryNextTry() {
 //	Retry=3: GroupB, priority1 (startRetryIndex=2, priorityRetry=1)
 //	         分组B, 优先级1
 func CacheGetRandomSatisfiedChannel(param *RetryParam) (*model.Channel, string, error) {
-	channel, err := model.GetRandomSatisfiedChannel("", param.ModelName, param.GetRetry())
+	retry := param.GetActualRetry()
+	if param.IsMappedPhase {
+		retry = param.GetMappedRetry()
+	}
+	channel, err := model.GetRandomSatisfiedChannel("", param.ModelName, retry, param.IsMappedPhase)
 	return channel, "", err
 }
