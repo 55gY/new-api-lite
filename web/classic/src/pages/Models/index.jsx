@@ -146,7 +146,7 @@ const getTestItems = (record) => {
   );
 
   if (mappings.length > 0) {
-    return mappings.map((mapping) => {
+    return mappings.filter((mapping) => mapping.actual_model || mapping.source).map((mapping) => {
       const actualModel = mapping.actual_model || mapping.source || '';
       const requestModel = mapping.request_model || mapping.target || '';
       const channel = channelById.get(mapping.channel_id) || {
@@ -158,7 +158,9 @@ const getTestItems = (record) => {
         channel,
         channelId: mapping.channel_id,
         channelName: mapping.channel_name || getChannelName(channel),
-        sourceModel: requestModel || actualModel,
+        actualModel,
+        sourceModel: actualModel,
+        requestModel,
         targetModel: actualModel,
         displayModel: actualModel,
         mapped: true,
@@ -177,7 +179,9 @@ const getTestItems = (record) => {
     channel,
     channelId: channel.id,
     channelName: getChannelName(channel),
+    actualModel: record.model_name,
     sourceModel: record.model_name,
+    requestModel: '',
     targetModel: record.model_name,
     displayModel: record.model_name,
     mapped: false,
@@ -253,6 +257,7 @@ const Models = () => {
       (item) =>
         !keyword ||
         item.sourceModel.toLowerCase().includes(keyword) ||
+        item.requestModel.toLowerCase().includes(keyword) ||
         item.channelName.toLowerCase().includes(keyword) ||
         item.displayModel.toLowerCase().includes(keyword),
     );
@@ -534,22 +539,34 @@ const Models = () => {
       if (!opts.silent) showError(t('该模型仅作为映射别名存在，无承载渠道'));
       return { successCount: 0, failureCount: 0 };
     }
+    const operations = channels
+      .map((channel) => ({
+        channel_id: channel.id ?? channel.channel_id,
+        model_name: model.model_name,
+      }))
+      .filter((operation) => operation.channel_id && operation.model_name);
+    if (operations.length === 0) {
+      if (!opts.silent) showError(t('操作失败'));
+      return { successCount: 0, failureCount: 0 };
+    }
     let successCount = 0;
     let failureCount = 0;
-    for (const channel of channels) {
-      const channelId = channel.id ?? channel.channel_id;
-      try {
-        const res = await API.delete(`/api/channel/${channelId}/models`, {
-          data: { model: model.model_name },
-        });
-        if (res.data.success) {
-          successCount++;
-        } else {
-          failureCount++;
-        }
-      } catch {
-        failureCount++;
+    try {
+      const res = await API.post('/api/channel/model/batch-delete', {
+        operations,
+        delete_mappings: true,
+      });
+      const { success, message, data } = res.data;
+      if (!success) {
+        failureCount = operations.length;
+        if (!opts.silent) showError(message || t('操作失败'));
+      } else {
+        const failures = Array.isArray(data?.failures) ? data.failures : [];
+        successCount = data?.deleted_count ?? Math.max(operations.length - failures.length, 0);
+        failureCount = failures.length;
       }
+    } catch {
+      failureCount = operations.length;
     }
     if (!opts.silent) {
       if (successCount > 0) showSuccess(t('批量操作完成: {{success}}个成功, {{failed}}个失败').replace('{{success}}', successCount).replace('{{failed}}', failureCount));
@@ -564,39 +581,30 @@ const Models = () => {
     if (channels.length === 0) {
       return { successCount: 0, failureCount: 0 };
     }
-    let successCount = 0;
-    let failureCount = 0;
-    for (const channel of channels) {
-      const channelId = channel.id ?? channel.channel_id;
-      try {
-        const channelRes = await API.get(`/api/channel/${channelId}`);
-        if (!channelRes.data.success) {
-          failureCount++;
-          continue;
-        }
-        const channelData = channelRes.data.data;
-        const modelMapping = parseModelMapping(channelData?.model_mapping);
-        if (modelMapping === null) {
-          failureCount++;
-          continue;
-        }
-        modelMapping[model.model_name] = requestModel;
-        const updateRes = await API.put('/api/channel/', {
-          id: channelId,
-          model_mapping: Object.keys(modelMapping).length
-            ? JSON.stringify(modelMapping, null, 2)
-            : '',
-        });
-        if (updateRes.data.success) {
-          successCount++;
-        } else {
-          failureCount++;
-        }
-      } catch {
-        failureCount++;
-      }
+    const operations = channels
+      .map((channel) => ({
+        channel_id: channel.id ?? channel.channel_id,
+        actual_model: model.model_name,
+        request_model: requestModel,
+      }))
+      .filter((operation) => operation.channel_id && operation.actual_model);
+    if (operations.length === 0) {
+      return { successCount: 0, failureCount: 0 };
     }
-    return { successCount, failureCount };
+    try {
+      const res = await API.post('/api/channel/model-mapping/batch', { operations });
+      const { success, data } = res.data;
+      if (!success) {
+        return { successCount: 0, failureCount: operations.length };
+      }
+      const failures = Array.isArray(data?.failures) ? data.failures : [];
+      const successCount = requestModel
+        ? data?.updated_count ?? Math.max(operations.length - failures.length, 0)
+        : data?.deleted_count ?? Math.max(operations.length - failures.length, 0);
+      return { successCount, failureCount: failures.length };
+    } catch {
+      return { successCount: 0, failureCount: operations.length };
+    }
   };
 
   const confirmDeleteSingleModel = (record) => {
@@ -757,7 +765,8 @@ const Models = () => {
     const testKey = item.key;
     setTestingItemKeys((prev) => new Set([...prev, testKey]));
     try {
-      const params = new URLSearchParams({ model: item.sourceModel });
+      const testModel = item.displayModel || item.targetModel || item.sourceModel;
+      const params = new URLSearchParams({ model: testModel });
       if (endpointType) params.set('endpoint_type', endpointType);
       if (stream) params.set('stream', 'true');
       const url = `/api/channel/test/${item.channelId}?${params.toString()}`;
@@ -778,7 +787,7 @@ const Models = () => {
           appendResponseInfo(
             t('通道 ${name} 测试成功，模型 ${model} 耗时 ${time.toFixed(2)} 秒。')
               .replace('${name}', item.channelName)
-              .replace('${model}', item.sourceModel)
+              .replace('${model}', testModel)
               .replace('${time.toFixed(2)}', (time || 0).toFixed(2)),
             response,
             t,
@@ -1476,7 +1485,16 @@ const Models = () => {
                 {
                   title: t('模型名称'),
                   dataIndex: 'sourceModel',
-                  render: (sourceModel) => <Text strong>{sourceModel}</Text>,
+                  render: (_, item) => (
+                    <div className='flex flex-col gap-1'>
+                      <Text strong>{item.displayModel || item.sourceModel}</Text>
+                      {item.mapped && item.requestModel ? (
+                        <Text type='tertiary' size='small'>
+                          {t('调用模型')}: {item.requestModel}
+                        </Text>
+                      ) : null}
+                    </div>
+                  ),
                 },
                 {
                   title: t('所属渠道'),

@@ -558,7 +558,7 @@ func RemoveModelsFromMapping(channel *Channel, modelNames []string) int {
 		empty := ""
 		channel.ModelMapping = &empty
 	} else {
-		newMapping, err := json.Marshal(mapping)
+		newMapping, err := common.Marshal(mapping)
 		if err != nil {
 			return deletedCount
 		}
