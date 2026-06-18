@@ -86,7 +86,6 @@ Transitive dependencies should be audited before a final external release.
 | web/classic | production  | npm       | `react-dropzone`                                      | `14.3.5`                             | MIT                                                |
 | web/classic | production  | npm       | `react-fireworks`                                     | `1.0.4`                              | ISC                                                |
 | web/classic | production  | npm       | `react-i18next`                                       | `13.5.0`                             | MIT                                                |
-| web/classic | production  | npm       | `react-icons`                                         | `5.5.0`                              | MIT                                                |
 | web/classic | production  | npm       | `react-markdown`                                      | `10.1.0`                             | MIT                                                |
 | web/classic | production  | npm       | `react-router-dom`                                    | `6.28.1`                             | MIT                                                |
 | web/classic | production  | npm       | `react-telegram-login`                                | `1.1.2`                              | MIT                                                |

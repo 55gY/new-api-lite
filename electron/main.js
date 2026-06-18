@@ -254,8 +254,9 @@ function startServer() {
       return;
     }
 
-    // 生产模式：启动二进制服务器
-    const env = { ...process.env, PORT: PORT.toString() };
+    // 生产模式：启动 noembed 二进制服务器，前端 dist 由 Electron resources 提供
+    const webDistDir = path.join(process.resourcesPath, 'web', 'classic', 'dist');
+    const env = { ...process.env, PORT: PORT.toString(), WEB_DIST_DIR: webDistDir };
 
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true });
@@ -273,6 +274,7 @@ function startServer() {
     const workingDir = process.resourcesPath;
     
     console.log('Starting server from:', binaryPath);
+    console.log('Using frontend dist:', webDistDir);
 
     serverProcess = spawn(binaryPath, [], {
       env,

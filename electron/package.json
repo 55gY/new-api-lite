@@ -98,6 +98,10 @@
           "to": "bin/new-api.exe"
         },
         {
+          "from": "../web/classic/dist",
+          "to": "web/classic/dist"
+        },
+        {
           "from": "../LICENSE",
           "to": "licenses/LICENSE"
         },
@@ -130,6 +134,10 @@
         {
           "from": "../new-api",
           "to": "bin/new-api"
+        },
+        {
+          "from": "../web/classic/dist",
+          "to": "web/classic/dist"
         },
         {
           "from": "../LICENSE",

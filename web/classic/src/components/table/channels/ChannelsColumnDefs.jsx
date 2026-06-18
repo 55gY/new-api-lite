@@ -46,7 +46,7 @@ import {
   IconMore,
   IconAlertTriangle,
 } from '@douyinfe/semi-icons';
-import { FaRandom } from 'react-icons/fa';
+import { Shuffle } from 'lucide-react';
 
 // Render functions
 const renderType = (type, record = {}, t) => {
@@ -63,7 +63,7 @@ const renderType = (type, record = {}, t) => {
     icon =
       channelInfo?.multi_key_mode === 'random' ? (
         <div className='flex items-center gap-1'>
-          <FaRandom className='text-blue-500' />
+          <Shuffle className='text-blue-500' size={14} />
           {icon}
         </div>
       ) : (

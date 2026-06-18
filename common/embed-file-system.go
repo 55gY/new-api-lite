@@ -5,6 +5,9 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"path"
+	"path/filepath"
+	"strings"
 
 	"github.com/gin-contrib/static"
 )
@@ -40,4 +43,32 @@ func EmbedFolder(fsEmbed embed.FS, targetPath string) static.ServeFileSystem {
 	return &embedFileSystem{
 		FileSystem: http.FS(efs),
 	}
+}
+
+type safeLocalFileSystem struct {
+	root string
+}
+
+func (s safeLocalFileSystem) Open(name string) (http.File, error) {
+	cleanName := strings.TrimPrefix(path.Clean("/"+name), "/")
+	fullPath := filepath.Join(s.root, filepath.FromSlash(cleanName))
+	resolvedPath, err := filepath.EvalSymlinks(fullPath)
+	if err != nil {
+		return nil, err
+	}
+	rel, err := filepath.Rel(s.root, resolvedPath)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+		return nil, os.ErrPermission
+	}
+	return os.Open(resolvedPath)
+}
+
+func LocalFolder(root string) (static.ServeFileSystem, error) {
+	resolvedRoot, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		return nil, err
+	}
+	return &embedFileSystem{
+		FileSystem: safeLocalFileSystem{root: resolvedRoot},
+	}, nil
 }

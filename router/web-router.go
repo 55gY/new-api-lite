@@ -1,11 +1,9 @@
 package router
 
 import (
-	"embed"
 	"net/http"
 	"strings"
 
-	"github.com/55gY/new-api-lite/common"
 	"github.com/55gY/new-api-lite/controller"
 	"github.com/55gY/new-api-lite/middleware"
 	"github.com/gin-contrib/gzip"
@@ -13,19 +11,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ThemeAssets holds the embedded classic frontend assets.
+// ThemeAssets holds the classic frontend assets.
 type ThemeAssets struct {
-	ClassicBuildFS   embed.FS
-	ClassicIndexPage []byte
+	ClassicFileSystem static.ServeFileSystem
+	ClassicIndexPage  []byte
 }
 
 func SetWebRouter(router *gin.Engine, assets ThemeAssets) {
-	classicFS := common.EmbedFolder(assets.ClassicBuildFS, "web/classic/dist")
-
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	router.Use(middleware.GlobalWebRateLimit())
 	router.Use(middleware.Cache())
-	router.Use(static.Serve("/", classicFS))
+	router.Use(static.Serve("/", assets.ClassicFileSystem))
 	router.NoRoute(func(c *gin.Context) {
 		c.Set(middleware.RouteTagKey, "web")
 		if strings.HasPrefix(c.Request.RequestURI, "/v1") || strings.HasPrefix(c.Request.RequestURI, "/api") || strings.HasPrefix(c.Request.RequestURI, "/assets") || strings.HasPrefix(c.Request.RequestURI, "/suno") {

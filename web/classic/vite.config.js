@@ -71,7 +71,16 @@ export default defineConfig({
       output: {
         manualChunks: {
           'react-core': ['react', 'react-dom', 'react-router-dom'],
-          'semi-ui': ['@douyinfe/semi-icons', '@douyinfe/semi-ui'],
+          'semi-ui': ['@douyinfe/semi-ui'],
+          'semi-icons': ['@douyinfe/semi-icons'],
+          icons: ['@lobehub/icons', 'lucide-react'],
+          mermaid: ['mermaid'],
+          katex: ['katex'],
+          charts: [
+            '@visactor/react-vchart',
+            '@visactor/vchart',
+            '@visactor/vchart-semi-theme',
+          ],
           tools: ['axios', 'history', 'marked'],
           'react-components': [
             'react-fireworks',

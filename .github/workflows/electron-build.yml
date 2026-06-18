@@ -63,13 +63,13 @@ jobs:
       #   if: runner.os != 'Windows'
       #   run: |
       #     go mod download
-      #     go build -ldflags "-s -w -X 'github.com/55gY/new-api-lite/common.Version=$VERSION' -extldflags '-static'" -o new-api
+      #     go build -tags noembed -ldflags "-s -w -X 'github.com/55gY/new-api-lite/common.Version=$VERSION' -extldflags '-static'" -o new-api
 
       - name: Build Go binary (Windows)
         if: runner.os == 'Windows'
         run: |
           go mod download
-          go build -ldflags "-s -w -X 'github.com/55gY/new-api-lite/common.Version=$VERSION'" -o new-api.exe
+          go build -tags noembed -ldflags "-s -w -X 'github.com/55gY/new-api-lite/common.Version=$VERSION'" -o new-api.exe
 
       - name: Update Electron version
         run: |
