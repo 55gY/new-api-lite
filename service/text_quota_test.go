@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/QuantumNous/new-api/constant"
-	"github.com/QuantumNous/new-api/dto"
-	relaycommon "github.com/QuantumNous/new-api/relay/common"
-	"github.com/QuantumNous/new-api/types"
+	"github.com/55gY/new-api-lite/constant"
+	"github.com/55gY/new-api-lite/dto"
+	relaycommon "github.com/55gY/new-api-lite/relay/common"
+	"github.com/55gY/new-api-lite/types"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
@@ -57,8 +57,8 @@ func TestCalculateTextQuotaSummaryUnifiedForClaudeSemantic(t *testing.T) {
 		StartTime:               time.Now(),
 	}
 
-	chatSummary := calculateTextQuotaSummary(ctx, chatRelayInfo, usage)
-	messageSummary := calculateTextQuotaSummary(ctx, messageRelayInfo, usage)
+	chatSummary := calculateTextUsageStats(ctx, chatRelayInfo, usage)
+	messageSummary := calculateTextUsageStats(ctx, messageRelayInfo, usage)
 
 	require.Equal(t, messageSummary.Quota, chatSummary.Quota)
 	require.Equal(t, messageSummary.CacheCreationTokens5m, chatSummary.CacheCreationTokens5m)
@@ -100,7 +100,7 @@ func TestCalculateTextQuotaSummaryUsesSplitClaudeCacheCreationRatios(t *testing.
 		ClaudeCacheCreation1hTokens: 3,
 	}
 
-	summary := calculateTextQuotaSummary(ctx, relayInfo, usage)
+	summary := calculateTextUsageStats(ctx, relayInfo, usage)
 
 	// 100 + remaining(5)*1 + 2*2 + 3*3 = 118
 	require.Zero(t, summary.Quota)
@@ -140,34 +140,34 @@ func TestCalculateTextQuotaSummaryUsesAnthropicUsageSemanticFromUpstreamUsage(t 
 		ClaudeCacheCreation1hTokens: 20,
 	}
 
-	summary := calculateTextQuotaSummary(ctx, relayInfo, usage)
+	summary := calculateTextUsageStats(ctx, relayInfo, usage)
 
 	require.True(t, summary.IsClaudeUsageSemantic)
 	require.Equal(t, "anthropic", summary.UsageSemantic)
 	require.Zero(t, summary.Quota)
 }
 
-func TestCacheWriteTokensTotal(t *testing.T) {
+func TestUsageStatsCacheWriteTokens(t *testing.T) {
 	t.Run("split cache creation", func(t *testing.T) {
-		summary := textQuotaSummary{
+		summary := textUsageStats{
 			CacheCreationTokens:   50,
 			CacheCreationTokens5m: 10,
 			CacheCreationTokens1h: 20,
 		}
-		require.Equal(t, 50, cacheWriteTokensTotal(summary))
+		require.Equal(t, 50, usageStatsCacheWriteTokens(summary))
 	})
 
 	t.Run("legacy cache creation", func(t *testing.T) {
-		summary := textQuotaSummary{CacheCreationTokens: 50}
-		require.Equal(t, 50, cacheWriteTokensTotal(summary))
+		summary := textUsageStats{CacheCreationTokens: 50}
+		require.Equal(t, 50, usageStatsCacheWriteTokens(summary))
 	})
 
 	t.Run("split cache creation without aggregate remainder", func(t *testing.T) {
-		summary := textQuotaSummary{
+		summary := textUsageStats{
 			CacheCreationTokens5m: 10,
 			CacheCreationTokens1h: 20,
 		}
-		require.Equal(t, 30, cacheWriteTokensTotal(summary))
+		require.Equal(t, 30, usageStatsCacheWriteTokens(summary))
 	})
 }
 
@@ -200,7 +200,7 @@ func TestCalculateTextQuotaSummaryHandlesLegacyClaudeDerivedOpenAIUsage(t *testi
 		ClaudeCacheCreation5mTokens: 586,
 	}
 
-	summary := calculateTextQuotaSummary(ctx, relayInfo, usage)
+	summary := calculateTextUsageStats(ctx, relayInfo, usage)
 
 	// 62 + 3544*0.1 + 586*1.25 + 95*5 = 1624.9 => 1624
 	require.Zero(t, summary.Quota)
@@ -234,7 +234,7 @@ func TestCalculateTextQuotaSummarySeparatesOpenRouterCacheReadFromPromptBilling(
 		},
 	}
 
-	summary := calculateTextQuotaSummary(ctx, relayInfo, usage)
+	summary := calculateTextUsageStats(ctx, relayInfo, usage)
 
 	// OpenRouter OpenAI-format display keeps prompt_tokens as total input,
 	// but billing still separates normal input from cache read tokens.
@@ -270,7 +270,7 @@ func TestCalculateTextQuotaSummarySeparatesOpenRouterCacheCreationFromPromptBill
 		},
 	}
 
-	summary := calculateTextQuotaSummary(ctx, relayInfo, usage)
+	summary := calculateTextUsageStats(ctx, relayInfo, usage)
 
 	// prompt_tokens is still logged as total input, but cache creation is billed separately.
 	// quota = (2604 - 100) + 100*1.25 + 383 = 3012
@@ -307,12 +307,12 @@ func TestCalculateTextQuotaSummaryKeepsPrePRClaudeOpenRouterBilling(t *testing.T
 		},
 	}
 
-	summary := calculateTextQuotaSummary(ctx, relayInfo, usage)
+	summary := calculateTextUsageStats(ctx, relayInfo, usage)
 
-	// Pre-PR PostClaudeConsumeQuota behavior for OpenRouter:
-	// prompt = 2604 - 2432 = 172
-	// quota = 172 + 2432*0.1 + 383 = 798.2 => 798
+	// Current usage stats preserve upstream prompt_tokens as total input and
+	// keep cache read tokens in a separate field for log metadata.
 	require.True(t, summary.IsClaudeUsageSemantic)
-	require.Equal(t, 172, summary.PromptTokens)
+	require.Equal(t, 2604, summary.PromptTokens)
+	require.Equal(t, 2432, summary.CacheTokens)
 	require.Zero(t, summary.Quota)
 }

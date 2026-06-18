@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/QuantumNous/new-api/setting/config"
+	"github.com/55gY/new-api-lite/setting/config"
 )
 
 //var claudeHeadersSettings = map[string][]string{}

@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/dto"
+	"github.com/55gY/new-api-lite/common"
+	"github.com/55gY/new-api-lite/dto"
 
 	"github.com/bytedance/gopkg/util/gopool"
 	"gorm.io/gorm"

@@ -1,10 +1,10 @@
 package router
 
 import (
-	"github.com/QuantumNous/new-api/constant"
-	"github.com/QuantumNous/new-api/controller"
-	"github.com/QuantumNous/new-api/middleware"
-	"github.com/QuantumNous/new-api/types"
+	"github.com/55gY/new-api-lite/constant"
+	"github.com/55gY/new-api-lite/controller"
+	"github.com/55gY/new-api-lite/middleware"
+	"github.com/55gY/new-api-lite/types"
 
 	"github.com/gin-gonic/gin"
 )

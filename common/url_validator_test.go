@@ -3,7 +3,7 @@ package common
 import (
 	"testing"
 
-	"github.com/QuantumNous/new-api/constant"
+	"github.com/55gY/new-api-lite/constant"
 )
 
 func TestValidateRedirectURL(t *testing.T) {

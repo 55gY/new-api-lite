@@ -3,10 +3,10 @@ package helper
 import (
 	"testing"
 
-	"github.com/QuantumNous/new-api/relay/common"
-	relayconstant "github.com/QuantumNous/new-api/relay/constant"
-	"github.com/QuantumNous/new-api/setting/ratio_setting"
-	"github.com/QuantumNous/new-api/types"
+	"github.com/55gY/new-api-lite/relay/common"
+	relayconstant "github.com/55gY/new-api-lite/relay/constant"
+	"github.com/55gY/new-api-lite/setting/ratio_setting"
+	"github.com/55gY/new-api-lite/types"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )

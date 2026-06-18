@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/constant"
-	"github.com/QuantumNous/new-api/logger"
-	"github.com/QuantumNous/new-api/setting/ratio_setting"
+	"github.com/55gY/new-api-lite/common"
+	"github.com/55gY/new-api-lite/constant"
+	"github.com/55gY/new-api-lite/logger"
+	"github.com/55gY/new-api-lite/setting/ratio_setting"
 )
 
 var group2model2channels map[string]map[string][]int // enabled channel
@@ -184,7 +184,7 @@ func filterDisabledModels(channelIDs []int, model string) []int {
 	if len(channelIDs) == 0 {
 		return channelIDs
 	}
-	
+
 	filtered := make([]int, 0, len(channelIDs))
 	for _, channelID := range channelIDs {
 		channel, ok := channelsIDM[channelID]

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/QuantumNous/new-api/setting/config"
-	"github.com/QuantumNous/new-api/types"
+	"github.com/55gY/new-api-lite/setting/config"
+	"github.com/55gY/new-api-lite/types"
 )
 
 var defaultGroupRatio = map[string]float64{

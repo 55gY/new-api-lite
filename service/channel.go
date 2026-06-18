@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/dto"
-	"github.com/QuantumNous/new-api/model"
-	"github.com/QuantumNous/new-api/setting/operation_setting"
-	"github.com/QuantumNous/new-api/types"
+	"github.com/55gY/new-api-lite/common"
+	"github.com/55gY/new-api-lite/dto"
+	"github.com/55gY/new-api-lite/model"
+	"github.com/55gY/new-api-lite/setting/operation_setting"
+	"github.com/55gY/new-api-lite/types"
 )
 
 func formatNotifyType(channelId int, status int) string {
@@ -103,7 +103,7 @@ func DisableModel(channel *model.Channel, modelName string, reason string) {
 		return
 	}
 	modelName = strings.TrimSpace(modelName)
-	
+
 	common.SysLog(fmt.Sprintf("渠道「%s」（#%d）模型「%s」发生错误，准备禁用该模型，原因：%s", channel.Name, channel.Id, modelName, common.LocalLogPreview(reason)))
 
 	// 禁用能力表中的模型

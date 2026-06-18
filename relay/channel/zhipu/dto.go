@@ -3,7 +3,7 @@ package zhipu
 import (
 	"time"
 
-	"github.com/QuantumNous/new-api/dto"
+	"github.com/55gY/new-api-lite/dto"
 )
 
 type ZhipuMessage struct {

@@ -35,7 +35,7 @@ import zh_CN from '@douyinfe/semi-ui/lib/es/locale/source/zh_CN';
 // Welcome message (Do not remove this without permission from the original developer)
 if (typeof window !== 'undefined') {
   console.log(
-    '%cWE ‚ù§ NEWAPI%c Github: https://github.com/QuantumNous/new-api',
+    '%cWE ‚ù?NEWAPI%c Github: https://github.com/55gY/new-api-lite',
     'color: #10b981; font-weight: bold; font-size: 24px;',
     'color: inherit; font-size: 14px;',
   );

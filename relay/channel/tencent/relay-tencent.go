@@ -14,13 +14,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/constant"
-	"github.com/QuantumNous/new-api/dto"
-	relaycommon "github.com/QuantumNous/new-api/relay/common"
-	"github.com/QuantumNous/new-api/relay/helper"
-	"github.com/QuantumNous/new-api/service"
-	"github.com/QuantumNous/new-api/types"
+	"github.com/55gY/new-api-lite/common"
+	"github.com/55gY/new-api-lite/constant"
+	"github.com/55gY/new-api-lite/dto"
+	relaycommon "github.com/55gY/new-api-lite/relay/common"
+	"github.com/55gY/new-api-lite/relay/helper"
+	"github.com/55gY/new-api-lite/service"
+	"github.com/55gY/new-api-lite/types"
 
 	"github.com/gin-gonic/gin"
 )

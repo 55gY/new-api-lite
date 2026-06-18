@@ -6,12 +6,12 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/QuantumNous/new-api/dto"
-	"github.com/QuantumNous/new-api/relay/channel"
-	"github.com/QuantumNous/new-api/relay/channel/openai"
-	relaycommon "github.com/QuantumNous/new-api/relay/common"
-	"github.com/QuantumNous/new-api/relay/constant"
-	"github.com/QuantumNous/new-api/types"
+	"github.com/55gY/new-api-lite/dto"
+	"github.com/55gY/new-api-lite/relay/channel"
+	"github.com/55gY/new-api-lite/relay/channel/openai"
+	relaycommon "github.com/55gY/new-api-lite/relay/common"
+	"github.com/55gY/new-api-lite/relay/constant"
+	"github.com/55gY/new-api-lite/types"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,8 +26,7 @@ func (a *Adaptor) ConvertGeminiRequest(*gin.Context, *relaycommon.RelayInfo, *dt
 
 func (a *Adaptor) ConvertClaudeRequest(*gin.Context, *relaycommon.RelayInfo, *dto.ClaudeRequest) (any, error) {
 	//TODO implement me
-	panic("implement me")
-	return nil, nil
+	return nil, errors.New("not implemented")
 }
 
 func (a *Adaptor) Init(info *relaycommon.RelayInfo) {

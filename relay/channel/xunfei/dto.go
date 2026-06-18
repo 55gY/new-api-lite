@@ -1,6 +1,6 @@
 package xunfei
 
-import "github.com/QuantumNous/new-api/dto"
+import "github.com/55gY/new-api-lite/dto"
 
 type XunfeiMessage struct {
 	Role    string `json:"role"`

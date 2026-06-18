@@ -7,13 +7,13 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/dto"
-	"github.com/QuantumNous/new-api/relay/channel"
-	"github.com/QuantumNous/new-api/relay/channel/openai"
-	relaycommon "github.com/QuantumNous/new-api/relay/common"
-	relayconstant "github.com/QuantumNous/new-api/relay/constant"
-	"github.com/QuantumNous/new-api/types"
+	"github.com/55gY/new-api-lite/common"
+	"github.com/55gY/new-api-lite/dto"
+	"github.com/55gY/new-api-lite/relay/channel"
+	"github.com/55gY/new-api-lite/relay/channel/openai"
+	relaycommon "github.com/55gY/new-api-lite/relay/common"
+	relayconstant "github.com/55gY/new-api-lite/relay/constant"
+	"github.com/55gY/new-api-lite/types"
 
 	"github.com/gin-gonic/gin"
 )

@@ -6,14 +6,14 @@ import (
 	"io"
 	"net/http"
 
-	channelconstant "github.com/QuantumNous/new-api/constant"
-	"github.com/QuantumNous/new-api/dto"
-	"github.com/QuantumNous/new-api/relay/channel"
-	"github.com/QuantumNous/new-api/relay/channel/claude"
-	"github.com/QuantumNous/new-api/relay/channel/openai"
-	relaycommon "github.com/QuantumNous/new-api/relay/common"
-	"github.com/QuantumNous/new-api/relay/constant"
-	"github.com/QuantumNous/new-api/types"
+	channelconstant "github.com/55gY/new-api-lite/constant"
+	"github.com/55gY/new-api-lite/dto"
+	"github.com/55gY/new-api-lite/relay/channel"
+	"github.com/55gY/new-api-lite/relay/channel/claude"
+	"github.com/55gY/new-api-lite/relay/channel/openai"
+	relaycommon "github.com/55gY/new-api-lite/relay/common"
+	"github.com/55gY/new-api-lite/relay/constant"
+	"github.com/55gY/new-api-lite/types"
 
 	"github.com/gin-gonic/gin"
 )

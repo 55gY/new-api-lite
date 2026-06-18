@@ -6,8 +6,8 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/QuantumNous/new-api/dto"
-	"github.com/QuantumNous/new-api/types"
+	"github.com/55gY/new-api-lite/dto"
+	"github.com/55gY/new-api-lite/types"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )

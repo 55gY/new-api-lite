@@ -3,9 +3,9 @@ package middleware
 import (
 	"fmt"
 
-	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/logger"
-	"github.com/QuantumNous/new-api/types"
+	"github.com/55gY/new-api-lite/common"
+	"github.com/55gY/new-api-lite/logger"
+	"github.com/55gY/new-api-lite/types"
 	"github.com/gin-gonic/gin"
 )
 

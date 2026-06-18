@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/QuantumNous/new-api/dto"
-	"github.com/QuantumNous/new-api/logger"
-	"github.com/QuantumNous/new-api/model"
-	relaycommon "github.com/QuantumNous/new-api/relay/common"
+	"github.com/55gY/new-api-lite/dto"
+	"github.com/55gY/new-api-lite/logger"
+	"github.com/55gY/new-api-lite/model"
+	relaycommon "github.com/55gY/new-api-lite/relay/common"
 
 	"github.com/gin-gonic/gin"
 )

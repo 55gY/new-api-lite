@@ -99,13 +99,13 @@ jobs:
         run: |
           go mod download
           mkdir -p dist/linux_amd64
-          go build -ldflags "-s -w -X 'new-api/common.Version=$VERSION' -extldflags '-static'" -o dist/linux_amd64/new-api
+          go build -ldflags "-s -w -X 'github.com/55gY/new-api-lite/common.Version=$VERSION' -extldflags '-static'" -o dist/linux_amd64/new-api
       - name: Build Backend (arm64)
         run: |
           sudo apt-get update
           DEBIAN_FRONTEND=noninteractive sudo apt-get install -y gcc-aarch64-linux-gnu
           mkdir -p dist/linux_arm64
-          CC=aarch64-linux-gnu-gcc CGO_ENABLED=1 GOOS=linux GOARCH=arm64 go build -ldflags "-s -w -X 'new-api/common.Version=$VERSION' -extldflags '-static'" -o dist/linux_arm64/new-api
+          CC=aarch64-linux-gnu-gcc CGO_ENABLED=1 GOOS=linux GOARCH=arm64 go build -ldflags "-s -w -X 'github.com/55gY/new-api-lite/common.Version=$VERSION' -extldflags '-static'" -o dist/linux_arm64/new-api
       - name: Package archives
         run: |
           tar -czf new_api_lite_linux_amd64.tar.gz -C dist/linux_amd64 new-api
@@ -168,7 +168,7 @@ jobs:
         run: |
           go mod download
           mkdir -p dist/darwin_amd64
-          go build -ldflags "-X 'new-api/common.Version=$VERSION'" -o dist/darwin_amd64/new-api
+          go build -ldflags "-X 'github.com/55gY/new-api-lite/common.Version=$VERSION'" -o dist/darwin_amd64/new-api
       - name: Package archive
         run: tar -czf new_api_lite_darwin_amd64.tar.gz -C dist/darwin_amd64 new-api
       - name: Generate checksums
@@ -232,7 +232,7 @@ jobs:
         run: |
           go mod download
           mkdir -p dist/windows_amd64
-          go build -ldflags "-s -w -X 'new-api/common.Version=$VERSION'" -o dist/windows_amd64/new-api.exe
+          go build -ldflags "-s -w -X 'github.com/55gY/new-api-lite/common.Version=$VERSION'" -o dist/windows_amd64/new-api.exe
       - name: Package archive
         run: tar -czf new_api_lite_windows_amd64.tar.gz -C dist/windows_amd64 new-api.exe
       - name: Generate checksums

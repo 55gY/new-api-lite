@@ -5,9 +5,9 @@ set -e
 echo "Building New API Electron App..."
 
 echo "Step 1: Building frontend..."
-cd ../web
+cd ../web/classic
 DISABLE_ESLINT_PLUGIN='true' bun run build
-cd ../electron
+cd ../../electron
 
 echo "Step 2: Building Go backend..."
 cd ..

@@ -11,16 +11,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/controller"
-	"github.com/QuantumNous/new-api/i18n"
-	"github.com/QuantumNous/new-api/logger"
-	"github.com/QuantumNous/new-api/middleware"
-	"github.com/QuantumNous/new-api/model"
-	perfmetrics "github.com/QuantumNous/new-api/pkg/perf_metrics"
-	"github.com/QuantumNous/new-api/router"
-	"github.com/QuantumNous/new-api/service"
-	_ "github.com/QuantumNous/new-api/setting/performance_setting"
+	"github.com/55gY/new-api-lite/common"
+	"github.com/55gY/new-api-lite/controller"
+	"github.com/55gY/new-api-lite/i18n"
+	"github.com/55gY/new-api-lite/logger"
+	"github.com/55gY/new-api-lite/middleware"
+	"github.com/55gY/new-api-lite/model"
+	perfmetrics "github.com/55gY/new-api-lite/pkg/perf_metrics"
+	"github.com/55gY/new-api-lite/router"
+	"github.com/55gY/new-api-lite/service"
+	_ "github.com/55gY/new-api-lite/setting/performance_setting"
 
 	"github.com/bytedance/gopkg/util/gopool"
 	"github.com/gin-contrib/sessions"
@@ -126,7 +126,7 @@ func main() {
 		common.SysLog(fmt.Sprintf("panic detected: %v", err))
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{
-				"message": fmt.Sprintf("Panic detected, error: %v. Please submit a issue here: https://github.com/Calcium-Ion/new-api", err),
+				"message": fmt.Sprintf("Panic detected, error: %v. Please submit an issue here: https://github.com/55gY/new-api-lite", err),
 				"type":    "new_api_panic",
 			},
 		})

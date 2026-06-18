@@ -1,7 +1,7 @@
 package router
 
 import (
-	"github.com/QuantumNous/new-api/middleware"
+	"github.com/55gY/new-api-lite/middleware"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 )

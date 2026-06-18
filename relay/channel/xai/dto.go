@@ -1,6 +1,6 @@
 package xai
 
-import "github.com/QuantumNous/new-api/dto"
+import "github.com/55gY/new-api-lite/dto"
 
 // ChatCompletionResponse represents the response from XAI chat completion API
 type ChatCompletionResponse struct {

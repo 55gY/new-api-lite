@@ -1,6 +1,6 @@
 package service
 
-import "github.com/QuantumNous/new-api/setting/operation_setting"
+import "github.com/55gY/new-api-lite/setting/operation_setting"
 
 // ToolCallUsage captures all tool call counts from a single request.
 type ToolCallUsage struct {

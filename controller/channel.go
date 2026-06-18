@@ -10,14 +10,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/constant"
-	"github.com/QuantumNous/new-api/dto"
-	"github.com/QuantumNous/new-api/model"
-	relaychannel "github.com/QuantumNous/new-api/relay/channel"
-	"github.com/QuantumNous/new-api/relay/channel/gemini"
-	"github.com/QuantumNous/new-api/relay/channel/ollama"
-	"github.com/QuantumNous/new-api/service"
+	"github.com/55gY/new-api-lite/common"
+	"github.com/55gY/new-api-lite/constant"
+	"github.com/55gY/new-api-lite/dto"
+	"github.com/55gY/new-api-lite/model"
+	relaychannel "github.com/55gY/new-api-lite/relay/channel"
+	"github.com/55gY/new-api-lite/relay/channel/gemini"
+	"github.com/55gY/new-api-lite/relay/channel/ollama"
+	"github.com/55gY/new-api-lite/service"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -700,8 +700,8 @@ type ChannelBatch struct {
 }
 
 type ChannelModelBatch struct {
-	Operations []model.ChannelModelOperation `json:"operations"`
-	DeleteMappings bool `json:"delete_mappings"`
+	Operations     []model.ChannelModelOperation `json:"operations"`
+	DeleteMappings bool                          `json:"delete_mappings"`
 }
 
 func DeleteChannelBatch(c *gin.Context) {
@@ -711,7 +711,7 @@ func DeleteChannelBatch(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
 			"message": "参数错误",
-			})
+		})
 		return
 	}
 	err = model.BatchDeleteChannels(channelBatch.Ids)
@@ -724,7 +724,7 @@ func DeleteChannelBatch(c *gin.Context) {
 		"success": true,
 		"message": "",
 		"data":    len(channelBatch.Ids),
-		})
+	})
 	return
 }
 
@@ -753,9 +753,9 @@ func DeleteChannelModelsBatch(c *gin.Context) {
 		"success": true,
 		"message": "",
 		"data": gin.H{
-			"deleted_count": deletedCount,
+			"deleted_count":         deletedCount,
 			"mapping_deleted_count": mappingDeletedCount,
-			"failures": failures,
+			"failures":              failures,
 		},
 	})
 }
@@ -1136,7 +1136,7 @@ func BatchUpdateModelMapping(c *gin.Context) {
 		"data": gin.H{
 			"updated_count": updated,
 			"deleted_count": deleted,
-			"failures": failures,
+			"failures":      failures,
 		},
 	})
 }

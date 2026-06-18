@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/QuantumNous/new-api/common"
+	"github.com/55gY/new-api-lite/common"
 
 	"github.com/samber/lo"
 	"gorm.io/gorm"

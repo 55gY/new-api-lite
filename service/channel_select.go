@@ -1,7 +1,7 @@
 package service
 
 import (
-	"github.com/QuantumNous/new-api/model"
+	"github.com/55gY/new-api-lite/model"
 	"github.com/gin-gonic/gin"
 )
 
