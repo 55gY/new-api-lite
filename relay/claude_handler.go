@@ -40,6 +40,8 @@ func ClaudeHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *typ
 	if err != nil {
 		return types.NewError(err, types.ErrorCodeChannelModelMappedError, types.ErrOptionWithSkipRetry())
 	}
+	// 归一化请求参数,解决模型映射后参数不匹配问题
+	helper.NormalizeRequestForModelMapping(info, request)
 
 	adaptor := GetAdaptor(info.ApiType)
 	if adaptor == nil {
