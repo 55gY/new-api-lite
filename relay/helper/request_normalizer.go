@@ -41,11 +41,11 @@ func normalizeOpenAIRequest(req *dto.GeneralOpenAIRequest) {
 	// 2. 清洗 tools schema 中的 null 值
 	// 某些上游提供商(如 DeepSeek)对 function schema 的校验比 OpenAI 更严格
 	// 如果客户端传了 "required": null 或某个数组字段是 null 而不是 [],会报错
-	if len(req.Tools) > 0 {
-		for i := range req.Tools {
-			if req.Tools[i].Type == "function" {
-				cleanToolFunctionParameters(&req.Tools[i].Function)
-			}
+	// Tools 字段是 []ToolCallRequest,需要遍历并检查每个 tool
+	for i := range req.Tools {
+		// ToolCallRequest 的 Type 字段是 string,检查是否为 function 类型
+		if req.Tools[i].Type == "function" {
+			cleanToolFunctionParameters(&req.Tools[i].Function)
 		}
 	}
 }
@@ -62,9 +62,22 @@ func normalizeClaudeRequest(req *dto.ClaudeRequest) {
 	}
 
 	// 清洗 tools schema
-	if len(req.Tools) > 0 {
-		for i := range req.Tools {
-			cleanClaudeToolParameters(&req.Tools[i])
+	// Tools 字段是 any 类型，需要先转换为 []any 再遍历
+	if req.Tools != nil {
+		if toolsSlice, ok := req.Tools.([]any); ok {
+			for _, toolAny := range toolsSlice {
+				if toolMap, ok := toolAny.(map[string]any); ok {
+					// 检查是否为 Tool 对象 (有 name 和 input_schema 字段)
+					if _, hasName := toolMap["name"]; hasName {
+						// 尝试获取 InputSchema
+						if inputSchema, ok := toolMap["input_schema"]; ok && inputSchema != nil {
+							if schemaMap, ok := inputSchema.(map[string]any); ok {
+								cleanNullValues(schemaMap)
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 }
@@ -91,10 +104,8 @@ func cleanClaudeToolParameters(tool *dto.Tool) {
 		return
 	}
 
-	schema, ok := tool.InputSchema.(map[string]any)
-	if !ok {
-		return
-	}
+	// InputSchema 已经是 map[string]interface{} 类型，直接使用
+	schema := tool.InputSchema
 
 	cleanNullValues(schema)
 }
