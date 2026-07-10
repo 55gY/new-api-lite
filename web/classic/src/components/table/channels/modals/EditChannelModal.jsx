@@ -857,7 +857,6 @@ const EditChannelModal = (props) => {
         data.upstream_model_update_last_detected_models = [];
         data.upstream_model_update_ignored_models = '';
       }
-        data.disable_auto_test = false;
 
       if (
         data.type === 45 &&
