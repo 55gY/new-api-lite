@@ -214,7 +214,7 @@ const EditChannelModal = (props) => {
     upstream_model_update_last_check_time: 0,
     upstream_model_update_last_detected_models: [],
     upstream_model_update_ignored_models: '',
-    disable_auto_test: false,
+    disable_auto_test: 0,
   };
   const [batch, setBatch] = useState(false);
   const [multiToSingle, setMultiToSingle] = useState(false);
@@ -817,7 +817,6 @@ const EditChannelModal = (props) => {
           )
             ? parsedSettings.upstream_model_update_ignored_models.join(',')
             : '';
-          data.disable_auto_test = parsedSettings.disable_auto_test === true;
         } catch (error) {
           console.error('解析其他设置失败:', error);
           data.azure_responses_version = '';
@@ -837,7 +836,6 @@ const EditChannelModal = (props) => {
           data.upstream_model_update_last_check_time = 0;
           data.upstream_model_update_last_detected_models = [];
           data.upstream_model_update_ignored_models = '';
-          data.disable_auto_test = false;
         }
       } else {
         // 兼容历史数据：老渠道没有 settings 时，默认按 json 展示
@@ -877,7 +875,7 @@ const EditChannelModal = (props) => {
       } else {
         setAutoBan(true);
       }
-      setDisableAutoTest(data.disable_auto_test === true);
+      setDisableAutoTest(data.disable_auto_test === 1);
       // 同步企业账户状态
       setIsEnterpriseAccount(data.is_enterprise_account || false);
       // 同步更新channelSettings状态显示
@@ -1622,7 +1620,6 @@ const EditChannelModal = (props) => {
       }
     }
 
-    settings.disable_auto_test = localInputs.disable_auto_test === true;
 
     settings.upstream_model_update_check_enabled =
       localInputs.upstream_model_update_check_enabled === true;
@@ -1669,7 +1666,7 @@ const EditChannelModal = (props) => {
     delete localInputs.allow_inference_geo;
     delete localInputs.allow_speed;
     delete localInputs.claude_beta_query;
-    delete localInputs.disable_auto_test;
+    localInputs.disable_auto_test = localInputs.disable_auto_test ? 1 : 0;
     delete localInputs.upstream_model_update_check_enabled;
     delete localInputs.upstream_model_update_auto_sync_enabled;
     delete localInputs.upstream_model_update_last_check_time;

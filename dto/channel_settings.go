@@ -41,7 +41,6 @@ type ChannelOtherSettings struct {
 	UpstreamModelUpdateLastDetectedModels []string      `json:"upstream_model_update_last_detected_models,omitempty"` // 上次检测到的可加入模型
 	UpstreamModelUpdateLastRemovedModels  []string      `json:"upstream_model_update_last_removed_models,omitempty"`  // 上次检测到的可删除模型
 	UpstreamModelUpdateIgnoredModels      []string      `json:"upstream_model_update_ignored_models,omitempty"`       // 手动忽略的模型
-	DisableAutoTest                       bool          `json:"disable_auto_test,omitempty"`                          // 是否禁止定时自动测试（开启后定时测试会跳过该渠道）
 }
 
 func (s *ChannelOtherSettings) IsOpenRouterEnterprise() bool {

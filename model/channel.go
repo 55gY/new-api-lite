@@ -43,6 +43,7 @@ type Channel struct {
 	StatusCodeMapping *string `json:"status_code_mapping" gorm:"type:varchar(1024);default:''"`
 	Priority          *int64  `json:"priority" gorm:"bigint;default:0"`
 	AutoBan           *int    `json:"auto_ban" gorm:"default:1"`
+	DisableAutoTest   *int    `json:"disable_auto_test" gorm:"default:0"`
 	OtherInfo         string  `json:"other_info"`
 	Setting           *string `json:"setting" gorm:"type:text"` // 渠道额外设置
 	ParamOverride     *string `json:"param_override" gorm:"type:text"`

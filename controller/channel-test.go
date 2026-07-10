@@ -937,7 +937,7 @@ func testAllChannels(notify bool) error {
 			if channel.Status == common.ChannelStatusManuallyDisabled {
 				continue
 			}
-			if channel.GetOtherSettings().DisableAutoTest {
+			if channel.DisableAutoTest != nil && *channel.DisableAutoTest == 1 {
 				continue
 			}
 			testableAbilities, err := model.GetChannelTestableAbilities(channel.Id)
