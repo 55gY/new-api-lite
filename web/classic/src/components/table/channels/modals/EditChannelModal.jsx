@@ -214,6 +214,7 @@ const EditChannelModal = (props) => {
     upstream_model_update_last_check_time: 0,
     upstream_model_update_last_detected_models: [],
     upstream_model_update_ignored_models: '',
+    disable_auto_test: false,
   };
   const [batch, setBatch] = useState(false);
   const [multiToSingle, setMultiToSingle] = useState(false);
@@ -815,6 +816,7 @@ const EditChannelModal = (props) => {
           )
             ? parsedSettings.upstream_model_update_ignored_models.join(',')
             : '';
+          data.disable_auto_test = parsedSettings.disable_auto_test === true;
         } catch (error) {
           console.error('解析其他设置失败:', error);
           data.azure_responses_version = '';
@@ -834,6 +836,7 @@ const EditChannelModal = (props) => {
           data.upstream_model_update_last_check_time = 0;
           data.upstream_model_update_last_detected_models = [];
           data.upstream_model_update_ignored_models = '';
+          data.disable_auto_test = false;
         }
       } else {
         // 兼容历史数据：老渠道没有 settings 时，默认按 json 展示
@@ -853,6 +856,7 @@ const EditChannelModal = (props) => {
         data.upstream_model_update_last_detected_models = [];
         data.upstream_model_update_ignored_models = '';
       }
+        data.disable_auto_test = false;
 
       if (
         data.type === 45 &&
@@ -1617,6 +1621,8 @@ const EditChannelModal = (props) => {
       }
     }
 
+    settings.disable_auto_test = localInputs.disable_auto_test === true;
+
     settings.upstream_model_update_check_enabled =
       localInputs.upstream_model_update_check_enabled === true;
     settings.upstream_model_update_auto_sync_enabled =
@@ -1662,6 +1668,7 @@ const EditChannelModal = (props) => {
     delete localInputs.allow_inference_geo;
     delete localInputs.allow_speed;
     delete localInputs.claude_beta_query;
+    delete localInputs.disable_auto_test;
     delete localInputs.upstream_model_update_check_enabled;
     delete localInputs.upstream_model_update_auto_sync_enabled;
     delete localInputs.upstream_model_update_last_check_time;
@@ -3218,6 +3225,17 @@ const EditChannelModal = (props) => {
                     }}
                     extraText={t(
                       '实际模型为上游模型名称，请求模型为客户端调用名称；多个请求模型用英文逗号分隔。例如配置 {"DeepSeek-V4":"gpt-5.5,gpt-5.4"} 表示请求 gpt-5.5 或 gpt-5.4 时实际发送到上游模型 DeepSeek-V4',
+                    )}
+                  />
+
+                  {/* Disable Auto Test - Core Config */}
+                  <Form.Switch
+                    field='disable_auto_test'
+                    label={t('禁止自动测试')}
+                    checkedText={t('开')}
+                    uncheckedText={t('关')}
+                    extraText={t(
+                      '开启后该渠道不会参与定时自动测试',
                     )}
                   />
 
