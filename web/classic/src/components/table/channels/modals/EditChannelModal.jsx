@@ -220,6 +220,7 @@ const EditChannelModal = (props) => {
   const [multiToSingle, setMultiToSingle] = useState(false);
   const [multiKeyMode, setMultiKeyMode] = useState('random');
   const [autoBan, setAutoBan] = useState(true);
+  const [disableAutoTest, setDisableAutoTest] = useState(false);
   const [inputs, setInputs] = useState(originInputs);
   const [originModelOptions, setOriginModelOptions] = useState([]);
   const [modelOptions, setModelOptions] = useState([]);
@@ -877,6 +878,7 @@ const EditChannelModal = (props) => {
       } else {
         setAutoBan(true);
       }
+      setDisableAutoTest(data.disable_auto_test === true);
       // 同步企业账户状态
       setIsEnterpriseAccount(data.is_enterprise_account || false);
       // 同步更新channelSettings状态显示
@@ -3234,9 +3236,11 @@ const EditChannelModal = (props) => {
                     label={t('禁止自动测试')}
                     checkedText={t('开')}
                     uncheckedText={t('关')}
+                    onChange={(value) => setDisableAutoTest(value)}
                     extraText={t(
                       '开启后该渠道不会参与定时自动测试',
                     )}
+                    initValue={disableAutoTest}
                   />
 
                   {/* Auto Ban - Core Config */}
