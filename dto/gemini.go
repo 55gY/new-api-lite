@@ -455,9 +455,10 @@ type GeminiChatPromptFeedback struct {
 }
 
 type GeminiChatResponse struct {
-	Candidates     []GeminiChatCandidate     `json:"candidates"`
-	PromptFeedback *GeminiChatPromptFeedback `json:"promptFeedback,omitempty"`
-	UsageMetadata  GeminiUsageMetadata       `json:"usageMetadata"`
+	Candidates       []GeminiChatCandidate     `json:"candidates"`
+	PromptFeedback   *GeminiChatPromptFeedback `json:"promptFeedback,omitempty"`
+	UsageMetadata    GeminiUsageMetadata       `json:"usageMetadata"`
+	HasUsageMetadata bool                      `json:"-"`
 }
 
 type GeminiUsageMetadata struct {
@@ -470,6 +471,7 @@ type GeminiUsageMetadata struct {
 	PromptTokensDetails        []GeminiPromptTokensDetails `json:"promptTokensDetails"`
 	ToolUsePromptTokensDetails []GeminiPromptTokensDetails `json:"toolUsePromptTokensDetails"`
 	CandidatesTokensDetails    []GeminiPromptTokensDetails `json:"candidatesTokensDetails"`
+	BillingUsage               *BillingUsage               `json:"billing_usage,omitempty"`
 }
 
 type GeminiPromptTokensDetails struct {
