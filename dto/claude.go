@@ -200,7 +200,7 @@ type ClaudeWebSearchUserLocation struct {
 type ClaudeToolChoice struct {
 	Type                   string `json:"type"`
 	Name                   string `json:"name,omitempty"`
-	DisableParallelToolUse bool   `json:"disable_parallel_tool_use,omitempty"`
+	DisableParallelToolUse *bool  `json:"disable_parallel_tool_use,omitempty"`
 }
 
 type ClaudeRequest struct {
@@ -414,7 +414,7 @@ func (c *ClaudeRequest) GetTools() []any {
 
 func (c *ClaudeRequest) GetEfforts() string {
 	var OutputConfig OutputConfigForEffort
-	if err := json.Unmarshal(c.OutputConfig, &OutputConfig); err == nil {
+	if err := common.Unmarshal(c.OutputConfig, &OutputConfig); err == nil {
 		effort := OutputConfig.Effort
 		return effort
 	}

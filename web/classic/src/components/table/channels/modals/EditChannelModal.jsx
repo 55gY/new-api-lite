@@ -408,10 +408,6 @@ const EditChannelModal = (props) => {
     </Tooltip>
   );
 
-  // 2FA状态更新辅助函数
-  const updateTwoFAState = (updates) => {
-    setTwoFAState((prev) => ({ ...prev, ...updates }));
-  };
   // 重置2FA验证状态
   const reset2FAVerifyState = () => {
     setShow2FAVerifyModal(false);
@@ -444,9 +440,9 @@ const EditChannelModal = (props) => {
   const showApiConfigCard = true; // 控制是否显示 API 配置卡片
   const getInitValues = () => ({ ...originInputs });
 
-  // 处理渠道额外设置的更新
+  // 处理渠道额外设置的更新（setting 单数 blob）
   const handleChannelSettingsChange = (key, value) => {
-    // 更新内部状态
+    // 更新内部状态（用于界面展示）
     setChannelSettings((prev) => ({ ...prev, [key]: value }));
 
     // 同步更新到表单字段
@@ -457,16 +453,27 @@ const EditChannelModal = (props) => {
     // 同步更新inputs状态
     setInputs((prev) => ({ ...prev, [key]: value }));
 
-    // 生成setting JSON并更新
-    const newSettings = { ...channelSettings, [key]: value };
-    const settingsJson = JSON.stringify(newSettings);
-    handleInputChange('setting', settingsJson);
+    // 从表单读取最新的 setting JSON（表单是提交时的唯一数据源，且被同步更新），
+    // 避免使用渲染闭包中已过期的 channelSettings，导致同一渲染周期内连续切换时丢失先前修改。
+    let base = {};
+    const currentSetting = formApiRef.current
+      ? formApiRef.current.getValue('setting')
+      : inputs.setting;
+    if (currentSetting) {
+      try {
+        base =
+          typeof currentSetting === 'string'
+            ? JSON.parse(currentSetting)
+            : { ...currentSetting };
+      } catch (error) {
+        console.error('解析设置失败:', error);
+      }
+    }
+    base[key] = value;
+    handleInputChange('setting', JSON.stringify(base));
   };
 
   const handleChannelOtherSettingsChange = (key, value) => {
-    // 更新内部状态
-    setChannelSettings((prev) => ({ ...prev, [key]: value }));
-
     // 同步更新到表单字段
     if (formApiRef.current) {
       formApiRef.current.setValue(key, value);
@@ -475,18 +482,25 @@ const EditChannelModal = (props) => {
     // 同步更新inputs状态
     setInputs((prev) => ({ ...prev, [key]: value }));
 
-    // 需要更新settings，是一个json，例如{"azure_responses_version": "preview"}
+    // 从表单读取最新的 settings（复数）JSON（提交时读取的即为表单值），避免使用渲染闭包中
+    // 已过期的 inputs.settings，导致同一渲染周期内连续切换多个开关时先前修改被覆盖丢失。
+    // 注意：此类 key 属于 settings（复数）blob，不应写入 channelSettings（setting 单数）桶。
     let settings = {};
-    if (inputs.settings) {
+    const currentSettings = formApiRef.current
+      ? formApiRef.current.getValue('settings')
+      : inputs.settings;
+    if (currentSettings) {
       try {
-        settings = JSON.parse(inputs.settings);
+        settings =
+          typeof currentSettings === 'string'
+            ? JSON.parse(currentSettings)
+            : { ...currentSettings };
       } catch (error) {
         console.error('解析设置失败:', error);
       }
     }
     settings[key] = value;
-    const settingsJson = JSON.stringify(settings);
-    handleInputChange('settings', settingsJson);
+    handleInputChange('settings', JSON.stringify(settings));
   };
 
   const applyClipboardConfig = (config) => {
@@ -3236,7 +3250,6 @@ const EditChannelModal = (props) => {
                     extraText={t(
                       '开启后该渠道不会参与定时自动测试',
                     )}
-                    initValue={disableAutoTest}
                   />
 
                   {/* Auto Ban - Core Config */}
@@ -3249,7 +3262,6 @@ const EditChannelModal = (props) => {
                     extraText={t(
                       '仅当自动禁用开启时有效，关闭后不会自动禁用该渠道',
                     )}
-                    initValue={autoBan}
                   />
 
                   {/* Test Model - Core Config */}

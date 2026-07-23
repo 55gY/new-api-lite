@@ -1,0 +1,3731 @@
+diff --git a/.plan/20260722-01.md b/.plan/20260722-01.md
+new file mode 100644
+index 0000000..2693c33
+--- /dev/null
++++ b/.plan/20260722-01.md
+@@ -0,0 +1,188 @@
++# 安全优化与代码健康度提升计划
++
++> 状态：**Phase A–F 已完成**（含 2026-07-23 跟进的 H1 全量转换、Uptime Kuma 整体移除、H6 死 quota 清理）。全部通过后端构建+测试、前端构建、运行时冒烟验证。仅 I1 完整多语言翻译与 Phase G 可选功能增强留待后续。详见各 Phase 状态与文末「执行结果」。
++
++## 执行规则
++
++- 本文件遵循 AGENTS.md 规则 9：列计划即记录，执行时每完成一步把对应 `[ ]` 更新为 `[x]`。
++- 每完成一个 Phase：汇报进度 → 更新本文件 checkbox → 读取 `plan.md` 确认整体状态 → 提示下一 Phase。
++- 核心约束（必须遵守，任何一项都不得违反）：
++  - 规则 1：JSON 只用 `common/json.go` 封装，不直接调用 `encoding/json`（类型引用如 `json.RawMessage` 除外）。
++  - 规则 2：仅 SQLite + GORM；迁移用 `ALTER TABLE ADD COLUMN`；JSON 存 `TEXT`。
++  - 规则 5：上行 relay 请求 DTO 的可选标量用指针 + `omitempty`，保留显式零值/false。
++  - 规则 7/8：禁止重新引入计费/额度/倍率/预填组、音频/视频/任务功能；发现残留只能「隐藏/删除」，不得恢复业务逻辑。
++  - 前后端分离构建：先构建前端（Bun/Vite）再构建后端。
++- 绝对安全优先：不引入破坏性变更；每个 Phase 结束必须编译 + smoke 验证。
++
++## 背景：用户报告的「禁止自动测试」问题已核实
++
++- 现象描述：新增渠道时开启「禁止自动测试」，保存后重新编辑显示为关闭。
++- 核实结论：**当前 HEAD（4699ea0）已修复该 bug**。历史：`6f05eaf` 引入功能（有 bug）→ `cb6572f`/`2316a5a`/`0338b56` 三次修复。
++  - `model/channel.go:46`：`DisableAutoTest *int json:"disable_auto_test" gorm:"default:0"`（专用列，`*int` 规避 GORM 对 false/0 的更新省略）。
++  - `controller/channel-test.go:940`：定时批量测试会跳过 `DisableAutoTest==1` 的渠道，功能生效。
++  - `EditChannelModal.jsx`：加载 869–878 用 `setValues(data)` + `setDisableAutoTest(data.disable_auto_test===1)`；提交 1669 用 `?1:0`；开关 3230–3240。往返正确。
++- 若线上仍复现：多为运行的是旧构建产物，需重新构建前端（Bun）后再构建后端。
++- 但存在**同族未修复的兄弟 bug**（见 C1、H8），属于本计划范围。
++
++## Current State（问题清单）
++
++按优先级分组，每项含定位与影响。
++
++### A. 正确性 / 安全（P0）
++
++- **C1 渠道表单 settings 往返闭包隐患**：`EditChannelModal.jsx:466–490` `handleChannelOtherSettingsChange` 在 480 行直接读渲染闭包中的 `inputs.settings`（非函数式），`handleChannelSettingsChange:461` 同样直接读 `channelSettings`；同一渲染周期内连续切换多个 settings 开关时，后一次读到旧值，先前修改在提交时被丢弃。`settings`（复数）blob 在提交 1578 行会带上该风险；`setting`（单数）blob 因提交 1567–1575 用显式白名单重建，污染不会持久化。与用户报告问题同族。
++- **C2 规则 5 违规——上行 DTO 显式零值被吞**：`dto/openai_request.go:246–249` `StreamOptions.IncludeUsage/IncludeObfuscation` 为非指针 `bool`+`omitempty`；`dto/claude.go:203` `DisableParallelToolUse`；`dto/embedding.go:11–18` `Seed/TopK/NumPredict/NumCtx` 非指针 `int`+`omitempty`。客户端显式传 false/0 时被静默丢弃，未透传上游。
++- **C3 CORS 非法组合**：`middleware/cors.go:10–12` 同时 `AllowAllOrigins=true` 且 `AllowCredentials=true`，违反 CORS 规范，跨域携带凭证被浏览器拒绝。
++- **C4 SiderBar 可见性非响应式**：`components/layout/SiderBar.jsx:60–94` 把 `localStorage.getItem('enable_data_export')` 放入 `useMemo` 依赖，localStorage 非响应值，运行中变更不会刷新侧边栏。
++- **C5 SettingsMonitoring 闭包 setState**：`pages/Setting/Operation/SettingsMonitoring.jsx:142–248` onChange 用 `setInputs({...inputs, k:v})` 非函数式，批量更新可能丢字段导致静默保存失败。
++- **C6 upstream update 选择不存在列**：`controller/channel_upstream_update.go:50` 的 select 字段含 `"tag"`，但 `model.Channel` 无 `Tag`/`tag` 列（原版残留）。
++- **C7 渠道 BaseURL 缺 SSRF 校验**：`controller/channel.go:437–495 validateChannel`（被 AddChannel/UpdateChannel 调用）未对管理员填写的 `channel.BaseURL` 调用已有的 `common.ValidateURLWithFetchSetting`，存在管理员级 SSRF/内网探测面。
++
++### B. 性能 / 稳定性（P1）
++
++- **P1 SQLite 连接池 + WAL**：`model/main.go:109–110` 默认 `SQL_MAX_OPEN_CONNS=1000`，与 SQLite 单写锁模型冲突，易 `SQLITE_BUSY`；`common/database.go` DSN 未启用 WAL。
++- **P2 渠道选择热路径每请求 DB**：`model/channel_cache.go:210–218 getAbilityStatus` 每次查库，`filterDisabledModels` 在每个 relay 请求、每个候选渠道上同步读 SQLite，绕过内存缓存。
++- **P3 日志分页双全扫**：`model/log.go:287–291`、`373–384` 每页 `COUNT(*)`+`SELECT` 两次扫描；用户侧在 `.Count()` 前的 `Limit(10000)` 对 count 无效（GORM 忽略）。
++- **P4 user.Insert 多余往返**：`model/user.go:330–370` Create 后又按 username 查一次、再按 id 查一次并整体 Update，单次注册 4 次 DB 往返。
++
++### C. 代码健康度 / Lite 一致性 / 合规（P2）
++
++- **H1 规则 1 合规**：业务代码约 76 处直接 `encoding/json`（多个 relay adapter、`controller/user.go`/`channel.go`/`console_migrate.go`、`model/user.go:76–88`、`service/codex_oauth.go:313` 等），应改为 `common.Marshal/Unmarshal/DecodeJson`。
++- **H2 删除危险死代码 migrateDBFast**：`model/main.go:158–205` 从未被调用，且并发 `AutoMigrate` 在 SQLite 上会 `SQLITE_BUSY`/损坏；仅返回首个错误。
++- **H3 uptime_kuma 孤立 handler**：`controller/uptime_kuma.go` 未注册路由，且用裸 `json.NewDecoder`（规则 1）；`console_migrate.go` 仍迁移其设置却无入口。删除或正确接线并修 json。
++- **H4 checkin 死多库分支**：`model/checkin.go:82–93` 的 `userCheckinWithTransaction` 仅在非 SQLite 走到，属死分支，误导（违反规则 2 语义）。
++- **H5 EditChannelModal 死代码**：`411–420` `updateTwoFAState` 调用未声明的 `setTwoFAState`（潜在 ReferenceError），及相关未用 2FA 状态，属残留。
++- **H6 货币化残留清理（Lite 一致性）**：`SystemSetting.jsx:425–427` 「支付回调地址」文案；`helpers/quota.js` 全量、`helpers/render.jsx:787–858` 一组 quota 渲染函数无人调用；`helpers/data.js:25,28` 每次登录写 `quota_per_unit`/`quota_display_type='USD'` 到 localStorage；`hooks/dashboard/useDashboardStats.jsx:33` 等 `consumeQuota` 死参数/状态。均为 Rule 7 移除功能的残留，应删（不得恢复）。
++- **H7 更新检查指向错误仓库**：`OtherSetting.jsx:215–225` 裸 `fetch` 请求上游 `Calcium-Ion/new-api` releases，版本比较对本 fork 无意义。改为本 fork 或移除。
++- **H8 disable_auto_test/auto_ban 开关硬化**：`EditChannelModal.jsx:3239,3252` 同时用 `initValue`（外部布尔状态）与表单 `setValues`（整数）双源，存在首帧优先级歧义。移除冗余 `initValue`，统一由 `setValues` 驱动。
++
++### D. 国际化（P3）
++
++- **I1 硬编码未翻译中文**：`SystemSetting.jsx:759,773`、`OtherSetting.jsx:160/176/192/243`、多个 Settings 组件 `showError('刷新失败')`、`hooks/usage-logs/useUsageLogsData.jsx:676` 等 9+ 处未包 `t()`，非 zh 语言显示原始中文；需补齐各 locale。
++
++### E. 功能增强候选（P4，可选，遵守规则 7/8）
++
++- **F1 继续既有 relay 增强计划**：`.plan/20260721-01.md` 的 P2/P3 尚未完成（relayconvert 统一转换框架、`gemini/relay_responses.go`、`openai/responses_via_chat.go`、`advancedcustom` 渠道；均需排除计费/音视频/任务依赖）。
++- **F2 渠道自动测试可视化/健康看板增强**（非计费，纯监控展示，可选）。
++
++## Target State
++
++- P0 正确性/安全项全部修复，relay 显式零值正确透传，跨域凭证行为正确，渠道 settings 往返稳定，管理员级 SSRF 面收敛。
++- P1 在 SQLite 单写模型下稳定（WAL + 合理连接池），热路径与日志分页无多余全扫。
++- P2 代码库无危险死代码与货币化残留，JSON 使用符合规则 1。
++- P3 用户可见文案完成多语言覆盖。
++- （可选）F1/F2 按需推进。
++
++## Affected Files（预估，按最终选定范围细化）
++
++| File | Change Type | Item |
++| --- | --- | --- |
++| `web/classic/src/components/table/channels/modals/EditChannelModal.jsx` | modify | C1, H5, H8 |
++| `dto/openai_request.go`, `dto/claude.go`, `dto/embedding.go` | modify | C2 |
++| `middleware/cors.go` | modify | C3 |
++| `web/classic/src/components/layout/SiderBar.jsx` | modify | C4 |
++| `web/classic/src/pages/Setting/Operation/SettingsMonitoring.jsx` | modify | C5 |
++| `controller/channel_upstream_update.go` | modify | C6 |
++| `controller/channel.go` | modify | C7 |
++| `common/database.go`, `model/main.go` | modify | P1 |
++| `model/channel_cache.go` | modify | P2 |
++| `model/log.go` | modify | P3 |
++| `model/user.go` | modify | P4, H1 |
++| relay adapters / controllers（多文件） | modify | H1 |
++| `model/main.go` | modify | H2 |
++| `controller/uptime_kuma.go`, `controller/console_migrate.go` | modify/delete | H3 |
++| `model/checkin.go` | modify | H4 |
++| `web/classic/src/components/settings/SystemSetting.jsx`, `helpers/quota.js`, `helpers/render.jsx`, `helpers/data.js`, `hooks/dashboard/*` | modify/delete | H6 |
++| `web/classic/src/components/settings/OtherSetting.jsx` | modify | H7 |
++| `web/classic/src/i18n/locales/*.json` + 多组件 | modify | I1 |
++
++## Execution Plan（分 Phase，待确认后执行）
++
++### Phase A：P0 正确性 / 安全（后端为主，风险低）✅ 已完成
++- [x] C2 relay DTO 指针化（StreamOptions.IncludeUsage/IncludeObfuscation、Claude.DisableParallelToolUse 改 *bool；EmbeddingOptions int 改 *int；读侧用 lo.FromPtrOr 保持网关默认语义不变；新增 dto/rule5_pointer_test.go）
++- [x] C3 CORS 组合修正（移除 AllowCredentials，使通配来源/头部合法；同源管理端不受影响）
++- [x] C6 移除 upstream update `tag` 列（该 select 列表用于 DB.Select，tag 非真实列会在 SQLite 报错，属真实修复）
++- [x] C7 渠道 BaseURL SSRF 校验接线（validateChannel 中复用 ValidateURLWithFetchSetting，仅在开启 SSRF 防护时生效）
++- [x] Verify A：`go build -tags noembed ./...` 通过；`go test ./dto/... ./relay/... ./middleware/...` 全绿；新增 Rule5 单测通过
++
++### Phase B：P0 正确性（前端表单/状态，风险中）
++- [ ] C1 渠道 settings 往返改函数式 / 从 formApi 读取当前值
++- [ ] C4 SiderBar 改用响应式状态源
++- [ ] C5 SettingsMonitoring 改函数式 setState
++- [ ] H8 移除 disable_auto_test/auto_ban 冗余 initValue
++- [ ] Verify B：前端构建通过 + 手动往返验证渠道各开关/设置
++
++### Phase C：P1 性能 / 稳定性 ✅ 已完成
++- [x] P1 SQLite 启用 WAL（journal_mode=WAL，库级持久，InitDB 中执行一次；连接池默认值保持不变以免影响既有部署）
++- [x] P2 getAbilityStatus 改为单次批量查询（getUnavailableAbilityChannels，N→1，仍实时读库、无缓存陈旧风险）
++- [x] P3 移除 GetUserLogs 中被 GORM Count 忽略的无效 Limit（行为不变：精确总数）；复合索引/count 上限因涉及 schema 迁移与产品语义变更，留作后续按需评估
++- [x] P4 user.Insert 直接使用刚创建的 user（去掉多余按 username 二次查询），并补充 Update 错误日志
++- [x] Verify C：`go build -tags noembed ./...`、`go vet`、`go test ./model/...` 全绿
++
++### Phase D：P2 代码健康度 / Lite 一致性 ✅ 大部分完成（部分保守留待后续）
++- [x] H2 删除死代码 migrateDBFast（SQLite 并发 AutoMigrate 危险）+ 移除仅其使用的 fmt import
++- [x] H3 uptime_kuma 休眠功能已按用户决策「整体移除」：删除 controller/uptime_kuma.go；移除 console_setting 的 UptimeKumaGroups/UptimeKumaEnabled 字段+默认值、validateUptimeKumaGroups/GetUptimeKumaGroups、ValidateConsoleSettings 的 UptimeKumaGroups 分支、controller/option.go 的 uptime_kuma_groups 校验分支、console_migrate.go 的 Uptime 迁移块；前端移除 dashboard.jsx 的 getUptimeStatusColor/getUptimeStatusText/renderMonitorList 与 dashboard.constants.js 的 UPTIME_STATUS_MAP。冒烟确认 /api/status 已无 uptime_kuma_enabled。
++- [x] H4 删除 checkin.go 死的 MySQL/PG 事务分支 + 连带移除仅其使用的 common import（本项目恒为 SQLite）
++- [x] H5 删除 EditChannelModal 死代码 updateTwoFAState（引用从未声明的 setTwoFAState，潜在 ReferenceError）
++- [x] H6 货币化残留：data.js 额度展示默认 USD→TOKENS；SystemSetting「支付回调地址」文案去除支付表述；（2026-07-23 跟进）删除孤立文件 helpers/quota.js（0 引用），移除 render.jsx 中 7 个 0 引用的 quota 渲染/换算函数（renderQuota/renderQuotaWithPrompt/getQuotaPerUnit/renderUnitWithQuota/getQuotaWithUnit/renderQuotaWithAmount/renderQuotaNumberWithDigit，保留非 quota 的 renderNumberWithPoint），并移除 useDashboardStats 的 consumeQuota 死参数及其调用点位置实参。
++- [x] H7 更新检查仓库由上游 Calcium-Ion/new-api 改为本 fork 55gY/new-api-lite，停止向无关上游 phone-home
++- [x] Verify D：后端 go build/test 通过；前端 vite build 通过
++
++### Phase E：规则 1 合规 ✅ 已完成 75/75（全部业务代码）
++- [x] H1 全部业务代码文件完成 json.Marshal/Unmarshal/NewDecoder → common.Marshal/Unmarshal/DecodeJson 转换；json.RawMessage/json.Number 类型引用按规则保留。全仓校验：业务代码（排除 common/ 与测试）已无任何残留 stdlib json.Marshal/Unmarshal/NewDecoder。
++- [x] （2026-07-23 跟进）余量 26 文件完成：25 个（pkg/*、dto/*、relay adaptor、setting/*）以显式插入我们的 common import 方式转换（避免 goimports 在两个同名 common 包间误判）；coze/adaptor.go 因 relay/common 占用 `common` 标识，改用别名 commonpkg 引用我们的 common；controller/uptime_kuma.go 随 Uptime 功能整体删除。
++- [x] Verify E：`go build`（noembed+embed）、`go test ./...` 全绿
++
++### Phase F：P3 i18n ⏳ 代表性完成（完整翻译留待 i18n 技能跑批）
++- [x] I1（代表性）OtherSetting.jsx 的 Logo/首页/页脚 更新 toast 由硬编码中文包入 t()，与文件内既有 t() 用法一致
++- [~] I1 余量：SystemSetting 复选框标签、多个 Settings 组件的 showError('刷新失败')、useUsageLogsData 复制提示等硬编码串，以及为 en/fr/ja/ru/vi 实际补齐译文——建议用仓库自带 .agents/skills/i18n-translate 技能配合 bun run i18n:extract/sync 成批完成。
++- [x] Verify F：前端 vite build 通过
++
++### Phase G（可选）：功能增强 ⏸ 未开始（可选，按需推进）
++- [ ] F1 推进 20260721-01.md P2/P3（relayconvert / gemini responses / openai responses_via_chat / advancedcustom）
++- [ ] F2 渠道测试健康看板（如确认需要）
++- [ ] Verify G：构建 + smoke
++
++## 执行结果（2026-07-22）
++
++环境：容器内安装 Go 1.25.1；前端 Bun 不可用，改用 npm（--legacy-peer-deps，需临时开通 registry.npmjs.org 访问）。
++
++已完成并验证（Phase A–F 主体）：
++- A（后端正确性/安全）：C2 relay DTO 指针化 + Rule5 单测；C3 CORS 去除非法 AllowCredentials；C6 移除 upstream update 不存在的 tag 列（SQLite 下会报错，真实修复）；C7 渠道 BaseURL SSRF 校验接线。
++- B（前端正确性）：C1 渠道 settings 往返改从表单读取最新值（消除过期闭包丢设置，与用户报告同族）；C4 SiderBar 改用 StatusContext 响应式；C5 SettingsMonitoring onChange 改函数式 setState；H8 移除渠道开关冗余 initValue 双源。
++- C（性能/稳定）：P1 SQLite 启用 WAL（冒烟确认 -wal 文件生成）；P2 渠道选择热路径 N 次查询降为 1 次批量查询；P3 移除被 Count 忽略的无效 Limit；P4 user.Insert 去掉多余按 username 二次查询。
++- D（健康度/Lite 一致性）：H2/H4 删死代码；H5 删坏死 2FA 辅助；H6 额度展示默认 TOKENS + 去支付文案；H7 更新检查指向本 fork。
++- E（规则1）：H1 覆盖 49 文件。
++- F（i18n）：I1 代表性完成。
++
++验证：后端 `go build`（noembed 与 embed 两种）、`go test ./...` 全绿；前端 `vite build` 成功生成 dist；主二进制构建成功；运行时冒烟 /api/status 200、SPA 首页 200、/v1/models 401（无 panic）、WAL 生效、后台任务正常启动。
++
++关于用户报告的「禁止自动测试」：当前 HEAD 已修复（见背景章节），本轮另修复了同族的 settings 往返闭包隐患（C1）。
++
++2026-07-23 跟进完成（用户选定三项）：① H1 余量 26 文件全部转换（业务代码已零 stdlib json.Marshal/Unmarshal/NewDecoder）；② Uptime Kuma 休眠功能整体移除（前后端）；③ H6 死 quota 函数/文件清理 + consumeQuota 死参数移除。均通过后端 go build+test、前端 vite build、运行时冒烟（/api/status 200、SPA 200、status 已无 uptime_kuma_enabled、无 panic）。
++
++仍留待后续（可选/低优先）：I1 完整多语言翻译（建议用 .agents/skills/i18n-translate 跑批）、Phase G 可选功能增强（20260721-01.md 的 P2/P3、渠道健康看板）。
++
++## Rollback Plan
++
++1. 每个 Phase 独立、可单独回滚；优先回滚最近一批文件修改，不回滚已验证 Phase。
++2. C1/C4/C5 若引入表单回归，先恢复原 onChange，再以字段级最小改动重做。
++3. P1 若 WAL/连接池导致启动或迁移异常，先恢复 DSN 与 pool 默认值。
++4. H1 分批替换，单目录编译失败即回退该目录批次。
++
++## Risks
++
++- C1/C5 表单状态路径较复杂，需实测每个开关/设置的保存-重载往返，避免只修一个丢另一个。
++- P1 WAL 在容器/网络文件系统上行为需验证；连接池收敛可能改变高并发吞吐特性。
++- P2 引入内存缓存需保证渠道能力状态更新时缓存一致。
++- H1 量大，务必只改 marshal/unmarshal 调用，保留 `json.RawMessage`/`json.Number` 类型引用。
++- H6 删货币化残留时须确认无插件/外部引用，且不触碰规则 7 允许保留的兼容空值字段。
++
++## Phase 完成记录
++
++- [ ] Phase A 完成后：汇报并提示 Phase B。
++- [ ] Phase B 完成后：汇报并提示 Phase C。
++- [ ] Phase C 完成后：汇报并提示 Phase D。
++- [ ] Phase D 完成后：汇报并提示 Phase E。
++- [ ] Phase E 完成后：汇报并提示 Phase F。
++- [ ] Phase F 完成后：汇报并提示 Phase G（或收尾）。
+diff --git a/controller/channel-test.go b/controller/channel-test.go
+index 000d18a..f82376e 100644
+--- a/controller/channel-test.go
++++ b/controller/channel-test.go
+@@ -755,7 +755,7 @@ func buildTestRequest(model string, endpointType string, channel *model.Channel,
+ 				MaxTokens: lo.ToPtr(maxTokens),
+ 			}
+ 			if isStream {
+-				req.StreamOptions = &dto.StreamOptions{IncludeUsage: true}
++				req.StreamOptions = &dto.StreamOptions{IncludeUsage: lo.ToPtr(true)}
+ 			}
+ 			return req
+ 		}
+@@ -811,7 +811,7 @@ func buildTestRequest(model string, endpointType string, channel *model.Channel,
+ 		},
+ 	}
+ 	if isStream {
+-		testRequest.StreamOptions = &dto.StreamOptions{IncludeUsage: true}
++		testRequest.StreamOptions = &dto.StreamOptions{IncludeUsage: lo.ToPtr(true)}
+ 	}
+ 
+ 	if strings.HasPrefix(model, "o") {
+diff --git a/controller/channel.go b/controller/channel.go
+index ff1c9aa..e2c819e 100644
+--- a/controller/channel.go
++++ b/controller/channel.go
+@@ -18,6 +18,7 @@ import (
+ 	"github.com/55gY/new-api-lite/relay/channel/gemini"
+ 	"github.com/55gY/new-api-lite/relay/channel/ollama"
+ 	"github.com/55gY/new-api-lite/service"
++	"github.com/55gY/new-api-lite/setting/system_setting"
+ 
+ 	"github.com/gin-gonic/gin"
+ 	"gorm.io/gorm"
+@@ -440,6 +441,17 @@ func validateChannel(channel *model.Channel, isAdd bool) error {
+ 		return fmt.Errorf("渠道额外设置[channel setting] 格式错误：%s", err.Error())
+ 	}
+ 
++	// SSRF 防护：校验管理员填写的渠道 BaseURL，避免被用于探测内网/元数据服务。
++	// 仅在系统开启 SSRF 防护时实际生效（未开启时 ValidateURLWithFetchSetting 直接返回 nil）。
++	if channel.BaseURL != nil {
++		if baseURL := strings.TrimSpace(*channel.BaseURL); baseURL != "" {
++			fetchSetting := system_setting.GetFetchSetting()
++			if err := common.ValidateURLWithFetchSetting(baseURL, fetchSetting.EnableSSRFProtection, fetchSetting.AllowPrivateIp, fetchSetting.DomainFilterMode, fetchSetting.IpFilterMode, fetchSetting.DomainList, fetchSetting.IpList, fetchSetting.AllowedPorts, fetchSetting.ApplyIPFilterForDomain); err != nil {
++				return fmt.Errorf("渠道 BaseURL 未通过 SSRF 安全校验：%s", err.Error())
++			}
++		}
++	}
++
+ 	// 如果是添加操作，检查 channel 和 key 是否为空
+ 	if isAdd {
+ 		if channel == nil || channel.Key == "" {
+@@ -548,7 +560,7 @@ func getVertexArrayKeys(keys string) ([]string, error) {
+ 		case string:
+ 			keyStr = strings.TrimSpace(v)
+ 		default:
+-			bytes, err := json.Marshal(v)
++			bytes, err := common.Marshal(v)
+ 			if err != nil {
+ 				return nil, fmt.Errorf("Vertex AI key JSON 编码失败: %w", err)
+ 			}
+@@ -813,7 +825,7 @@ func UpdateChannel(c *gin.Context) {
+ 				if strings.HasPrefix(strings.TrimSpace(originChannel.Key), "[") {
+ 					// JSON数组格式
+ 					var arr []json.RawMessage
+-					if err := json.Unmarshal([]byte(strings.TrimSpace(originChannel.Key)), &arr); err == nil {
++					if err := common.Unmarshal([]byte(strings.TrimSpace(originChannel.Key)), &arr); err == nil {
+ 						existingKeys = make([]string, len(arr))
+ 						for i, v := range arr {
+ 							existingKeys[i] = string(v)
+@@ -1923,7 +1935,7 @@ func OllamaPullModelStream(c *gin.Context) {
+ 
+ 	// 创建进度回调函数
+ 	progressCallback := func(progress ollama.OllamaPullResponse) {
+-		data, _ := json.Marshal(progress)
++		data, _ := common.Marshal(progress)
+ 		fmt.Fprintf(c.Writer, "data: %s\n\n", string(data))
+ 		c.Writer.Flush()
+ 	}
+@@ -1932,12 +1944,12 @@ func OllamaPullModelStream(c *gin.Context) {
+ 	err = ollama.PullOllamaModelStream(baseURL, key, req.ModelName, progressCallback)
+ 
+ 	if err != nil {
+-		errorData, _ := json.Marshal(gin.H{
++		errorData, _ := common.Marshal(gin.H{
+ 			"error": err.Error(),
+ 		})
+ 		fmt.Fprintf(c.Writer, "data: %s\n\n", string(errorData))
+ 	} else {
+-		successData, _ := json.Marshal(gin.H{
++		successData, _ := common.Marshal(gin.H{
+ 			"message": fmt.Sprintf("Model %s pulled successfully", req.ModelName),
+ 		})
+ 		fmt.Fprintf(c.Writer, "data: %s\n\n", string(successData))
+diff --git a/controller/channel_upstream_update.go b/controller/channel_upstream_update.go
+index 802935b..a45ed27 100644
+--- a/controller/channel_upstream_update.go
++++ b/controller/channel_upstream_update.go
+@@ -47,7 +47,6 @@ var channelUpstreamModelUpdateSelectFields = []string{
+ 	"group",
+ 	"priority",
+ 	"weight",
+-	"tag",
+ 	"channel_info",
+ 	"header_override",
+ }
+diff --git a/controller/console_migrate.go b/controller/console_migrate.go
+index 28f221a..7834482 100644
+--- a/controller/console_migrate.go
++++ b/controller/console_migrate.go
+@@ -3,7 +3,6 @@
+ package controller
+ 
+ import (
+-	"encoding/json"
+ 	"net/http"
+ 
+ 	"github.com/55gY/new-api-lite/common"
+@@ -30,11 +29,11 @@ func MigrateConsoleSetting(c *gin.Context) {
+ 	// 处理 APIInfo
+ 	if v := valMap["ApiInfo"]; v != "" {
+ 		var arr []map[string]interface{}
+-		if err := json.Unmarshal([]byte(v), &arr); err == nil {
++		if err := common.Unmarshal([]byte(v), &arr); err == nil {
+ 			if len(arr) > 50 {
+ 				arr = arr[:50]
+ 			}
+-			bytes, _ := json.Marshal(arr)
++			bytes, _ := common.Marshal(arr)
+ 			model.UpdateOption("console_setting.api_info", string(bytes))
+ 		}
+ 		model.UpdateOption("ApiInfo", "")
+@@ -47,7 +46,7 @@ func MigrateConsoleSetting(c *gin.Context) {
+ 	// FAQ 转换
+ 	if v := valMap["FAQ"]; v != "" {
+ 		var arr []map[string]interface{}
+-		if err := json.Unmarshal([]byte(v), &arr); err == nil {
++		if err := common.Unmarshal([]byte(v), &arr); err == nil {
+ 			out := []map[string]interface{}{}
+ 			for _, item := range arr {
+ 				q, _ := item["question"].(string)
+@@ -65,38 +64,13 @@ func MigrateConsoleSetting(c *gin.Context) {
+ 			if len(out) > 50 {
+ 				out = out[:50]
+ 			}
+-			bytes, _ := json.Marshal(out)
++			bytes, _ := common.Marshal(out)
+ 			model.UpdateOption("console_setting.faq", string(bytes))
+ 		}
+ 		model.UpdateOption("FAQ", "")
+ 	}
+-	// Uptime Kuma 迁移到新的 groups 结构（console_setting.uptime_kuma_groups）
+-	url := valMap["UptimeKumaUrl"]
+-	slug := valMap["UptimeKumaSlug"]
+-	if url != "" && slug != "" {
+-		// 仅当同时存在 URL 与 Slug 时才进行迁移
+-		groups := []map[string]interface{}{
+-			{
+-				"id":           1,
+-				"categoryName": "old",
+-				"url":          url,
+-				"slug":         slug,
+-				"description":  "",
+-			},
+-		}
+-		bytes, _ := json.Marshal(groups)
+-		model.UpdateOption("console_setting.uptime_kuma_groups", string(bytes))
+-	}
+-	// 清空旧键内容
+-	if url != "" {
+-		model.UpdateOption("UptimeKumaUrl", "")
+-	}
+-	if slug != "" {
+-		model.UpdateOption("UptimeKumaSlug", "")
+-	}
+-
+ 	// 删除旧键记录
+-	oldKeys := []string{"ApiInfo", "Announcements", "FAQ", "UptimeKumaUrl", "UptimeKumaSlug"}
++	oldKeys := []string{"ApiInfo", "Announcements", "FAQ"}
+ 	model.DB.Where("key IN ?", oldKeys).Delete(&model.Option{})
+ 
+ 	// 重新加载 OptionMap
+diff --git a/controller/deployment.go b/controller/deployment.go
+index f56da7a..e92dc05 100644
+--- a/controller/deployment.go
++++ b/controller/deployment.go
+@@ -2,7 +2,6 @@ package controller
+ 
+ import (
+ 	"bytes"
+-	"encoding/json"
+ 	"fmt"
+ 	"strconv"
+ 	"strings"
+@@ -66,7 +65,7 @@ func TestIoNetConnection(c *gin.Context) {
+ 		return
+ 	}
+ 	if len(bytes.TrimSpace(rawBody)) > 0 {
+-		if err := json.Unmarshal(rawBody, &req); err != nil {
++		if err := common.Unmarshal(rawBody, &req); err != nil {
+ 			common.ApiErrorMsg(c, "invalid request payload")
+ 			return
+ 		}
+diff --git a/controller/misc.go b/controller/misc.go
+index ac2d896..7838db8 100644
+--- a/controller/misc.go
++++ b/controller/misc.go
+@@ -1,7 +1,6 @@
+ package controller
+ 
+ import (
+-	"encoding/json"
+ 	"fmt"
+ 	"net/http"
+ 	"strings"
+@@ -236,7 +235,7 @@ type PasswordResetRequest struct {
+ 
+ func ResetPassword(c *gin.Context) {
+ 	var req PasswordResetRequest
+-	err := json.NewDecoder(c.Request.Body).Decode(&req)
++	err := common.DecodeJson(c.Request.Body, &req)
+ 	if req.Email == "" || req.Token == "" {
+ 		c.JSON(http.StatusOK, gin.H{
+ 			"success": false,
+diff --git a/controller/option.go b/controller/option.go
+index 1a556ec..e33e5de 100644
+--- a/controller/option.go
++++ b/controller/option.go
+@@ -249,15 +249,6 @@ func UpdateOption(c *gin.Context) {
+ 			})
+ 			return
+ 		}
+-	case "console_setting.uptime_kuma_groups":
+-		err = console_setting.ValidateConsoleSettings(option.Value.(string), "UptimeKumaGroups")
+-		if err != nil {
+-			c.JSON(http.StatusOK, gin.H{
+-				"success": false,
+-				"message": err.Error(),
+-			})
+-			return
+-		}
+ 	}
+ 	err = model.UpdateOption(option.Key, option.Value.(string))
+ 	if err != nil {
+diff --git a/controller/uptime_kuma.go b/controller/uptime_kuma.go
+deleted file mode 100644
+index cc22c2d..0000000
+--- a/controller/uptime_kuma.go
++++ /dev/null
+@@ -1,155 +0,0 @@
+-package controller
+-
+-import (
+-	"context"
+-	"encoding/json"
+-	"errors"
+-	"net/http"
+-	"strconv"
+-	"strings"
+-	"time"
+-
+-	"github.com/55gY/new-api-lite/setting/console_setting"
+-
+-	"github.com/gin-gonic/gin"
+-	"golang.org/x/sync/errgroup"
+-)
+-
+-const (
+-	requestTimeout   = 30 * time.Second
+-	httpTimeout      = 10 * time.Second
+-	uptimeKeySuffix  = "_24"
+-	apiStatusPath    = "/api/status-page/"
+-	apiHeartbeatPath = "/api/status-page/heartbeat/"
+-)
+-
+-type Monitor struct {
+-	Name   string  `json:"name"`
+-	Uptime float64 `json:"uptime"`
+-	Status int     `json:"status"`
+-	Group  string  `json:"group,omitempty"`
+-}
+-
+-type UptimeGroupResult struct {
+-	CategoryName string    `json:"categoryName"`
+-	Monitors     []Monitor `json:"monitors"`
+-}
+-
+-func getAndDecode(ctx context.Context, client *http.Client, url string, dest interface{}) error {
+-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+-	if err != nil {
+-		return err
+-	}
+-
+-	resp, err := client.Do(req)
+-	if err != nil {
+-		return err
+-	}
+-	defer resp.Body.Close()
+-
+-	if resp.StatusCode != http.StatusOK {
+-		return errors.New("non-200 status")
+-	}
+-
+-	return json.NewDecoder(resp.Body).Decode(dest)
+-}
+-
+-func fetchGroupData(ctx context.Context, client *http.Client, groupConfig map[string]interface{}) UptimeGroupResult {
+-	url, _ := groupConfig["url"].(string)
+-	slug, _ := groupConfig["slug"].(string)
+-	categoryName, _ := groupConfig["categoryName"].(string)
+-
+-	result := UptimeGroupResult{
+-		CategoryName: categoryName,
+-		Monitors:     []Monitor{},
+-	}
+-
+-	if url == "" || slug == "" {
+-		return result
+-	}
+-
+-	baseURL := strings.TrimSuffix(url, "/")
+-
+-	var statusData struct {
+-		PublicGroupList []struct {
+-			ID          int    `json:"id"`
+-			Name        string `json:"name"`
+-			MonitorList []struct {
+-				ID   int    `json:"id"`
+-				Name string `json:"name"`
+-			} `json:"monitorList"`
+-		} `json:"publicGroupList"`
+-	}
+-
+-	var heartbeatData struct {
+-		HeartbeatList map[string][]struct {
+-			Status int `json:"status"`
+-		} `json:"heartbeatList"`
+-		UptimeList map[string]float64 `json:"uptimeList"`
+-	}
+-
+-	g, gCtx := errgroup.WithContext(ctx)
+-	g.Go(func() error {
+-		return getAndDecode(gCtx, client, baseURL+apiStatusPath+slug, &statusData)
+-	})
+-	g.Go(func() error {
+-		return getAndDecode(gCtx, client, baseURL+apiHeartbeatPath+slug, &heartbeatData)
+-	})
+-
+-	if g.Wait() != nil {
+-		return result
+-	}
+-
+-	for _, pg := range statusData.PublicGroupList {
+-		if len(pg.MonitorList) == 0 {
+-			continue
+-		}
+-
+-		for _, m := range pg.MonitorList {
+-			monitor := Monitor{
+-				Name:  m.Name,
+-				Group: pg.Name,
+-			}
+-
+-			monitorID := strconv.Itoa(m.ID)
+-
+-			if uptime, exists := heartbeatData.UptimeList[monitorID+uptimeKeySuffix]; exists {
+-				monitor.Uptime = uptime
+-			}
+-
+-			if heartbeats, exists := heartbeatData.HeartbeatList[monitorID]; exists && len(heartbeats) > 0 {
+-				monitor.Status = heartbeats[0].Status
+-			}
+-
+-			result.Monitors = append(result.Monitors, monitor)
+-		}
+-	}
+-
+-	return result
+-}
+-
+-func GetUptimeKumaStatus(c *gin.Context) {
+-	groups := console_setting.GetUptimeKumaGroups()
+-	if len(groups) == 0 {
+-		c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": []UptimeGroupResult{}})
+-		return
+-	}
+-
+-	ctx, cancel := context.WithTimeout(c.Request.Context(), requestTimeout)
+-	defer cancel()
+-
+-	client := &http.Client{Timeout: httpTimeout}
+-	results := make([]UptimeGroupResult, len(groups))
+-
+-	g, gCtx := errgroup.WithContext(ctx)
+-	for i, group := range groups {
+-		i, group := i, group
+-		g.Go(func() error {
+-			results[i] = fetchGroupData(gCtx, client, group)
+-			return nil
+-		})
+-	}
+-
+-	g.Wait()
+-	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": results})
+-}
+diff --git a/controller/user.go b/controller/user.go
+index 0d400e4..096e71e 100644
+--- a/controller/user.go
++++ b/controller/user.go
+@@ -1,7 +1,6 @@
+ package controller
+ 
+ import (
+-	"encoding/json"
+ 	"errors"
+ 	"fmt"
+ 	"net/http"
+@@ -33,7 +32,7 @@ func Login(c *gin.Context) {
+ 		return
+ 	}
+ 	var loginRequest LoginRequest
+-	err := json.NewDecoder(c.Request.Body).Decode(&loginRequest)
++	err := common.DecodeJson(c.Request.Body, &loginRequest)
+ 	if err != nil {
+ 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+ 		return
+@@ -142,7 +141,7 @@ func Register(c *gin.Context) {
+ 		return
+ 	}
+ 	var user model.User
+-	err := json.NewDecoder(c.Request.Body).Decode(&user)
++	err := common.DecodeJson(c.Request.Body, &user)
+ 	if err != nil {
+ 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+ 		return
+@@ -530,7 +529,7 @@ func GetUserModels(c *gin.Context) {
+ 
+ func UpdateUser(c *gin.Context) {
+ 	var updatedUser model.User
+-	err := json.NewDecoder(c.Request.Body).Decode(&updatedUser)
++	err := common.DecodeJson(c.Request.Body, &updatedUser)
+ 	if err != nil || updatedUser.Id == 0 {
+ 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+ 		return
+@@ -573,7 +572,7 @@ func UpdateUser(c *gin.Context) {
+ 
+ func UpdateSelf(c *gin.Context) {
+ 	var user model.User
+-	err := json.NewDecoder(c.Request.Body).Decode(&user)
++	err := common.DecodeJson(c.Request.Body, &user)
+ 	if err != nil {
+ 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+ 		return
+@@ -684,7 +683,7 @@ func DeleteSelf(c *gin.Context) {
+ 
+ func CreateUser(c *gin.Context) {
+ 	var user model.User
+-	err := json.NewDecoder(c.Request.Body).Decode(&user)
++	err := common.DecodeJson(c.Request.Body, &user)
+ 	user.Username = strings.TrimSpace(user.Username)
+ 	if err != nil || user.Username == "" || user.Password == "" {
+ 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+@@ -731,7 +730,7 @@ type ManageRequest struct {
+ // ManageUser Only admin user can do this
+ func ManageUser(c *gin.Context) {
+ 	var req ManageRequest
+-	err := json.NewDecoder(c.Request.Body).Decode(&req)
++	err := common.DecodeJson(c.Request.Body, &req)
+ 
+ 	if err != nil {
+ 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+diff --git a/dto/claude.go b/dto/claude.go
+index 8c861b3..e6957b3 100644
+--- a/dto/claude.go
++++ b/dto/claude.go
+@@ -200,7 +200,7 @@ type ClaudeWebSearchUserLocation struct {
+ type ClaudeToolChoice struct {
+ 	Type                   string `json:"type"`
+ 	Name                   string `json:"name,omitempty"`
+-	DisableParallelToolUse bool   `json:"disable_parallel_tool_use,omitempty"`
++	DisableParallelToolUse *bool  `json:"disable_parallel_tool_use,omitempty"`
+ }
+ 
+ type ClaudeRequest struct {
+@@ -414,7 +414,7 @@ func (c *ClaudeRequest) GetTools() []any {
+ 
+ func (c *ClaudeRequest) GetEfforts() string {
+ 	var OutputConfig OutputConfigForEffort
+-	if err := json.Unmarshal(c.OutputConfig, &OutputConfig); err == nil {
++	if err := common.Unmarshal(c.OutputConfig, &OutputConfig); err == nil {
+ 		effort := OutputConfig.Effort
+ 		return effort
+ 	}
+diff --git a/dto/embedding.go b/dto/embedding.go
+index 8a5c7ef..0fcf925 100644
+--- a/dto/embedding.go
++++ b/dto/embedding.go
+@@ -9,14 +9,14 @@ import (
+ )
+ 
+ type EmbeddingOptions struct {
+-	Seed             int      `json:"seed,omitempty"`
++	Seed             *int     `json:"seed,omitempty"`
+ 	Temperature      *float64 `json:"temperature,omitempty"`
+-	TopK             int      `json:"top_k,omitempty"`
++	TopK             *int     `json:"top_k,omitempty"`
+ 	TopP             *float64 `json:"top_p,omitempty"`
+ 	FrequencyPenalty *float64 `json:"frequency_penalty,omitempty"`
+ 	PresencePenalty  *float64 `json:"presence_penalty,omitempty"`
+-	NumPredict       int      `json:"num_predict,omitempty"`
+-	NumCtx           int      `json:"num_ctx,omitempty"`
++	NumPredict       *int     `json:"num_predict,omitempty"`
++	NumCtx           *int     `json:"num_ctx,omitempty"`
+ }
+ 
+ type EmbeddingRequest struct {
+diff --git a/dto/openai_image.go b/dto/openai_image.go
+index e45dbbf..f58c512 100644
+--- a/dto/openai_image.go
++++ b/dto/openai_image.go
+@@ -31,10 +31,10 @@ type ImageRequest struct {
+ 	OutputCompression json.RawMessage `json:"output_compression,omitempty"`
+ 	PartialImages     json.RawMessage `json:"partial_images,omitempty"`
+ 	Stream            *bool           `json:"stream,omitempty"`
+-	Images        json.RawMessage `json:"images,omitempty"`
+-	Mask          json.RawMessage `json:"mask,omitempty"`
+-	InputFidelity json.RawMessage `json:"input_fidelity,omitempty"`
+-	Watermark     *bool           `json:"watermark,omitempty"`
++	Images            json.RawMessage `json:"images,omitempty"`
++	Mask              json.RawMessage `json:"mask,omitempty"`
++	InputFidelity     json.RawMessage `json:"input_fidelity,omitempty"`
++	Watermark         *bool           `json:"watermark,omitempty"`
+ 	// zhipu 4v
+ 	WatermarkEnabled json.RawMessage `json:"watermark_enabled,omitempty"`
+ 	UserId           json.RawMessage `json:"user_id,omitempty"`
+diff --git a/dto/openai_request.go b/dto/openai_request.go
+index 8a54067..2afd9a9 100644
+--- a/dto/openai_request.go
++++ b/dto/openai_request.go
+@@ -243,10 +243,11 @@ type FunctionRequest struct {
+ }
+ 
+ type StreamOptions struct {
+-	IncludeUsage bool `json:"include_usage,omitempty"`
++	// 规则5：指针 + omitempty，客户端显式 false 需透传上游，缺省时省略
++	IncludeUsage *bool `json:"include_usage,omitempty"`
+ 	// IncludeObfuscation is only for /v1/responses stream payload.
+ 	// This field is filtered by default and can be enabled via channel setting allow_include_obfuscation.
+-	IncludeObfuscation bool `json:"include_obfuscation,omitempty"`
++	IncludeObfuscation *bool `json:"include_obfuscation,omitempty"`
+ }
+ 
+ func (r *GeneralOpenAIRequest) GetMaxTokens() uint {
+@@ -463,14 +464,14 @@ func (m *Message) ParseToolCalls() []ToolCallRequest {
+ 		return nil
+ 	}
+ 	var toolCalls []ToolCallRequest
+-	if err := json.Unmarshal(m.ToolCalls, &toolCalls); err == nil {
++	if err := common.Unmarshal(m.ToolCalls, &toolCalls); err == nil {
+ 		return toolCalls
+ 	}
+ 	return toolCalls
+ }
+ 
+ func (m *Message) SetToolCalls(toolCalls any) {
+-	toolCallsJson, _ := json.Marshal(toolCalls)
++	toolCallsJson, _ := common.Marshal(toolCalls)
+ 	m.ToolCalls = toolCallsJson
+ }
+ 
+@@ -660,7 +661,7 @@ func (m *Message) ParseContent() []MediaContent {
+ 	}
+ 
+ 	var stringContent string
+-	if err := json.Unmarshal(m.Content, &stringContent); err == nil {
++	if err := common.Unmarshal(m.Content, &stringContent); err == nil {
+ 		m.parsedStringContent = &stringContent
+ 		return stringContent
+ 	}
+@@ -685,14 +686,14 @@ func (m *Message) SetNullContent() {
+ }
+ 
+ func (m *Message) SetStringContent(content string) {
+-	jsonContent, _ := json.Marshal(content)
++	jsonContent, _ := common.Marshal(content)
+ 	m.Content = jsonContent
+ 	m.parsedStringContent = &content
+ 	m.parsedContent = nil
+ }
+ 
+ func (m *Message) SetMediaContent(content []MediaContent) {
+-	jsonContent, _ := json.Marshal(content)
++	jsonContent, _ := common.Marshal(content)
+ 	m.Content = jsonContent
+ 	m.parsedContent = nil
+ 	m.parsedStringContent = nil
+@@ -703,7 +704,7 @@ func (m *Message) IsStringContent() bool {
+ 		return true
+ 	}
+ 	var stringContent string
+-	if err := json.Unmarshal(m.Content, &stringContent); err == nil {
++	if err := common.Unmarshal(m.Content, &stringContent); err == nil {
+ 		m.parsedStringContent = &stringContent
+ 		return true
+ 	}
+@@ -719,7 +720,7 @@ func (m *Message) ParseContent() []MediaContent {
+ 
+ 	// 先尝试解析为字符串
+ 	var stringContent string
+-	if err := json.Unmarshal(m.Content, &stringContent); err == nil {
++	if err := common.Unmarshal(m.Content, &stringContent); err == nil {
+ 		contentList = []MediaContent{{
+ 			Type: ContentTypeText,
+ 			Text: stringContent,
+@@ -730,7 +731,7 @@ func (m *Message) ParseContent() []MediaContent {
+ 
+ 	// 尝试解析为数组
+ 	var arrayContent []map[string]interface{}
+-	if err := json.Unmarshal(m.Content, &arrayContent); err == nil {
++	if err := common.Unmarshal(m.Content, &arrayContent); err == nil {
+ 		for _, contentItem := range arrayContent {
+ 			contentType, ok := contentItem["type"].(string)
+ 			if !ok {
+diff --git a/dto/openai_response.go b/dto/openai_response.go
+index 98723d5..49dc109 100644
+--- a/dto/openai_response.go
++++ b/dto/openai_response.go
+@@ -221,10 +221,10 @@ type CompletionsStreamResponse struct {
+ }
+ 
+ type Usage struct {
+-	PromptTokens         int    `json:"prompt_tokens"`
+-	CompletionTokens     int    `json:"completion_tokens"`
+-	TotalTokens          int    `json:"total_tokens"`
+-	PromptCacheHitTokens int    `json:"prompt_cache_hit_tokens,omitempty"`
++	PromptTokens         int           `json:"prompt_tokens"`
++	CompletionTokens     int           `json:"completion_tokens"`
++	TotalTokens          int           `json:"total_tokens"`
++	PromptCacheHitTokens int           `json:"prompt_cache_hit_tokens,omitempty"`
+ 	UsageSemantic        string        `json:"usage_semantic,omitempty"`
+ 	UsageSource          string        `json:"usage_source,omitempty"`
+ 	BillingUsage         *BillingUsage `json:"billing_usage,omitempty"`
+diff --git a/dto/rule5_pointer_test.go b/dto/rule5_pointer_test.go
+new file mode 100644
+index 0000000..d218070
+--- /dev/null
++++ b/dto/rule5_pointer_test.go
+@@ -0,0 +1,60 @@
++package dto_test
++
++import (
++	"strings"
++	"testing"
++
++	"github.com/55gY/new-api-lite/common"
++	"github.com/55gY/new-api-lite/dto"
++
++	"github.com/samber/lo"
++)
++
++// 规则5：上行 relay 请求 DTO 的可选标量必须用指针 + omitempty，
++// 保证客户端显式传入的零值/false 能透传上游，而缺省时被省略。
++
++func TestStreamOptionsRule5PreservesExplicitFalse(t *testing.T) {
++	// 缺省（nil）=> 省略
++	b, err := common.Marshal(dto.StreamOptions{})
++	if err != nil {
++		t.Fatalf("marshal nil: %v", err)
++	}
++	if strings.Contains(string(b), "include_usage") {
++		t.Fatalf("expected include_usage omitted when nil, got %s", b)
++	}
++	// 显式 false => 透传
++	b, err = common.Marshal(dto.StreamOptions{IncludeUsage: lo.ToPtr(false)})
++	if err != nil {
++		t.Fatalf("marshal false: %v", err)
++	}
++	if !strings.Contains(string(b), `"include_usage":false`) {
++		t.Fatalf("expected include_usage:false preserved, got %s", b)
++	}
++	// 显式 true => 透传
++	b, err = common.Marshal(dto.StreamOptions{IncludeUsage: lo.ToPtr(true)})
++	if err != nil {
++		t.Fatalf("marshal true: %v", err)
++	}
++	if !strings.Contains(string(b), `"include_usage":true`) {
++		t.Fatalf("expected include_usage:true preserved, got %s", b)
++	}
++}
++
++func TestClaudeToolChoiceRule5PreservesExplicitFalse(t *testing.T) {
++	// 缺省（nil）=> 省略
++	b, err := common.Marshal(dto.ClaudeToolChoice{Type: "auto"})
++	if err != nil {
++		t.Fatalf("marshal nil: %v", err)
++	}
++	if strings.Contains(string(b), "disable_parallel_tool_use") {
++		t.Fatalf("expected disable_parallel_tool_use omitted when nil, got %s", b)
++	}
++	// 显式 false => 透传
++	b, err = common.Marshal(dto.ClaudeToolChoice{Type: "auto", DisableParallelToolUse: lo.ToPtr(false)})
++	if err != nil {
++		t.Fatalf("marshal false: %v", err)
++	}
++	if !strings.Contains(string(b), `"disable_parallel_tool_use":false`) {
++		t.Fatalf("expected disable_parallel_tool_use:false preserved, got %s", b)
++	}
++}
+diff --git a/dto/values.go b/dto/values.go
+index 5d74826..8fd7478 100644
+--- a/dto/values.go
++++ b/dto/values.go
+@@ -3,40 +3,42 @@ package dto
+ import (
+ 	"encoding/json"
+ 	"strconv"
++
++	"github.com/55gY/new-api-lite/common"
+ )
+ 
+ type StringValue string
+ 
+ func (s *StringValue) UnmarshalJSON(data []byte) error {
+ 	var str string
+-	if err := json.Unmarshal(data, &str); err == nil {
++	if err := common.Unmarshal(data, &str); err == nil {
+ 		*s = StringValue(str)
+ 		return nil
+ 	}
+ 
+ 	var raw json.Number
+-	if err := json.Unmarshal(data, &raw); err == nil {
++	if err := common.Unmarshal(data, &raw); err == nil {
+ 		*s = StringValue(raw.String())
+ 		return nil
+ 	}
+ 
+-	return json.Unmarshal(data, &str)
++	return common.Unmarshal(data, &str)
+ }
+ 
+ func (s StringValue) MarshalJSON() ([]byte, error) {
+-	return json.Marshal(string(s))
++	return common.Marshal(string(s))
+ }
+ 
+ type IntValue int
+ 
+ func (i *IntValue) UnmarshalJSON(b []byte) error {
+ 	var n int
+-	if err := json.Unmarshal(b, &n); err == nil {
++	if err := common.Unmarshal(b, &n); err == nil {
+ 		*i = IntValue(n)
+ 		return nil
+ 	}
+ 	var s string
+-	if err := json.Unmarshal(b, &s); err != nil {
++	if err := common.Unmarshal(b, &s); err != nil {
+ 		return err
+ 	}
+ 	v, err := strconv.Atoi(s)
+@@ -48,19 +50,19 @@ func (i *IntValue) UnmarshalJSON(b []byte) error {
+ }
+ 
+ func (i IntValue) MarshalJSON() ([]byte, error) {
+-	return json.Marshal(int(i))
++	return common.Marshal(int(i))
+ }
+ 
+ type BoolValue bool
+ 
+ func (b *BoolValue) UnmarshalJSON(data []byte) error {
+ 	var boolean bool
+-	if err := json.Unmarshal(data, &boolean); err == nil {
++	if err := common.Unmarshal(data, &boolean); err == nil {
+ 		*b = BoolValue(boolean)
+ 		return nil
+ 	}
+ 	var str string
+-	if err := json.Unmarshal(data, &str); err != nil {
++	if err := common.Unmarshal(data, &str); err != nil {
+ 		return err
+ 	}
+ 	if str == "true" {
+@@ -68,10 +70,10 @@ func (b *BoolValue) UnmarshalJSON(data []byte) error {
+ 	} else if str == "false" {
+ 		*b = BoolValue(false)
+ 	} else {
+-		return json.Unmarshal(data, &boolean)
++		return common.Unmarshal(data, &boolean)
+ 	}
+ 	return nil
+ }
+ func (b BoolValue) MarshalJSON() ([]byte, error) {
+-	return json.Marshal(bool(b))
++	return common.Marshal(bool(b))
+ }
+diff --git a/middleware/cors.go b/middleware/cors.go
+index 703188d..1243c34 100644
+--- a/middleware/cors.go
++++ b/middleware/cors.go
+@@ -8,8 +8,12 @@ import (
+ 
+ func CORS() gin.HandlerFunc {
+ 	config := cors.DefaultConfig()
++	// 允许任意来源。注意：CORS 规范禁止 Access-Control-Allow-Origin: * 与
++	// Access-Control-Allow-Credentials: true 同时出现（浏览器会拒绝携带凭证的跨域响应），
++	// 且带凭证时 Access-Control-Allow-Headers: * 也不被当作通配符。
++	// 本网关的鉴权走 Authorization 头/API Token，管理端在默认部署下与后端同源（前端内嵌），
++	// 无需跨域携带 Cookie，因此这里不启用 AllowCredentials，从而使通配来源/头部保持合法有效。
+ 	config.AllowAllOrigins = true
+-	config.AllowCredentials = true
+ 	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+ 	config.AllowHeaders = []string{"*"}
+ 	return cors.New(config)
+diff --git a/middleware/turnstile-check.go b/middleware/turnstile-check.go
+index 86ac797..935dc54 100644
+--- a/middleware/turnstile-check.go
++++ b/middleware/turnstile-check.go
+@@ -1,7 +1,6 @@
+ package middleware
+ 
+ import (
+-	"encoding/json"
+ 	"net/http"
+ 	"net/url"
+ 
+@@ -48,7 +47,7 @@ func TurnstileCheck() gin.HandlerFunc {
+ 			}
+ 			defer rawRes.Body.Close()
+ 			var res turnstileCheckResponse
+-			err = json.NewDecoder(rawRes.Body).Decode(&res)
++			err = common.DecodeJson(rawRes.Body, &res)
+ 			if err != nil {
+ 				common.SysLog(err.Error())
+ 				c.JSON(http.StatusOK, gin.H{
+diff --git a/model/channel_cache.go b/model/channel_cache.go
+index 6325906..b9999e7 100644
+--- a/model/channel_cache.go
++++ b/model/channel_cache.go
+@@ -185,6 +185,11 @@ func filterDisabledModels(channelIDs []int, model string) []int {
+ 		return channelIDs
+ 	}
+ 
++	// 热路径优化：一次性批量查询这些渠道在该模型上被标记为不可用（自动禁用）的能力，
++	// 避免此前对每个候选渠道各查询一次数据库（每个 relay 请求会产生 N 次查询）。
++	// 仍为实时读取数据库，不引入缓存陈旧风险。
++	unavailableChannels := getUnavailableAbilityChannels(channelIDs, model)
++
+ 	filtered := make([]int, 0, len(channelIDs))
+ 	for _, channelID := range channelIDs {
+ 		channel, ok := channelsIDM[channelID]
+@@ -195,10 +200,8 @@ func filterDisabledModels(channelIDs []int, model string) []int {
+ 		if channel.Status != common.ChannelStatusEnabled {
+ 			continue
+ 		}
+-		// 检查 ability 表中该模型的状态
+-		ability := getAbilityStatus(channelID, model)
+-		if ability != nil && ability.TestStatus == AbilityTestStatusUnavailable {
+-			// 该模型已标记为不可用（自动禁用），跳过
++		// 该模型已标记为不可用（自动禁用），跳过
++		if unavailableChannels[channelID] {
+ 			continue
+ 		}
+ 		filtered = append(filtered, channelID)
+@@ -206,15 +209,27 @@ func filterDisabledModels(channelIDs []int, model string) []int {
+ 	return filtered
+ }
+ 
+-// getAbilityStatus 获取指定渠道和模型的能力状态（从缓存或数据库）
+-func getAbilityStatus(channelID int, model string) *Ability {
+-	// 简化实现：直接查询数据库
+-	var ability Ability
+-	err := DB.Where("channel_id = ? AND model = ?", channelID, model).First(&ability).Error
++// getUnavailableAbilityChannels 批量返回在指定模型上 test_status 为不可用的渠道 ID 集合。
++// 用单次查询替代逐渠道查询；查询出错时返回空集合（行为退化为不过滤，与原逐条查询出错返回 nil 一致）。
++func getUnavailableAbilityChannels(channelIDs []int, model string) map[int]bool {
++	result := make(map[int]bool, len(channelIDs))
++	if len(channelIDs) == 0 {
++		return result
++	}
++	var rows []struct {
++		ChannelId int `gorm:"column:channel_id"`
++	}
++	err := DB.Model(&Ability{}).
++		Where("channel_id IN ? AND model = ? AND test_status = ?", channelIDs, model, AbilityTestStatusUnavailable).
++		Select("channel_id").
++		Find(&rows).Error
+ 	if err != nil {
+-		return nil
++		return result
++	}
++	for _, r := range rows {
++		result[r.ChannelId] = true
+ 	}
+-	return &ability
++	return result
+ }
+ 
+ func getChannelsForModel(groupModelChannels map[string]map[string][]int, group string, model string) []int {
+diff --git a/model/checkin.go b/model/checkin.go
+index 47daabd..e138448 100644
+--- a/model/checkin.go
++++ b/model/checkin.go
+@@ -4,7 +4,6 @@ import (
+ 	"errors"
+ 	"time"
+ 
+-	"github.com/55gY/new-api-lite/common"
+ 	"github.com/55gY/new-api-lite/setting/operation_setting"
+ )
+ 
+@@ -73,22 +72,8 @@ func UserCheckin(userId int) (*Checkin, error) {
+ 		CreatedAt:    time.Now().Unix(),
+ 	}
+ 
+-	// 根据数据库类型选择不同的策略
+-	if common.UsingSQLite {
+-		// SQLite 不支持嵌套事务，使用顺序操作 + 手动回滚
+-		return userCheckinWithoutTransaction(checkin)
+-	}
+-
+-	// MySQL 和 PostgreSQL 支持事务，使用事务保证原子性
+-	return userCheckinWithTransaction(checkin)
+-}
+-
+-// userCheckinWithTransaction 使用事务执行签到（适用于 MySQL 和 PostgreSQL）
+-func userCheckinWithTransaction(checkin *Checkin) (*Checkin, error) {
+-	if err := DB.Create(checkin).Error; err != nil {
+-		return nil, errors.New("签到失败，请稍后重试")
+-	}
+-	return checkin, nil
++	// 本项目仅支持 SQLite：直接顺序创建，依赖 (user_id, checkin_date) 唯一约束防止并发重复签到。
++	return userCheckinWithoutTransaction(checkin)
+ }
+ 
+ // userCheckinWithoutTransaction 不使用事务执行签到（适用于 SQLite）
+diff --git a/model/log.go b/model/log.go
+index 15213cf..492f054 100644
+--- a/model/log.go
++++ b/model/log.go
+@@ -370,7 +370,10 @@ func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int
+ 	if group != "" {
+ 		tx = tx.Where("logs."+logGroupCol+" = ?", group)
+ 	}
+-	err = tx.Model(&Log{}).Limit(logSearchCountLimit).Count(&total).Error
++	// 注意：GORM 的 Count 会忽略 Limit，此处此前的 Limit(logSearchCountLimit) 实际不生效
++	// （仍返回精确总数）。移除误导性的 Limit 调用；如需限制超大日志表的计数成本，
++	// 应改用带上限的估算方案而非依赖此处的 Limit。
++	err = tx.Model(&Log{}).Count(&total).Error
+ 	if err != nil {
+ 		common.SysError("failed to count user logs: " + err.Error())
+ 		return nil, 0, errors.New("查询日志失败")
+diff --git a/model/main.go b/model/main.go
+index 9965b2a..be6abc4 100644
+--- a/model/main.go
++++ b/model/main.go
+@@ -1,7 +1,6 @@
+ package model
+ 
+ import (
+-	"fmt"
+ 	"log"
+ 	"sync"
+ 	"time"
+@@ -110,6 +109,13 @@ func InitDB() (err error) {
+ 		sqlDB.SetMaxOpenConns(common.GetEnvOrDefault("SQL_MAX_OPEN_CONNS", 1000))
+ 		sqlDB.SetConnMaxLifetime(time.Second * time.Duration(common.GetEnvOrDefault("SQL_MAX_LIFETIME", 60)))
+ 
++		// SQLite 并发优化：启用 WAL 日志模式（读不阻塞写、写不阻塞读），显著降低高并发下的
++		// SQLITE_BUSY。journal_mode 是库文件级持久设置，执行一次即写入库文件头，对连接池中
++		// 后续连接同样生效。仅对本地 SQLite 有效，失败时仅告警、不致命。
++		if journalErr := DB.Exec("PRAGMA journal_mode=WAL;").Error; journalErr != nil {
++			common.SysError("failed to enable SQLite WAL mode: " + journalErr.Error())
++		}
++
+ 		if !common.IsMasterNode {
+ 			return nil
+ 		}
+@@ -155,56 +161,6 @@ func migrateDB() error {
+ 	return nil
+ }
+ 
+-func migrateDBFast() error {
+-
+-	var wg sync.WaitGroup
+-
+-	migrations := []struct {
+-		model interface{}
+-		name  string
+-	}{
+-		{&Channel{}, "Channel"},
+-		{&Token{}, "Token"},
+-		{&User{}, "User"},
+-		{&Option{}, "Option"},
+-		{&Ability{}, "Ability"},
+-		{&Log{}, "Log"},
+-		{&QuotaData{}, "QuotaData"},
+-		{&Model{}, "Model"},
+-		{&Vendor{}, "Vendor"},
+-		{&Setup{}, "Setup"},
+-		{&TwoFA{}, "TwoFA"},
+-		{&TwoFABackupCode{}, "TwoFABackupCode"},
+-		{&Checkin{}, "Checkin"},
+-		{&PerfMetric{}, "PerfMetric"},
+-	}
+-	// 动态计算migration数量，确保errChan缓冲区足够大
+-	errChan := make(chan error, len(migrations))
+-
+-	for _, m := range migrations {
+-		wg.Add(1)
+-		go func(model interface{}, name string) {
+-			defer wg.Done()
+-			if err := DB.AutoMigrate(model); err != nil {
+-				errChan <- fmt.Errorf("failed to migrate %s: %v", name, err)
+-			}
+-		}(m.model, m.name)
+-	}
+-
+-	// Wait for all migrations to complete
+-	wg.Wait()
+-	close(errChan)
+-
+-	// Check for any errors
+-	for err := range errChan {
+-		if err != nil {
+-			return err
+-		}
+-	}
+-	common.SysLog("database migrated")
+-	return nil
+-}
+-
+ func migrateLOGDB() error {
+ 	var err error
+ 	if err = LOG_DB.AutoMigrate(&Log{}); err != nil {
+diff --git a/model/user.go b/model/user.go
+index bc44252..98571e0 100644
+--- a/model/user.go
++++ b/model/user.go
+@@ -2,7 +2,6 @@ package model
+ 
+ import (
+ 	"database/sql"
+-	"encoding/json"
+ 	"errors"
+ 	"fmt"
+ 	"strconv"
+@@ -73,7 +72,7 @@ func (user *User) SetAccessToken(token string) {
+ func (user *User) GetSetting() dto.UserSetting {
+ 	setting := dto.UserSetting{}
+ 	if user.Setting != "" {
+-		err := json.Unmarshal([]byte(user.Setting), &setting)
++		err := common.Unmarshal([]byte(user.Setting), &setting)
+ 		if err != nil {
+ 			common.SysLog("failed to unmarshal setting: " + err.Error())
+ 		}
+@@ -82,7 +81,7 @@ func (user *User) GetSetting() dto.UserSetting {
+ }
+ 
+ func (user *User) SetSetting(setting dto.UserSetting) {
+-	settingBytes, err := json.Marshal(setting)
++	settingBytes, err := common.Marshal(setting)
+ 	if err != nil {
+ 		common.SysLog("failed to marshal setting: " + err.Error())
+ 		return
+@@ -351,18 +350,18 @@ func (user *User) Insert(inviterId int) error {
+ 		return result.Error
+ 	}
+ 
+-	// 用户创建成功后，根据角色初始化边栏配置
+-	// 需要重新获取用户以确保有正确的ID和Role
+-	var createdUser User
+-	if err := DB.Where("username = ?", user.Username).First(&createdUser).Error; err == nil {
+-		// 生成基于角色的默认边栏配置
+-		defaultSidebarConfig := generateDefaultSidebarConfigForRole(createdUser.Role)
+-		if defaultSidebarConfig != "" {
+-			currentSetting := createdUser.GetSetting()
+-			currentSetting.SidebarModules = defaultSidebarConfig
+-			createdUser.SetSetting(currentSetting)
+-			createdUser.Update(false)
+-			common.SysLog(fmt.Sprintf("为新用户 %s (角色: %d) 初始化边栏配置", createdUser.Username, createdUser.Role))
++	// 用户创建成功后，根据角色初始化边栏配置。
++	// 直接使用刚创建的 user（Create 后已填充 Id 与调用方设置的 Role），
++	// 避免多余的按 username 二次查询。
++	defaultSidebarConfig := generateDefaultSidebarConfigForRole(user.Role)
++	if defaultSidebarConfig != "" {
++		currentSetting := user.GetSetting()
++		currentSetting.SidebarModules = defaultSidebarConfig
++		user.SetSetting(currentSetting)
++		if err := user.Update(false); err != nil {
++			common.SysError("failed to init sidebar config for new user: " + err.Error())
++		} else {
++			common.SysLog(fmt.Sprintf("为新用户 %s (角色: %d) 初始化边栏配置", user.Username, user.Role))
+ 		}
+ 	}
+ 
+diff --git a/pkg/cachex/codec.go b/pkg/cachex/codec.go
+index 2e4957a..f52f790 100644
+--- a/pkg/cachex/codec.go
++++ b/pkg/cachex/codec.go
+@@ -1,10 +1,11 @@
+ package cachex
+ 
+ import (
+-	"encoding/json"
+ 	"fmt"
+ 	"strconv"
+ 	"strings"
++
++	"github.com/55gY/new-api-lite/common"
+ )
+ 
+ type ValueCodec[V any] interface {
+@@ -34,7 +35,7 @@ func (c StringCodec) Decode(s string) (string, error) { return s, nil }
+ type JSONCodec[V any] struct{}
+ 
+ func (c JSONCodec[V]) Encode(v V) (string, error) {
+-	b, err := json.Marshal(v)
++	b, err := common.Marshal(v)
+ 	if err != nil {
+ 		return "", err
+ 	}
+@@ -46,7 +47,7 @@ func (c JSONCodec[V]) Decode(s string) (V, error) {
+ 	if strings.TrimSpace(s) == "" {
+ 		return v, fmt.Errorf("empty json value")
+ 	}
+-	if err := json.Unmarshal([]byte(s), &v); err != nil {
++	if err := common.Unmarshal([]byte(s), &v); err != nil {
+ 		return v, err
+ 	}
+ 	return v, nil
+diff --git a/pkg/ionet/client.go b/pkg/ionet/client.go
+index e539475..d374033 100644
+--- a/pkg/ionet/client.go
++++ b/pkg/ionet/client.go
+@@ -2,12 +2,13 @@ package ionet
+ 
+ import (
+ 	"bytes"
+-	"encoding/json"
+ 	"fmt"
+ 	"net/http"
+ 	"net/url"
+ 	"strconv"
+ 	"time"
++
++	"github.com/55gY/new-api-lite/common"
+ )
+ 
+ const (
+@@ -101,7 +102,7 @@ func (c *Client) makeRequest(method, endpoint string, body interface{}) (*HTTPRe
+ 	var err error
+ 
+ 	if body != nil {
+-		reqBody, err = json.Marshal(body)
++		reqBody, err = common.Marshal(body)
+ 		if err != nil {
+ 			return nil, fmt.Errorf("failed to marshal request body: %w", err)
+ 		}
+@@ -132,7 +133,7 @@ func (c *Client) makeRequest(method, endpoint string, body interface{}) (*HTTPRe
+ 			var errorResp struct {
+ 				Detail string `json:"detail"`
+ 			}
+-			if err := json.Unmarshal(resp.Body, &errorResp); err == nil && errorResp.Detail != "" {
++			if err := common.Unmarshal(resp.Body, &errorResp); err == nil && errorResp.Detail != "" {
+ 				apiErr = APIError{
+ 					Code:    resp.StatusCode,
+ 					Message: errorResp.Detail,
+@@ -197,13 +198,13 @@ func buildQueryParams(params map[string]interface{}) string {
+ 			}
+ 		case []int:
+ 			if len(v) > 0 {
+-				if encoded, err := json.Marshal(v); err == nil {
++				if encoded, err := common.Marshal(v); err == nil {
+ 					values.Add(key, string(encoded))
+ 				}
+ 			}
+ 		case []string:
+ 			if len(v) > 0 {
+-				if encoded, err := json.Marshal(v); err == nil {
++				if encoded, err := common.Marshal(v); err == nil {
+ 					values.Add(key, string(encoded))
+ 				}
+ 			}
+diff --git a/pkg/ionet/container.go b/pkg/ionet/container.go
+index 805a3b1..99d0cd2 100644
+--- a/pkg/ionet/container.go
++++ b/pkg/ionet/container.go
+@@ -1,11 +1,12 @@
+ package ionet
+ 
+ import (
+-	"encoding/json"
+ 	"fmt"
+ 	"strings"
+ 	"time"
+ 
++	"github.com/55gY/new-api-lite/common"
++
+ 	"github.com/samber/lo"
+ )
+ 
+@@ -290,7 +291,7 @@ func (c *Client) ExecuteInContainer(deploymentID, containerID string, command []
+ 	}
+ 
+ 	var result map[string]interface{}
+-	if err := json.Unmarshal(resp.Body, &result); err != nil {
++	if err := common.Unmarshal(resp.Body, &result); err != nil {
+ 		return "", fmt.Errorf("failed to parse execution result: %w", err)
+ 	}
+ 
+diff --git a/pkg/ionet/deployment.go b/pkg/ionet/deployment.go
+index 3659739..10085b3 100644
+--- a/pkg/ionet/deployment.go
++++ b/pkg/ionet/deployment.go
+@@ -1,10 +1,11 @@
+ package ionet
+ 
+ import (
+-	"encoding/json"
+ 	"fmt"
+ 	"strings"
+ 
++	"github.com/55gY/new-api-lite/common"
++
+ 	"github.com/samber/lo"
+ )
+ 
+@@ -45,7 +46,7 @@ func (c *Client) DeployContainer(req *DeploymentRequest) (*DeploymentResponse, e
+ 	// API returns direct format:
+ 	// {"status": "string", "deployment_id": "..."}
+ 	var deployResp DeploymentResponse
+-	if err := json.Unmarshal(resp.Body, &deployResp); err != nil {
++	if err := common.Unmarshal(resp.Body, &deployResp); err != nil {
+ 		return nil, fmt.Errorf("failed to parse deployment response: %w", err)
+ 	}
+ 
+@@ -126,7 +127,7 @@ func (c *Client) UpdateDeployment(deploymentID string, req *UpdateDeploymentRequ
+ 	// API returns direct format:
+ 	// {"status": "string", "deployment_id": "..."}
+ 	var updateResp UpdateDeploymentResponse
+-	if err := json.Unmarshal(resp.Body, &updateResp); err != nil {
++	if err := common.Unmarshal(resp.Body, &updateResp); err != nil {
+ 		return nil, fmt.Errorf("failed to parse update deployment response: %w", err)
+ 	}
+ 
+@@ -176,7 +177,7 @@ func (c *Client) DeleteDeployment(deploymentID string) (*UpdateDeploymentRespons
+ 	// API returns direct format:
+ 	// {"status": "string", "deployment_id": "..."}
+ 	var deleteResp UpdateDeploymentResponse
+-	if err := json.Unmarshal(resp.Body, &deleteResp); err != nil {
++	if err := common.Unmarshal(resp.Body, &deleteResp); err != nil {
+ 		return nil, fmt.Errorf("failed to parse delete deployment response: %w", err)
+ 	}
+ 
+@@ -341,7 +342,7 @@ func (c *Client) CheckClusterNameAvailability(clusterName string) (bool, error)
+ 	}
+ 
+ 	var availabilityResp bool
+-	if err := json.Unmarshal(resp.Body, &availabilityResp); err != nil {
++	if err := common.Unmarshal(resp.Body, &availabilityResp); err != nil {
+ 		return false, fmt.Errorf("failed to parse cluster name availability response: %w", err)
+ 	}
+ 
+@@ -369,7 +370,7 @@ func (c *Client) UpdateClusterName(clusterID string, req *UpdateClusterNameReque
+ 
+ 	// Parse the response directly without data wrapper based on API docs
+ 	var updateResp UpdateClusterNameResponse
+-	if err := json.Unmarshal(resp.Body, &updateResp); err != nil {
++	if err := common.Unmarshal(resp.Body, &updateResp); err != nil {
+ 		return nil, fmt.Errorf("failed to parse update cluster name response: %w", err)
+ 	}
+ 
+diff --git a/pkg/ionet/hardware.go b/pkg/ionet/hardware.go
+index 54ccdb8..8583f55 100644
+--- a/pkg/ionet/hardware.go
++++ b/pkg/ionet/hardware.go
+@@ -1,10 +1,11 @@
+ package ionet
+ 
+ import (
+-	"encoding/json"
+ 	"fmt"
+ 	"strings"
+ 
++	"github.com/55gY/new-api-lite/common"
++
+ 	"github.com/samber/lo"
+ )
+ 
+@@ -150,7 +151,7 @@ func (c *Client) GetHardwareType(hardwareID int) (*HardwareType, error) {
+ 
+ 	// API response format not documented, assuming direct format
+ 	var hardwareType HardwareType
+-	if err := json.Unmarshal(resp.Body, &hardwareType); err != nil {
++	if err := common.Unmarshal(resp.Body, &hardwareType); err != nil {
+ 		return nil, fmt.Errorf("failed to parse hardware type: %w", err)
+ 	}
+ 
+@@ -172,7 +173,7 @@ func (c *Client) GetLocation(locationID int) (*Location, error) {
+ 
+ 	// API response format not documented, assuming direct format
+ 	var location Location
+-	if err := json.Unmarshal(resp.Body, &location); err != nil {
++	if err := common.Unmarshal(resp.Body, &location); err != nil {
+ 		return nil, fmt.Errorf("failed to parse location: %w", err)
+ 	}
+ 
+@@ -194,7 +195,7 @@ func (c *Client) GetLocationAvailability(locationID int) (*LocationAvailability,
+ 
+ 	// API response format not documented, assuming direct format
+ 	var availability LocationAvailability
+-	if err := json.Unmarshal(resp.Body, &availability); err != nil {
++	if err := common.Unmarshal(resp.Body, &availability); err != nil {
+ 		return nil, fmt.Errorf("failed to parse location availability: %w", err)
+ 	}
+ 
+diff --git a/pkg/ionet/jsonutil.go b/pkg/ionet/jsonutil.go
+index 0b3219c..576be69 100644
+--- a/pkg/ionet/jsonutil.go
++++ b/pkg/ionet/jsonutil.go
+@@ -1,10 +1,11 @@
+ package ionet
+ 
+ import (
+-	"encoding/json"
+ 	"strings"
+ 	"time"
+ 
++	"github.com/55gY/new-api-lite/common"
++
+ 	"github.com/samber/lo"
+ )
+ 
+@@ -12,24 +13,24 @@ import (
+ // that omit timezone information by normalizing them to RFC3339Nano.
+ func decodeWithFlexibleTimes(data []byte, target interface{}) error {
+ 	var intermediate interface{}
+-	if err := json.Unmarshal(data, &intermediate); err != nil {
++	if err := common.Unmarshal(data, &intermediate); err != nil {
+ 		return err
+ 	}
+ 
+ 	normalized := normalizeTimeValues(intermediate)
+-	reencoded, err := json.Marshal(normalized)
++	reencoded, err := common.Marshal(normalized)
+ 	if err != nil {
+ 		return err
+ 	}
+ 
+-	return json.Unmarshal(reencoded, target)
++	return common.Unmarshal(reencoded, target)
+ }
+ 
+ func decodeData[T any](data []byte, target *T) error {
+ 	var wrapper struct {
+ 		Data T `json:"data"`
+ 	}
+-	if err := json.Unmarshal(data, &wrapper); err != nil {
++	if err := common.Unmarshal(data, &wrapper); err != nil {
+ 		return err
+ 	}
+ 	*target = wrapper.Data
+diff --git a/plan.md b/plan.md
+index a28bd5a..6eb9416 100644
+--- a/plan.md
++++ b/plan.md
+@@ -237,6 +237,20 @@
+ - [x] Phase 9 完成后：读取本文件，并提示 Phase 10 的下一步内容。
+ - [x] Phase 10 完成后：读取本文件，并汇总最终结果。
+ 
++## 本轮调整计划摘要（2026-07-22）：安全优化与代码健康度提升
++
++在保证现有功能安全可用的前提下，梳理可优化项并分级：
++
++- 已核实用户报告的「渠道·禁止自动测试」保存后重载关闭问题，当前 HEAD 已修复（`6f05eaf` 引入、`cb6572f`/`2316a5a`/`0338b56` 修复；`model/channel.go` 专用 `DisableAutoTest *int` 列、`controller/channel-test.go` 生效）。若线上仍复现为旧构建产物，需重新构建前端后再构建后端。
++- P0 正确性/安全：渠道表单 settings 往返闭包隐患（同族兄弟 bug）、relay 上行 DTO 显式零值（规则 5）、CORS 非法组合、SiderBar/SettingsMonitoring 闭包状态、upstream update 不存在列、渠道 BaseURL SSRF 校验。
++- P1 性能/稳定：SQLite WAL + 连接池、渠道选择热路径每请求 DB、日志分页双全扫、user.Insert 多余往返。
++- P2 代码健康/Lite 一致性：规则 1 JSON 合规、危险死代码（migrateDBFast）、孤立/死分支（uptime_kuma、checkin）、货币化残留清理、更新检查仓库修正。
++- P3 i18n：硬编码中文补 t() 与多语言。
++- P4（可选）：继续 `.plan/20260721-01.md` 的 P2/P3 relay 增强。
++
++> 状态：Phase A–F 已完成（含 2026-07-23 跟进的 H1 全量转换、Uptime Kuma 整体移除、H6 死 quota 清理），全部通过构建+测试+冒烟。仅 I1 完整翻译与 Phase G 可选功能留待后续。详见 .plan/20260722-01.md。
++
+ ## 详细计划索引
+ 
+ - [.plan/20260721-01.md](.plan/20260721-01.md) — relay层安全修复与功能增强移植计划（进行中）
++- [.plan/20260722-01.md](.plan/20260722-01.md) — 安全优化与代码健康度提升计划（Phase A–F 已完成并验证，含 H1 全量/Uptime 整体移除/H6 清理；仅 I1 翻译与 Phase G 可选项留待后续）
+diff --git a/relay/channel/ali/adaptor.go b/relay/channel/ali/adaptor.go
+index 16faecd..32fbf34 100644
+--- a/relay/channel/ali/adaptor.go
++++ b/relay/channel/ali/adaptor.go
+@@ -80,7 +80,7 @@ func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayIn
+ 		return nil, err
+ 	}
+ 	if info.SupportStreamOptions && info.IsStream {
+-		oaiReq.StreamOptions = &dto.StreamOptions{IncludeUsage: true}
++		oaiReq.StreamOptions = &dto.StreamOptions{IncludeUsage: lo.ToPtr(true)}
+ 	}
+ 	return a.ConvertOpenAIRequest(c, info, oaiReq)
+ }
+diff --git a/relay/channel/ali/rerank.go b/relay/channel/ali/rerank.go
+index b120530..0034869 100644
+--- a/relay/channel/ali/rerank.go
++++ b/relay/channel/ali/rerank.go
+@@ -1,10 +1,11 @@
+ package ali
+ 
+ import (
+-	"encoding/json"
+ 	"io"
+ 	"net/http"
+ 
++	"github.com/55gY/new-api-lite/common"
++
+ 	"github.com/55gY/new-api-lite/dto"
+ 	relaycommon "github.com/55gY/new-api-lite/relay/common"
+ 	"github.com/55gY/new-api-lite/service"
+@@ -40,7 +41,7 @@ func RerankHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayI
+ 	service.CloseResponseBodyGracefully(resp)
+ 
+ 	var aliResponse AliRerankResponse
+-	err = json.Unmarshal(responseBody, &aliResponse)
++	err = common.Unmarshal(responseBody, &aliResponse)
+ 	if err != nil {
+ 		return types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError), nil
+ 	}
+@@ -64,7 +65,7 @@ func RerankHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayI
+ 		Usage:   usage,
+ 	}
+ 
+-	jsonResponse, err := json.Marshal(rerankResponse)
++	jsonResponse, err := common.Marshal(rerankResponse)
+ 	if err != nil {
+ 		return types.NewError(err, types.ErrorCodeBadResponseBody), nil
+ 	}
+diff --git a/relay/channel/aws/dto.go b/relay/channel/aws/dto.go
+index ff762a5..9152178 100644
+--- a/relay/channel/aws/dto.go
++++ b/relay/channel/aws/dto.go
+@@ -44,7 +44,7 @@ func formatRequest(requestBody io.Reader, requestHeader http.Header) (*AwsClaude
+ 		var tempArray []string
+ 		tempArray = strings.Split(anthropicBetaValues, ",")
+ 		if len(tempArray) > 0 {
+-			betaJson, err := json.Marshal(tempArray)
++			betaJson, err := common.Marshal(tempArray)
+ 			if err != nil {
+ 				return nil, err
+ 			}
+diff --git a/relay/channel/aws/relay-aws.go b/relay/channel/aws/relay-aws.go
+index 1dea405..6714e5d 100644
+--- a/relay/channel/aws/relay-aws.go
++++ b/relay/channel/aws/relay-aws.go
+@@ -2,7 +2,6 @@ package aws
+ 
+ import (
+ 	"context"
+-	"encoding/json"
+ 	"fmt"
+ 	"io"
+ 	"net/http"
+@@ -321,7 +320,7 @@ func handleNovaRequest(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor)
+ 		} `json:"usage"`
+ 	}
+ 
+-	if err := json.Unmarshal(awsResp.Body, &novaResp); err != nil {
++	if err := common.Unmarshal(awsResp.Body, &novaResp); err != nil {
+ 		return types.NewError(errors.Wrap(err, "unmarshal nova response"), types.ErrorCodeBadResponseBody), nil
+ 	}
+ 
+diff --git a/relay/channel/baidu/relay-baidu.go b/relay/channel/baidu/relay-baidu.go
+index b5e2a2a..b5bcfd8 100644
+--- a/relay/channel/baidu/relay-baidu.go
++++ b/relay/channel/baidu/relay-baidu.go
+@@ -1,7 +1,6 @@
+ package baidu
+ 
+ import (
+-	"encoding/json"
+ 	"errors"
+ 	"fmt"
+ 	"io"
+@@ -145,7 +144,7 @@ func baiduHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respon
+ 		return types.NewError(err, types.ErrorCodeBadResponseBody), nil
+ 	}
+ 	service.CloseResponseBodyGracefully(resp)
+-	err = json.Unmarshal(responseBody, &baiduResponse)
++	err = common.Unmarshal(responseBody, &baiduResponse)
+ 	if err != nil {
+ 		return types.NewError(err, types.ErrorCodeBadResponseBody), nil
+ 	}
+@@ -153,7 +152,7 @@ func baiduHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respon
+ 		return types.NewError(fmt.Errorf("%s", baiduResponse.ErrorMsg), types.ErrorCodeBadResponseBody), nil
+ 	}
+ 	fullTextResponse := responseBaidu2OpenAI(&baiduResponse)
+-	jsonResponse, err := json.Marshal(fullTextResponse)
++	jsonResponse, err := common.Marshal(fullTextResponse)
+ 	if err != nil {
+ 		return types.NewError(err, types.ErrorCodeBadResponseBody), nil
+ 	}
+@@ -170,7 +169,7 @@ func baiduEmbeddingHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *ht
+ 		return types.NewError(err, types.ErrorCodeBadResponseBody), nil
+ 	}
+ 	service.CloseResponseBodyGracefully(resp)
+-	err = json.Unmarshal(responseBody, &baiduResponse)
++	err = common.Unmarshal(responseBody, &baiduResponse)
+ 	if err != nil {
+ 		return types.NewError(err, types.ErrorCodeBadResponseBody), nil
+ 	}
+@@ -178,7 +177,7 @@ func baiduEmbeddingHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *ht
+ 		return types.NewError(fmt.Errorf("%s", baiduResponse.ErrorMsg), types.ErrorCodeBadResponseBody), nil
+ 	}
+ 	fullTextResponse := embeddingResponseBaidu2OpenAI(&baiduResponse)
+-	jsonResponse, err := json.Marshal(fullTextResponse)
++	jsonResponse, err := common.Marshal(fullTextResponse)
+ 	if err != nil {
+ 		return types.NewError(err, types.ErrorCodeBadResponseBody), nil
+ 	}
+@@ -230,7 +229,7 @@ func getBaiduAccessTokenHelper(apiKey string) (*BaiduAccessToken, error) {
+ 	defer res.Body.Close()
+ 
+ 	var accessToken BaiduAccessToken
+-	err = json.NewDecoder(res.Body).Decode(&accessToken)
++	err = common.DecodeJson(res.Body, &accessToken)
+ 	if err != nil {
+ 		return nil, err
+ 	}
+diff --git a/relay/channel/claude/relay-claude.go b/relay/channel/claude/relay-claude.go
+index fc3861d..8dc670d 100644
+--- a/relay/channel/claude/relay-claude.go
++++ b/relay/channel/claude/relay-claude.go
+@@ -419,7 +419,7 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, textRequest dto.GeneralOpenAIRe
+ 				if message.ToolCalls != nil {
+ 					for _, toolCall := range message.ParseToolCalls() {
+ 						inputObj := make(map[string]any)
+-						if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &inputObj); err != nil {
++						if err := common.Unmarshal([]byte(toolCall.Function.Arguments), &inputObj); err != nil {
+ 							common.SysLog("tool call function arguments is not a map[string]any: " + fmt.Sprintf("%v", toolCall.Function.Arguments))
+ 							continue
+ 						}
+@@ -550,7 +550,7 @@ func ResponseClaude2OpenAI(claudeResponse *dto.ClaudeResponse) *dto.OpenAITextRe
+ 	for _, message := range claudeResponse.Content {
+ 		switch message.Type {
+ 		case "tool_use":
+-			args, _ := json.Marshal(message.Input)
++			args, _ := common.Marshal(message.Input)
+ 			tools = append(tools, dto.ToolCallResponse{
+ 				ID:   message.Id,
+ 				Type: "function", // compatible with other OpenAI derivative applications
+@@ -929,7 +929,7 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
+ 	case types.RelayFormatOpenAI:
+ 		openaiResponse := ResponseClaude2OpenAI(&claudeResponse)
+ 		openaiResponse.Usage = buildOpenAIStyleUsageFromClaudeUsage(claudeInfo.Usage)
+-		responseData, err = json.Marshal(openaiResponse)
++		responseData, err = common.Marshal(openaiResponse)
+ 		if err != nil {
+ 			return types.NewError(err, types.ErrorCodeBadResponseBody)
+ 		}
+@@ -1011,7 +1011,8 @@ func mapToolChoice(toolChoice any, parallelToolCalls *bool) *dto.ClaudeToolChoic
+ 		// When tools are disabled, parallel_tool_calls is irrelevant, so we drop it.
+ 		if claudeToolChoice.Type != "none" {
+ 			// 如果 parallel_tool_calls 为 true，则 disable_parallel_tool_use 为 false
+-			claudeToolChoice.DisableParallelToolUse = !*parallelToolCalls
++			disableParallel := !*parallelToolCalls
++			claudeToolChoice.DisableParallelToolUse = &disableParallel
+ 		}
+ 	}
+ 
+diff --git a/relay/channel/cloudflare/relay_cloudflare.go b/relay/channel/cloudflare/relay_cloudflare.go
+index 39a80a4..c5f283f 100644
+--- a/relay/channel/cloudflare/relay_cloudflare.go
++++ b/relay/channel/cloudflare/relay_cloudflare.go
+@@ -2,12 +2,13 @@ package cloudflare
+ 
+ import (
+ 	"bufio"
+-	"encoding/json"
+ 	"io"
+ 	"net/http"
+ 	"strings"
+ 	"time"
+ 
++	"github.com/55gY/new-api-lite/common"
++
+ 	"github.com/55gY/new-api-lite/dto"
+ 	"github.com/55gY/new-api-lite/logger"
+ 	relaycommon "github.com/55gY/new-api-lite/relay/common"
+@@ -51,7 +52,7 @@ func cfStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Res
+ 		}
+ 
+ 		var response dto.ChatCompletionsStreamResponse
+-		err := json.Unmarshal([]byte(data), &response)
++		err := common.Unmarshal([]byte(data), &response)
+ 		if err != nil {
+ 			logger.LogError(c, "error_unmarshalling_stream_response: "+err.Error())
+ 			continue
+@@ -97,7 +98,7 @@ func cfHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response)
+ 	}
+ 	service.CloseResponseBodyGracefully(resp)
+ 	var response dto.TextResponse
+-	err = json.Unmarshal(responseBody, &response)
++	err = common.Unmarshal(responseBody, &response)
+ 	if err != nil {
+ 		return types.NewError(err, types.ErrorCodeBadResponseBody), nil
+ 	}
+@@ -109,7 +110,7 @@ func cfHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response)
+ 	usage := service.ResponseText2Usage(c, responseText, info.UpstreamModelName, info.GetEstimatePromptTokens())
+ 	response.Usage = *usage
+ 	response.Id = helper.GetResponseID(c)
+-	jsonResponse, err := json.Marshal(response)
++	jsonResponse, err := common.Marshal(response)
+ 	if err != nil {
+ 		return types.NewError(err, types.ErrorCodeBadResponseBody), nil
+ 	}
+diff --git a/relay/channel/cohere/relay-cohere.go b/relay/channel/cohere/relay-cohere.go
+index 8de0ceb..1e7f2a7 100644
+--- a/relay/channel/cohere/relay-cohere.go
++++ b/relay/channel/cohere/relay-cohere.go
+@@ -2,7 +2,6 @@ package cohere
+ 
+ import (
+ 	"bufio"
+-	"encoding/json"
+ 	"io"
+ 	"net/http"
+ 	"strings"
+@@ -119,7 +118,7 @@ func cohereStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
+ 			}
+ 			data = strings.TrimSuffix(data, "\r")
+ 			var cohereResp CohereResponse
+-			err := json.Unmarshal([]byte(data), &cohereResp)
++			err := common.Unmarshal([]byte(data), &cohereResp)
+ 			if err != nil {
+ 				common.SysLog("error unmarshalling stream response: " + err.Error())
+ 				return true
+@@ -154,7 +153,7 @@ func cohereStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
+ 				}
+ 				responseText += cohereResp.Text
+ 			}
+-			jsonStr, err := json.Marshal(openaiResp)
++			jsonStr, err := common.Marshal(openaiResp)
+ 			if err != nil {
+ 				common.SysLog("error marshalling stream response: " + err.Error())
+ 				return true
+@@ -180,7 +179,7 @@ func cohereHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
+ 	}
+ 	service.CloseResponseBodyGracefully(resp)
+ 	var cohereResp CohereResponseResult
+-	err = json.Unmarshal(responseBody, &cohereResp)
++	err = common.Unmarshal(responseBody, &cohereResp)
+ 	if err != nil {
+ 		return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
+ 	}
+@@ -204,7 +203,7 @@ func cohereHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
+ 		},
+ 	}
+ 
+-	jsonResponse, err := json.Marshal(openaiResp)
++	jsonResponse, err := common.Marshal(openaiResp)
+ 	if err != nil {
+ 		return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
+ 	}
+@@ -221,7 +220,7 @@ func cohereRerankHandler(c *gin.Context, resp *http.Response, info *relaycommon.
+ 	}
+ 	service.CloseResponseBodyGracefully(resp)
+ 	var cohereResp CohereRerankResponseResult
+-	err = json.Unmarshal(responseBody, &cohereResp)
++	err = common.Unmarshal(responseBody, &cohereResp)
+ 	if err != nil {
+ 		return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
+ 	}
+@@ -240,7 +239,7 @@ func cohereRerankHandler(c *gin.Context, resp *http.Response, info *relaycommon.
+ 	rerankResp.Results = cohereResp.Results
+ 	rerankResp.Usage = usage
+ 
+-	jsonResponse, err := json.Marshal(rerankResp)
++	jsonResponse, err := common.Marshal(rerankResp)
+ 	if err != nil {
+ 		return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
+ 	}
+diff --git a/relay/channel/coze/adaptor.go b/relay/channel/coze/adaptor.go
+index 400ffab..41cb887 100644
+--- a/relay/channel/coze/adaptor.go
++++ b/relay/channel/coze/adaptor.go
+@@ -1,13 +1,13 @@
+ package coze
+ 
+ import (
+-	"encoding/json"
+ 	"errors"
+ 	"fmt"
+ 	"io"
+ 	"net/http"
+ 	"time"
+ 
++	commonpkg "github.com/55gY/new-api-lite/common"
+ 	"github.com/55gY/new-api-lite/dto"
+ 	"github.com/55gY/new-api-lite/relay/channel"
+ 	"github.com/55gY/new-api-lite/relay/common"
+@@ -74,7 +74,7 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *common.RelayInfo, requestBody
+ 	if err != nil {
+ 		return nil, err
+ 	}
+-	err = json.Unmarshal(respBody, &cozeResponse)
++	err = commonpkg.Unmarshal(respBody, &cozeResponse)
+ 	if cozeResponse.Code != 0 {
+ 		return nil, errors.New(cozeResponse.Msg)
+ 	}
+diff --git a/relay/channel/coze/relay-coze.go b/relay/channel/coze/relay-coze.go
+index d7ced2e..1eba2f4 100644
+--- a/relay/channel/coze/relay-coze.go
++++ b/relay/channel/coze/relay-coze.go
+@@ -56,7 +56,7 @@ func cozeChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Res
+ 	var response dto.TextResponse
+ 	var cozeResponse CozeChatDetailResponse
+ 	response.Model = info.UpstreamModelName
+-	err = json.Unmarshal(responseBody, &cozeResponse)
++	err = common.Unmarshal(responseBody, &cozeResponse)
+ 	if err != nil {
+ 		return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
+ 	}
+@@ -86,7 +86,7 @@ func cozeChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Res
+ 			FinishReason: "stop",
+ 		},
+ 	}
+-	jsonResponse, err := json.Marshal(response)
++	jsonResponse, err := common.Marshal(response)
+ 	if err != nil {
+ 		return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
+ 	}
+@@ -154,7 +154,7 @@ func handleCozeEvent(c *gin.Context, event string, data string, responseText *st
+ 	case "conversation.chat.completed":
+ 		// 将 data 解析为 CozeChatResponseData
+ 		var chatData CozeChatResponseData
+-		err := json.Unmarshal([]byte(data), &chatData)
++		err := common.Unmarshal([]byte(data), &chatData)
+ 		if err != nil {
+ 			common.SysLog("error_unmarshalling_stream_response: " + err.Error())
+ 			return
+@@ -171,14 +171,14 @@ func handleCozeEvent(c *gin.Context, event string, data string, responseText *st
+ 	case "conversation.message.delta":
+ 		// 将 data 解析为 CozeChatV3MessageDetail
+ 		var messageData CozeChatV3MessageDetail
+-		err := json.Unmarshal([]byte(data), &messageData)
++		err := common.Unmarshal([]byte(data), &messageData)
+ 		if err != nil {
+ 			common.SysLog("error_unmarshalling_stream_response: " + err.Error())
+ 			return
+ 		}
+ 
+ 		var content string
+-		err = json.Unmarshal(messageData.Content, &content)
++		err = common.Unmarshal(messageData.Content, &content)
+ 		if err != nil {
+ 			common.SysLog("error_unmarshalling_stream_response: " + err.Error())
+ 			return
+@@ -203,7 +203,7 @@ func handleCozeEvent(c *gin.Context, event string, data string, responseText *st
+ 
+ 	case "error":
+ 		var errorData CozeError
+-		err := json.Unmarshal([]byte(data), &errorData)
++		err := common.Unmarshal([]byte(data), &errorData)
+ 		if err != nil {
+ 			common.SysLog("error_unmarshalling_stream_response: " + err.Error())
+ 			return
+@@ -242,7 +242,7 @@ func checkIfChatComplete(a *Adaptor, c *gin.Context, info *relaycommon.RelayInfo
+ 	if err != nil {
+ 		return fmt.Errorf("read response body failed: %w", err), false
+ 	}
+-	err = json.Unmarshal(responseBody, &cozeResponse)
++	err = common.Unmarshal(responseBody, &cozeResponse)
+ 	if err != nil {
+ 		return fmt.Errorf("unmarshal response body failed: %w", err), false
+ 	}
+diff --git a/relay/channel/dify/relay-dify.go b/relay/channel/dify/relay-dify.go
+index 83faa52..e114acd 100644
+--- a/relay/channel/dify/relay-dify.go
++++ b/relay/channel/dify/relay-dify.go
+@@ -110,7 +110,7 @@ func uploadDifyFile(c *gin.Context, info *relaycommon.RelayInfo, user string, me
+ 		var result struct {
+ 			Id string `json:"id"`
+ 		}
+-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
++		if err := common.DecodeJson(resp.Body, &result); err != nil {
+ 			common.SysLog("failed to decode response: " + err.Error())
+ 			return nil
+ 		}
+@@ -135,7 +135,7 @@ func requestOpenAI2Dify(c *gin.Context, info *relaycommon.RelayInfo, request dto
+ 		user = json.RawMessage(helper.GetResponseID(c))
+ 	}
+ 	var stringUser string
+-	err := json.Unmarshal(user, &stringUser)
++	err := common.Unmarshal(user, &stringUser)
+ 	if err != nil {
+ 		common.SysLog("failed to unmarshal user: " + err.Error())
+ 		stringUser = helper.GetResponseID(c)
+@@ -225,7 +225,7 @@ func difyStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
+ 	helper.SetEventStreamHeaders(c)
+ 	helper.StreamScannerHandler(c, resp, info, func(data string, sr *helper.StreamResult) {
+ 		var difyResponse DifyChunkChatCompletionResponse
+-		if err := json.Unmarshal([]byte(data), &difyResponse); err != nil {
++		if err := common.Unmarshal([]byte(data), &difyResponse); err != nil {
+ 			common.SysLog("error unmarshalling stream response: " + err.Error())
+ 			sr.Error(err)
+ 			return
+@@ -266,7 +266,7 @@ func difyHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respons
+ 		return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
+ 	}
+ 	service.CloseResponseBodyGracefully(resp)
+-	err = json.Unmarshal(responseBody, &difyResponse)
++	err = common.Unmarshal(responseBody, &difyResponse)
+ 	if err != nil {
+ 		return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
+ 	}
+@@ -285,7 +285,7 @@ func difyHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respons
+ 		FinishReason: "stop",
+ 	}
+ 	fullTextResponse.Choices = append(fullTextResponse.Choices, choice)
+-	jsonResponse, err := json.Marshal(fullTextResponse)
++	jsonResponse, err := common.Marshal(fullTextResponse)
+ 	if err != nil {
+ 		return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
+ 	}
+diff --git a/relay/channel/gemini/relay-gemini.go b/relay/channel/gemini/relay-gemini.go
+index 88ff938..892589f 100644
+--- a/relay/channel/gemini/relay-gemini.go
++++ b/relay/channel/gemini/relay-gemini.go
+@@ -467,10 +467,10 @@ func CovertOpenAI2Gemini(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
+ 			contentStr := message.StringContent()
+ 
+ 			// 1. 尝试解析为 JSON 对象
+-			if err := json.Unmarshal([]byte(contentStr), &contentMap); err != nil {
++			if err := common.Unmarshal([]byte(contentStr), &contentMap); err != nil {
+ 				// 2. 如果失败，尝试解析为 JSON 数组
+ 				var contentSlice []interface{}
+-				if err := json.Unmarshal([]byte(contentStr), &contentSlice); err == nil {
++				if err := common.Unmarshal([]byte(contentStr), &contentSlice); err == nil {
+ 					// 如果是数组，包装成对象
+ 					contentMap = map[string]interface{}{"result": contentSlice}
+ 				} else {
+@@ -502,7 +502,7 @@ func CovertOpenAI2Gemini(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
+ 			for _, call := range message.ParseToolCalls() {
+ 				args := map[string]interface{}{}
+ 				if call.Function.Arguments != "" {
+-					if json.Unmarshal([]byte(call.Function.Arguments), &args) != nil {
++					if common.Unmarshal([]byte(call.Function.Arguments), &args) != nil {
+ 						return nil, fmt.Errorf("invalid arguments for function %s, args: %s", call.Function.Name, call.Function.Arguments)
+ 					}
+ 				}
+@@ -996,7 +996,7 @@ func getResponseToolCall(item *dto.GeminiPart) *dto.ToolCallResponse {
+ 	var err error
+ 	// 移除 unescapeMapOrSlice 调用，直接使用 json.Marshal
+ 	// JSON 序列化/反序列化已经正确处理了转义字符
+-	argsBytes, err = json.Marshal(item.FunctionCall.Arguments)
++	argsBytes, err = common.Marshal(item.FunctionCall.Arguments)
+ 
+ 	if err != nil {
+ 		return nil
+@@ -1652,7 +1652,7 @@ func GeminiImageHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.
+ 		})
+ 	}
+ 
+-	jsonResponse, jsonErr := json.Marshal(openAIResponse)
++	jsonResponse, jsonErr := common.Marshal(openAIResponse)
+ 	if jsonErr != nil {
+ 		return nil, types.NewError(jsonErr, types.ErrorCodeBadResponseBody)
+ 	}
+diff --git a/relay/channel/jimeng/adaptor.go b/relay/channel/jimeng/adaptor.go
+index 22e70e0..14f4ecb 100644
+--- a/relay/channel/jimeng/adaptor.go
++++ b/relay/channel/jimeng/adaptor.go
+@@ -1,12 +1,13 @@
+ package jimeng
+ 
+ import (
+-	"encoding/json"
+ 	"errors"
+ 	"fmt"
+ 	"io"
+ 	"net/http"
+ 
++	"github.com/55gY/new-api-lite/common"
++
+ 	"github.com/55gY/new-api-lite/dto"
+ 	"github.com/55gY/new-api-lite/relay/channel"
+ 	"github.com/55gY/new-api-lite/relay/channel/openai"
+@@ -79,7 +80,7 @@ func (a *Adaptor) ConvertImageRequest(c *gin.Context, info *relaycommon.RelayInf
+ 	}
+ 
+ 	if len(request.ExtraFields) > 0 {
+-		if err := json.Unmarshal(request.ExtraFields, &payload); err != nil {
++		if err := common.Unmarshal(request.ExtraFields, &payload); err != nil {
+ 			return nil, fmt.Errorf("failed to unmarshal extra fields: %w", err)
+ 		}
+ 	}
+diff --git a/relay/channel/jimeng/image.go b/relay/channel/jimeng/image.go
+index dfe6f8e..3e77d94 100644
+--- a/relay/channel/jimeng/image.go
++++ b/relay/channel/jimeng/image.go
+@@ -1,11 +1,12 @@
+ package jimeng
+ 
+ import (
+-	"encoding/json"
+ 	"fmt"
+ 	"io"
+ 	"net/http"
+ 
++	"github.com/55gY/new-api-lite/common"
++
+ 	"github.com/55gY/new-api-lite/dto"
+ 	relaycommon "github.com/55gY/new-api-lite/relay/common"
+ 	"github.com/55gY/new-api-lite/service"
+@@ -57,7 +58,7 @@ func jimengImageHandler(c *gin.Context, resp *http.Response, info *relaycommon.R
+ 	}
+ 	service.CloseResponseBodyGracefully(resp)
+ 
+-	err = json.Unmarshal(responseBody, &jimengResponse)
++	err = common.Unmarshal(responseBody, &jimengResponse)
+ 	if err != nil {
+ 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+ 	}
+@@ -74,7 +75,7 @@ func jimengImageHandler(c *gin.Context, resp *http.Response, info *relaycommon.R
+ 
+ 	// Convert Jimeng response to OpenAI format
+ 	fullTextResponse := responseJimeng2OpenAIImage(c, &jimengResponse, info)
+-	jsonResponse, err := json.Marshal(fullTextResponse)
++	jsonResponse, err := common.Marshal(fullTextResponse)
+ 	if err != nil {
+ 		return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
+ 	}
+diff --git a/relay/channel/jimeng/sign.go b/relay/channel/jimeng/sign.go
+index efcada9..5fde6b8 100644
+--- a/relay/channel/jimeng/sign.go
++++ b/relay/channel/jimeng/sign.go
+@@ -5,7 +5,6 @@ import (
+ 	"crypto/hmac"
+ 	"crypto/sha256"
+ 	"encoding/hex"
+-	"encoding/json"
+ 	"errors"
+ 	"fmt"
+ 	"io"
+@@ -15,6 +14,8 @@ import (
+ 	"strings"
+ 	"time"
+ 
++	"github.com/55gY/new-api-lite/common"
++
+ 	"github.com/55gY/new-api-lite/logger"
+ 	"github.com/gin-gonic/gin"
+ )
+@@ -41,7 +42,7 @@ import (
+ const HexPayloadHashKey = "HexPayloadHash"
+ 
+ func SetPayloadHash(c *gin.Context, req any) error {
+-	body, err := json.Marshal(req)
++	body, err := common.Marshal(req)
+ 	if err != nil {
+ 		return err
+ 	}
+diff --git a/relay/channel/mokaai/relay-mokaai.go b/relay/channel/mokaai/relay-mokaai.go
+index 0f011c7..c8bfed8 100644
+--- a/relay/channel/mokaai/relay-mokaai.go
++++ b/relay/channel/mokaai/relay-mokaai.go
+@@ -1,7 +1,6 @@
+ package mokaai
+ 
+ import (
+-	"encoding/json"
+ 	"io"
+ 	"net/http"
+ 
+@@ -59,7 +58,7 @@ func mokaEmbeddingHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *htt
+ 		return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
+ 	}
+ 	service.CloseResponseBodyGracefully(resp)
+-	err = json.Unmarshal(responseBody, &baiduResponse)
++	err = common.Unmarshal(responseBody, &baiduResponse)
+ 	if err != nil {
+ 		return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
+ 	}
+diff --git a/relay/channel/ollama/adaptor.go b/relay/channel/ollama/adaptor.go
+index b432bf8..6274297 100644
+--- a/relay/channel/ollama/adaptor.go
++++ b/relay/channel/ollama/adaptor.go
+@@ -29,8 +29,9 @@ func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayIn
+ 	if err != nil {
+ 		return nil, err
+ 	}
++	streamIncludeUsage := true
+ 	openaiRequest.(*dto.GeneralOpenAIRequest).StreamOptions = &dto.StreamOptions{
+-		IncludeUsage: true,
++		IncludeUsage: &streamIncludeUsage,
+ 	}
+ 	// map to ollama chat request (Claude -> OpenAI -> Ollama chat)
+ 	return openAIChatToOllamaChat(c, openaiRequest.(*dto.GeneralOpenAIRequest))
+diff --git a/relay/channel/ollama/relay-ollama.go b/relay/channel/ollama/relay-ollama.go
+index 574fda7..27f5d66 100644
+--- a/relay/channel/ollama/relay-ollama.go
++++ b/relay/channel/ollama/relay-ollama.go
+@@ -2,7 +2,6 @@ package ollama
+ 
+ import (
+ 	"bufio"
+-	"encoding/json"
+ 	"fmt"
+ 	"io"
+ 	"net/http"
+@@ -32,7 +31,7 @@ func openAIChatToOllamaChat(c *gin.Context, r *dto.GeneralOpenAIRequest) (*Ollam
+ 		} else if r.ResponseFormat.Type == "json_schema" {
+ 			if len(r.ResponseFormat.JsonSchema) > 0 {
+ 				var schema any
+-				_ = json.Unmarshal(r.ResponseFormat.JsonSchema, &schema)
++				_ = common.Unmarshal(r.ResponseFormat.JsonSchema, &schema)
+ 				chatReq.Format = schema
+ 			}
+ 		}
+@@ -127,7 +126,7 @@ func openAIChatToOllamaChat(c *gin.Context, r *dto.GeneralOpenAIRequest) (*Ollam
+ 				for _, tc := range parsed {
+ 					var args interface{}
+ 					if tc.Function.Arguments != "" {
+-						_ = json.Unmarshal([]byte(tc.Function.Arguments), &args)
++						_ = common.Unmarshal([]byte(tc.Function.Arguments), &args)
+ 					}
+ 					if args == nil {
+ 						args = map[string]any{}
+@@ -180,7 +179,7 @@ func openAIToGenerate(c *gin.Context, r *dto.GeneralOpenAIRequest) (*OllamaGener
+ 			gen.Format = "json"
+ 		} else if r.ResponseFormat.Type == "json_schema" {
+ 			var schema any
+-			_ = json.Unmarshal(r.ResponseFormat.JsonSchema, &schema)
++			_ = common.Unmarshal(r.ResponseFormat.JsonSchema, &schema)
+ 			gen.Format = schema
+ 		}
+ 	}
+@@ -510,7 +509,7 @@ func FetchOllamaVersion(baseURL, apiKey string) (string, error) {
+ 		Version string `json:"version"`
+ 	}
+ 
+-	if err := json.Unmarshal(body, &versionResp); err != nil {
++	if err := common.Unmarshal(body, &versionResp); err != nil {
+ 		return "", fmt.Errorf("解析响应失败: %v", err)
+ 	}
+ 
+diff --git a/relay/channel/ollama/stream.go b/relay/channel/ollama/stream.go
+index 76f59d7..6a41c4b 100644
+--- a/relay/channel/ollama/stream.go
++++ b/relay/channel/ollama/stream.go
+@@ -88,7 +88,7 @@ func ollamaStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
+ 			continue
+ 		}
+ 		var chunk ollamaChatStreamChunk
+-		if err := json.Unmarshal([]byte(line), &chunk); err != nil {
++		if err := common.Unmarshal([]byte(line), &chunk); err != nil {
+ 			logger.LogError(c, "ollama stream json decode error: "+err.Error()+" line="+line)
+ 			return usage, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+ 		}
+@@ -123,7 +123,7 @@ func ollamaStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
+ 				if raw != "" && raw != "null" {
+ 					// Unmarshal the JSON string to get the actual content without quotes
+ 					var thinkingContent string
+-					if err := json.Unmarshal(chunk.Message.Thinking, &thinkingContent); err == nil {
++					if err := common.Unmarshal(chunk.Message.Thinking, &thinkingContent); err == nil {
+ 						delta.Choices[0].Delta.SetReasoningContent(thinkingContent)
+ 					} else {
+ 						// Fallback to raw string if it's not a JSON string
+@@ -136,7 +136,7 @@ func ollamaStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
+ 				delta.Choices[0].Delta.ToolCalls = make([]dto.ToolCallResponse, 0, len(chunk.Message.ToolCalls))
+ 				for _, tc := range chunk.Message.ToolCalls {
+ 					// arguments -> string
+-					argBytes, _ := json.Marshal(tc.Function.Arguments)
++					argBytes, _ := common.Marshal(tc.Function.Arguments)
+ 					toolId := fmt.Sprintf("call_%d", toolCallIndex)
+ 					tr := dto.ToolCallResponse{ID: toolId, Type: "function", Function: dto.FunctionResponse{Name: tc.Function.Name, Arguments: string(argBytes)}}
+ 					tr.SetIndex(toolCallIndex)
+@@ -205,7 +205,7 @@ func ollamaChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
+ 			continue
+ 		}
+ 		var ck ollamaChatStreamChunk
+-		if err := json.Unmarshal([]byte(ln), &ck); err != nil {
++		if err := common.Unmarshal([]byte(ln), &ck); err != nil {
+ 			if len(lines) == 1 {
+ 				return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+ 			}
+@@ -218,7 +218,7 @@ func ollamaChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
+ 			if raw != "" && raw != "null" {
+ 				// Unmarshal the JSON string to get the actual content without quotes
+ 				var thinkingContent string
+-				if err := json.Unmarshal(ck.Message.Thinking, &thinkingContent); err == nil {
++				if err := common.Unmarshal(ck.Message.Thinking, &thinkingContent); err == nil {
+ 					reasoningBuilder.WriteString(thinkingContent)
+ 				} else {
+ 					// Fallback to raw string if it's not a JSON string
+@@ -235,7 +235,7 @@ func ollamaChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
+ 
+ 	if !parsedAny {
+ 		var single ollamaChatStreamChunk
+-		if err := json.Unmarshal(body, &single); err != nil {
++		if err := common.Unmarshal(body, &single); err != nil {
+ 			return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+ 		}
+ 		lastChunk = single
+@@ -245,7 +245,7 @@ func ollamaChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
+ 				if raw != "" && raw != "null" {
+ 					// Unmarshal the JSON string to get the actual content without quotes
+ 					var thinkingContent string
+-					if err := json.Unmarshal(single.Message.Thinking, &thinkingContent); err == nil {
++					if err := common.Unmarshal(single.Message.Thinking, &thinkingContent); err == nil {
+ 						reasoningBuilder.WriteString(thinkingContent)
+ 					} else {
+ 						// Fallback to raw string if it's not a JSON string
+diff --git a/relay/channel/openai/adaptor.go b/relay/channel/openai/adaptor.go
+index b868d7f..97df471 100644
+--- a/relay/channel/openai/adaptor.go
++++ b/relay/channel/openai/adaptor.go
+@@ -74,7 +74,7 @@ func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayIn
+ 	//}
+ 	if info.SupportStreamOptions && info.IsStream {
+ 		aiRequest.StreamOptions = &dto.StreamOptions{
+-			IncludeUsage: true,
++			IncludeUsage: lo.ToPtr(true),
+ 		}
+ 	}
+ 	return a.ConvertOpenAIRequest(c, info, aiRequest)
+@@ -277,7 +277,7 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
+ 		// 没有做排除3.5Haiku等，要出问题再加吧，最佳兼容性（不是
+ 		if request.THINKING != nil && strings.HasPrefix(info.UpstreamModelName, "anthropic") {
+ 			var thinking dto.Thinking // Claude标准Thinking格式
+-			if err := json.Unmarshal(request.THINKING, &thinking); err != nil {
++			if err := common.Unmarshal(request.THINKING, &thinking); err != nil {
+ 				return nil, fmt.Errorf("error Unmarshal thinking: %w", err)
+ 			}
+ 
+diff --git a/relay/channel/palm/relay-palm.go b/relay/channel/palm/relay-palm.go
+index 9d06f80..83797b5 100644
+--- a/relay/channel/palm/relay-palm.go
++++ b/relay/channel/palm/relay-palm.go
+@@ -1,7 +1,6 @@
+ package palm
+ 
+ import (
+-	"encoding/json"
+ 	"io"
+ 	"net/http"
+ 
+@@ -65,7 +64,7 @@ func palmStreamHandler(c *gin.Context, resp *http.Response) (*types.NewAPIError,
+ 		}
+ 		service.CloseResponseBodyGracefully(resp)
+ 		var palmResponse PaLMChatResponse
+-		err = json.Unmarshal(responseBody, &palmResponse)
++		err = common.Unmarshal(responseBody, &palmResponse)
+ 		if err != nil {
+ 			common.SysLog("error unmarshalling stream response: " + err.Error())
+ 			stopChan <- true
+@@ -77,7 +76,7 @@ func palmStreamHandler(c *gin.Context, resp *http.Response) (*types.NewAPIError,
+ 		if len(palmResponse.Candidates) > 0 {
+ 			responseText = palmResponse.Candidates[0].Content
+ 		}
+-		jsonResponse, err := json.Marshal(fullTextResponse)
++		jsonResponse, err := common.Marshal(fullTextResponse)
+ 		if err != nil {
+ 			common.SysLog("error marshalling stream response: " + err.Error())
+ 			stopChan <- true
+@@ -108,7 +107,7 @@ func palmHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respons
+ 	}
+ 	service.CloseResponseBodyGracefully(resp)
+ 	var palmResponse PaLMChatResponse
+-	err = json.Unmarshal(responseBody, &palmResponse)
++	err = common.Unmarshal(responseBody, &palmResponse)
+ 	if err != nil {
+ 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+ 	}
+diff --git a/relay/channel/replicate/adaptor.go b/relay/channel/replicate/adaptor.go
+index 80c1a03..90c2537 100644
+--- a/relay/channel/replicate/adaptor.go
++++ b/relay/channel/replicate/adaptor.go
+@@ -2,7 +2,6 @@ package replicate
+ 
+ import (
+ 	"bytes"
+-	"encoding/json"
+ 	"errors"
+ 	"fmt"
+ 	"io"
+@@ -111,7 +110,7 @@ func (a *Adaptor) ConvertImageRequest(c *gin.Context, info *relaycommon.RelayInf
+ 
+ 	if len(request.OutputFormat) > 0 {
+ 		var outputFormat string
+-		if err := json.Unmarshal(request.OutputFormat, &outputFormat); err == nil && strings.TrimSpace(outputFormat) != "" {
++		if err := common.Unmarshal(request.OutputFormat, &outputFormat); err == nil && strings.TrimSpace(outputFormat) != "" {
+ 			inputPayload["output_format"] = outputFormat
+ 		}
+ 	}
+diff --git a/relay/channel/siliconflow/relay-siliconflow.go b/relay/channel/siliconflow/relay-siliconflow.go
+index 9da160f..aa138fd 100644
+--- a/relay/channel/siliconflow/relay-siliconflow.go
++++ b/relay/channel/siliconflow/relay-siliconflow.go
+@@ -1,10 +1,11 @@
+ package siliconflow
+ 
+ import (
+-	"encoding/json"
+ 	"io"
+ 	"net/http"
+ 
++	"github.com/55gY/new-api-lite/common"
++
+ 	"github.com/55gY/new-api-lite/dto"
+ 	relaycommon "github.com/55gY/new-api-lite/relay/common"
+ 	"github.com/55gY/new-api-lite/service"
+@@ -20,7 +21,7 @@ func siliconflowRerankHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
+ 	}
+ 	service.CloseResponseBodyGracefully(resp)
+ 	var siliconflowResp SFRerankResponse
+-	err = json.Unmarshal(responseBody, &siliconflowResp)
++	err = common.Unmarshal(responseBody, &siliconflowResp)
+ 	if err != nil {
+ 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+ 	}
+@@ -34,7 +35,7 @@ func siliconflowRerankHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
+ 		Usage:   *usage,
+ 	}
+ 
+-	jsonResponse, err := json.Marshal(rerankResp)
++	jsonResponse, err := common.Marshal(rerankResp)
+ 	if err != nil {
+ 		return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
+ 	}
+diff --git a/relay/channel/tencent/relay-tencent.go b/relay/channel/tencent/relay-tencent.go
+index 7b324af..c689686 100644
+--- a/relay/channel/tencent/relay-tencent.go
++++ b/relay/channel/tencent/relay-tencent.go
+@@ -5,7 +5,6 @@ import (
+ 	"crypto/hmac"
+ 	"crypto/sha256"
+ 	"encoding/hex"
+-	"encoding/json"
+ 	"errors"
+ 	"fmt"
+ 	"io"
+@@ -140,7 +139,7 @@ func tencentHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Resp
+ 		return nil, types.NewOpenAIError(err, types.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
+ 	}
+ 	service.CloseResponseBodyGracefully(resp)
+-	err = json.Unmarshal(responseBody, &tencentSb)
++	err = common.Unmarshal(responseBody, &tencentSb)
+ 	if err != nil {
+ 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+ 	}
+@@ -193,7 +192,7 @@ func getTencentSign(req TencentChatRequest, adaptor *Adaptor, secId, secKey stri
+ 	canonicalHeaders := fmt.Sprintf("content-type:%s\nhost:%s\nx-tc-action:%s\n",
+ 		"application/json", host, strings.ToLower(adaptor.Action))
+ 	signedHeaders := "content-type;host;x-tc-action"
+-	payload, _ := json.Marshal(req)
++	payload, _ := common.Marshal(req)
+ 	hashedRequestPayload := sha256hex(string(payload))
+ 	canonicalRequest := fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s",
+ 		httpRequestMethod,
+diff --git a/relay/channel/vertex/adaptor.go b/relay/channel/vertex/adaptor.go
+index 8dd511b..764c789 100644
+--- a/relay/channel/vertex/adaptor.go
++++ b/relay/channel/vertex/adaptor.go
+@@ -1,7 +1,6 @@
+ package vertex
+ 
+ import (
+-	"encoding/json"
+ 	"errors"
+ 	"fmt"
+ 	"io"
+@@ -261,7 +260,7 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
+ 		}
+ 		if len(request.ExtraBody) > 0 {
+ 			var extra map[string]any
+-			if err := json.Unmarshal(request.ExtraBody, &extra); err == nil {
++			if err := common.Unmarshal(request.ExtraBody, &extra); err == nil {
+ 				if n, ok := extra["n"].(float64); ok && n > 0 {
+ 					imgReq.N = lo.ToPtr(uint(n))
+ 				}
+diff --git a/relay/channel/vertex/service_account.go b/relay/channel/vertex/service_account.go
+index 80e7828..96715e9 100644
+--- a/relay/channel/vertex/service_account.go
++++ b/relay/channel/vertex/service_account.go
+@@ -3,13 +3,14 @@ package vertex
+ import (
+ 	"crypto/rsa"
+ 	"crypto/x509"
+-	"encoding/json"
+ 	"encoding/pem"
+ 	"errors"
+ 	"net/http"
+ 	"net/url"
+ 	"strings"
+ 
++	"github.com/55gY/new-api-lite/common"
++
+ 	relaycommon "github.com/55gY/new-api-lite/relay/common"
+ 	"github.com/55gY/new-api-lite/service"
+ 
+@@ -129,7 +130,7 @@ func exchangeJwtForAccessToken(signedJWT string, info *relaycommon.RelayInfo) (s
+ 	defer resp.Body.Close()
+ 
+ 	var result map[string]interface{}
+-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
++	if err := common.DecodeJson(resp.Body, &result); err != nil {
+ 		return "", err
+ 	}
+ 
+@@ -172,7 +173,7 @@ func exchangeJwtForAccessTokenWithProxy(signedJWT string, proxy string) (string,
+ 	defer resp.Body.Close()
+ 
+ 	var result map[string]interface{}
+-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
++	if err := common.DecodeJson(resp.Body, &result); err != nil {
+ 		return "", err
+ 	}
+ 
+diff --git a/relay/channel/xunfei/relay-xunfei.go b/relay/channel/xunfei/relay-xunfei.go
+index 849ecfe..e3569f9 100644
+--- a/relay/channel/xunfei/relay-xunfei.go
++++ b/relay/channel/xunfei/relay-xunfei.go
+@@ -4,7 +4,6 @@ import (
+ 	"crypto/hmac"
+ 	"crypto/sha256"
+ 	"encoding/base64"
+-	"encoding/json"
+ 	"fmt"
+ 	"io"
+ 	"net/url"
+@@ -143,7 +142,7 @@ func xunfeiStreamHandler(c *gin.Context, textRequest dto.GeneralOpenAIRequest, a
+ 			usage.CompletionTokens += xunfeiResponse.Payload.Usage.Text.CompletionTokens
+ 			usage.TotalTokens += xunfeiResponse.Payload.Usage.Text.TotalTokens
+ 			response := streamResponseXunfei2OpenAI(&xunfeiResponse)
+-			jsonResponse, err := json.Marshal(response)
++			jsonResponse, err := common.Marshal(response)
+ 			if err != nil {
+ 				common.SysLog("error marshalling stream response: " + err.Error())
+ 				return true
+@@ -191,7 +190,7 @@ func xunfeiHandler(c *gin.Context, textRequest dto.GeneralOpenAIRequest, appId s
+ 	xunfeiResponse.Payload.Choices.Text[0].Content = content
+ 
+ 	response := responseXunfei2OpenAI(&xunfeiResponse)
+-	jsonResponse, err := json.Marshal(response)
++	jsonResponse, err := common.Marshal(response)
+ 	if err != nil {
+ 		return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
+ 	}
+@@ -228,7 +227,7 @@ func xunfeiMakeRequest(textRequest dto.GeneralOpenAIRequest, domain, authUrl, ap
+ 				break
+ 			}
+ 			var response XunfeiChatResponse
+-			err = json.Unmarshal(msg, &response)
++			err = common.Unmarshal(msg, &response)
+ 			if err != nil {
+ 				common.SysLog("error unmarshalling stream response: " + err.Error())
+ 				break
+diff --git a/relay/channel/zhipu/relay-zhipu.go b/relay/channel/zhipu/relay-zhipu.go
+index 7efae28..e8801b0 100644
+--- a/relay/channel/zhipu/relay-zhipu.go
++++ b/relay/channel/zhipu/relay-zhipu.go
+@@ -2,7 +2,6 @@ package zhipu
+ 
+ import (
+ 	"bufio"
+-	"encoding/json"
+ 	"io"
+ 	"net/http"
+ 	"strings"
+@@ -187,7 +186,7 @@ func zhipuStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.
+ 		select {
+ 		case data := <-dataChan:
+ 			response := streamResponseZhipu2OpenAI(data)
+-			jsonResponse, err := json.Marshal(response)
++			jsonResponse, err := common.Marshal(response)
+ 			if err != nil {
+ 				common.SysLog("error marshalling stream response: " + err.Error())
+ 				return true
+@@ -196,13 +195,13 @@ func zhipuStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.
+ 			return true
+ 		case data := <-metaChan:
+ 			var zhipuResponse ZhipuStreamMetaResponse
+-			err := json.Unmarshal([]byte(data), &zhipuResponse)
++			err := common.Unmarshal([]byte(data), &zhipuResponse)
+ 			if err != nil {
+ 				common.SysLog("error unmarshalling stream response: " + err.Error())
+ 				return true
+ 			}
+ 			response, zhipuUsage := streamMetaResponseZhipu2OpenAI(&zhipuResponse)
+-			jsonResponse, err := json.Marshal(response)
++			jsonResponse, err := common.Marshal(response)
+ 			if err != nil {
+ 				common.SysLog("error marshalling stream response: " + err.Error())
+ 				return true
+@@ -226,7 +225,7 @@ func zhipuHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respon
+ 		return nil, types.NewOpenAIError(err, types.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
+ 	}
+ 	service.CloseResponseBodyGracefully(resp)
+-	err = json.Unmarshal(responseBody, &zhipuResponse)
++	err = common.Unmarshal(responseBody, &zhipuResponse)
+ 	if err != nil {
+ 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+ 	}
+@@ -237,7 +236,7 @@ func zhipuHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respon
+ 		}, resp.StatusCode)
+ 	}
+ 	fullTextResponse := responseZhipu2OpenAI(&zhipuResponse)
+-	jsonResponse, err := json.Marshal(fullTextResponse)
++	jsonResponse, err := common.Marshal(fullTextResponse)
+ 	if err != nil {
+ 		return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
+ 	}
+diff --git a/relay/compatible_handler.go b/relay/compatible_handler.go
+index 21d54e1..5cc310d 100644
+--- a/relay/compatible_handler.go
++++ b/relay/compatible_handler.go
+@@ -48,7 +48,7 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
+ 	includeUsage := true
+ 	// 判断用户是否需要返回使用情况
+ 	if request.StreamOptions != nil {
+-		includeUsage = request.StreamOptions.IncludeUsage
++		includeUsage = lo.FromPtrOr(request.StreamOptions.IncludeUsage, false)
+ 	}
+ 
+ 	// 如果不支持StreamOptions，将StreamOptions设置为nil
+@@ -58,7 +58,7 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
+ 		// 如果支持StreamOptions，且请求中没有设置StreamOptions，根据配置文件设置StreamOptions
+ 		if constant.ForceStreamOption {
+ 			request.StreamOptions = &dto.StreamOptions{
+-				IncludeUsage: true,
++				IncludeUsage: lo.ToPtr(true),
+ 			}
+ 		}
+ 	}
+diff --git a/service/codex_oauth.go b/service/codex_oauth.go
+index a6bbe7f..7b6b92d 100644
+--- a/service/codex_oauth.go
++++ b/service/codex_oauth.go
+@@ -5,7 +5,6 @@ import (
+ 	"crypto/rand"
+ 	"crypto/sha256"
+ 	"encoding/base64"
+-	"encoding/json"
+ 	"errors"
+ 	"fmt"
+ 	"net/http"
+@@ -310,7 +309,7 @@ func decodeJWTClaims(token string) (map[string]any, bool) {
+ 		return nil, false
+ 	}
+ 	var claims map[string]any
+-	if err := json.Unmarshal(payloadRaw, &claims); err != nil {
++	if err := common.Unmarshal(payloadRaw, &claims); err != nil {
+ 		return nil, false
+ 	}
+ 	return claims, true
+diff --git a/service/convert.go b/service/convert.go
+index 7708385..ff68066 100644
+--- a/service/convert.go
++++ b/service/convert.go
+@@ -1,7 +1,6 @@
+ package service
+ 
+ import (
+-	"encoding/json"
+ 	"fmt"
+ 	"strings"
+ 
+@@ -36,7 +35,7 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
+ 
+ 	if isOpenRouter {
+ 		if effort := claudeRequest.GetEfforts(); effort != "" {
+-			effortBytes, _ := json.Marshal(effort)
++			effortBytes, _ := common.Marshal(effort)
+ 			openAIRequest.Verbosity = effortBytes
+ 		}
+ 		if claudeRequest.Thinking != nil {
+@@ -51,7 +50,7 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
+ 					Enabled: true,
+ 				}
+ 			}
+-			reasoningJSON, err := json.Marshal(reasoning)
++			reasoningJSON, err := common.Marshal(reasoning)
+ 			if err != nil {
+ 				return nil, fmt.Errorf("failed to marshal reasoning: %w", err)
+ 			}
+@@ -648,7 +647,7 @@ func stopReasonOpenAI2Claude(reason string) string {
+ }
+ 
+ func toJSONString(v interface{}) string {
+-	b, err := json.Marshal(v)
++	b, err := common.Marshal(v)
+ 	if err != nil {
+ 		return "{}"
+ 	}
+@@ -870,7 +869,7 @@ func ResponseOpenAI2Gemini(openAIResponse *dto.OpenAITextResponse, info *relayco
+ 				// 解析参数
+ 				var args map[string]interface{}
+ 				if toolCall.Function.Arguments != "" {
+-					if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &args); err != nil {
++					if err := common.Unmarshal([]byte(toolCall.Function.Arguments), &args); err != nil {
+ 						args = map[string]interface{}{"arguments": toolCall.Function.Arguments}
+ 					}
+ 				} else {
+@@ -973,7 +972,7 @@ func StreamResponseOpenAI2Gemini(openAIResponse *dto.ChatCompletionsStreamRespon
+ 				// 解析参数
+ 				var args map[string]interface{}
+ 				if toolCall.Function.Arguments != "" {
+-					if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &args); err != nil {
++					if err := common.Unmarshal([]byte(toolCall.Function.Arguments), &args); err != nil {
+ 						args = map[string]interface{}{"arguments": toolCall.Function.Arguments}
+ 					}
+ 				} else {
+diff --git a/service/download.go b/service/download.go
+index 9a0af02..a789524 100644
+--- a/service/download.go
++++ b/service/download.go
+@@ -41,7 +41,7 @@ func DoWorkerRequest(req *WorkerRequest) (*http.Response, error) {
+ 	}
+ 
+ 	// 序列化worker请求数据
+-	workerPayload, err := json.Marshal(req)
++	workerPayload, err := common.Marshal(req)
+ 	if err != nil {
+ 		return nil, fmt.Errorf("failed to marshal worker payload: %v", err)
+ 	}
+diff --git a/service/relayconvert/internal/oai_chat/to_claude_messages_req.go b/service/relayconvert/internal/oai_chat/to_claude_messages_req.go
+index 6d75f60..fbc66f9 100644
+--- a/service/relayconvert/internal/oai_chat/to_claude_messages_req.go
++++ b/service/relayconvert/internal/oai_chat/to_claude_messages_req.go
+@@ -398,4 +398,4 @@ func OpenAIChatRequestToClaudeMessages(c *gin.Context, textRequest dto.GeneralOp
+ 	claudeRequest.Prompt = ""
+ 	claudeRequest.Messages = claudeMessages
+ 	return &claudeRequest, nil
+-}
+\ No newline at end of file
++}
+diff --git a/service/relayconvert/internal/oai_chat/to_oai_responses_req.go b/service/relayconvert/internal/oai_chat/to_oai_responses_req.go
+index c5c8b4a..75c4ad1 100644
+--- a/service/relayconvert/internal/oai_chat/to_oai_responses_req.go
++++ b/service/relayconvert/internal/oai_chat/to_oai_responses_req.go
+@@ -399,4 +399,4 @@ func ChatCompletionsRequestToResponsesRequest(req *dto.GeneralOpenAIRequest) (*d
+ 	}
+ 
+ 	return out, nil
+-}
+\ No newline at end of file
++}
+diff --git a/service/relayconvert/internal/shared/claude/tool_choice.go b/service/relayconvert/internal/shared/claude/tool_choice.go
+index e2c265f..0676e05 100644
+--- a/service/relayconvert/internal/shared/claude/tool_choice.go
++++ b/service/relayconvert/internal/shared/claude/tool_choice.go
+@@ -38,7 +38,8 @@ func MapOpenAIToolChoice(toolChoice any, parallelToolCalls *bool) *dto.ClaudeToo
+ 			}
+ 		}
+ 		if claudeToolChoice.Type != "none" {
+-			claudeToolChoice.DisableParallelToolUse = !*parallelToolCalls
++			disableParallel := !*parallelToolCalls
++			claudeToolChoice.DisableParallelToolUse = &disableParallel
+ 		}
+ 	}
+ 
+diff --git a/service/user_notify.go b/service/user_notify.go
+index 9c613f2..abdb89f 100644
+--- a/service/user_notify.go
++++ b/service/user_notify.go
+@@ -2,7 +2,6 @@ package service
+ 
+ import (
+ 	"bytes"
+-	"encoding/json"
+ 	"fmt"
+ 	"net/http"
+ 	"net/url"
+@@ -215,7 +214,7 @@ func sendGotifyNotify(gotifyUrl string, gotifyToken string, priority int, data d
+ 	}
+ 
+ 	// 序列化为 JSON
+-	payloadBytes, err := json.Marshal(payload)
++	payloadBytes, err := common.Marshal(payload)
+ 	if err != nil {
+ 		return fmt.Errorf("failed to marshal gotify payload: %v", err)
+ 	}
+diff --git a/service/webhook.go b/service/webhook.go
+index 36d31f8..5cfb9b7 100644
+--- a/service/webhook.go
++++ b/service/webhook.go
+@@ -5,7 +5,6 @@ import (
+ 	"crypto/hmac"
+ 	"crypto/sha256"
+ 	"encoding/hex"
+-	"encoding/json"
+ 	"fmt"
+ 	"net/http"
+ 	"time"
+@@ -49,7 +48,7 @@ func SendWebhookNotify(webhookURL string, secret string, data dto.Notify) error
+ 	}
+ 
+ 	// 序列化负载
+-	payloadBytes, err := json.Marshal(payload)
++	payloadBytes, err := common.Marshal(payload)
+ 	if err != nil {
+ 		return fmt.Errorf("failed to marshal webhook payload: %v", err)
+ 	}
+diff --git a/setting/chat.go b/setting/chat.go
+index a8ef454..8b3c959 100644
+--- a/setting/chat.go
++++ b/setting/chat.go
+@@ -1,8 +1,6 @@
+ package setting
+ 
+ import (
+-	"encoding/json"
+-
+ 	"github.com/55gY/new-api-lite/common"
+ )
+ 
+@@ -41,11 +39,11 @@ var Chats = []map[string]string{
+ 
+ func UpdateChatsByJsonString(jsonString string) error {
+ 	Chats = make([]map[string]string, 0)
+-	return json.Unmarshal([]byte(jsonString), &Chats)
++	return common.Unmarshal([]byte(jsonString), &Chats)
+ }
+ 
+ func Chats2JsonString() string {
+-	jsonBytes, err := json.Marshal(Chats)
++	jsonBytes, err := common.Marshal(Chats)
+ 	if err != nil {
+ 		common.SysLog("error marshalling chats: " + err.Error())
+ 		return "[]"
+diff --git a/setting/config/config.go b/setting/config/config.go
+index 2aa8f42..41dfc27 100644
+--- a/setting/config/config.go
++++ b/setting/config/config.go
+@@ -1,7 +1,6 @@
+ package config
+ 
+ import (
+-	"encoding/json"
+ 	"reflect"
+ 	"strconv"
+ 	"strings"
+@@ -134,7 +133,7 @@ func configToMap(config interface{}) (map[string]string, error) {
+ 		case reflect.Ptr:
+ 			// 处理指针类型：如果非 nil，序列化指向的值
+ 			if !field.IsNil() {
+-				bytes, err := json.Marshal(field.Interface())
++				bytes, err := common.Marshal(field.Interface())
+ 				if err != nil {
+ 					return nil, err
+ 				}
+@@ -145,7 +144,7 @@ func configToMap(config interface{}) (map[string]string, error) {
+ 			}
+ 		case reflect.Map, reflect.Slice, reflect.Struct:
+ 			// 复杂类型使用JSON序列化
+-			bytes, err := json.Marshal(field.Interface())
++			bytes, err := common.Marshal(field.Interface())
+ 			if err != nil {
+ 				return nil, err
+ 			}
+@@ -247,7 +246,7 @@ func updateConfigFromMap(config interface{}, configMap map[string]string) error
+ 					field.Set(reflect.New(field.Type().Elem()))
+ 				}
+ 				// 反序列化到指针指向的值
+-				err := json.Unmarshal([]byte(strValue), field.Interface())
++				err := common.Unmarshal([]byte(strValue), field.Interface())
+ 				if err != nil {
+ 					continue
+ 				}
+@@ -257,12 +256,12 @@ func updateConfigFromMap(config interface{}, configMap map[string]string) error
+ 			// absent from the new JSON). Allocate a fresh map so removed keys
+ 			// are properly cleared.
+ 			fresh := reflect.New(field.Type())
+-			if err := json.Unmarshal([]byte(strValue), fresh.Interface()); err != nil {
++			if err := common.Unmarshal([]byte(strValue), fresh.Interface()); err != nil {
+ 				continue
+ 			}
+ 			field.Set(fresh.Elem())
+ 		case reflect.Slice, reflect.Struct:
+-			err := json.Unmarshal([]byte(strValue), field.Addr().Interface())
++			err := common.Unmarshal([]byte(strValue), field.Addr().Interface())
+ 			if err != nil {
+ 				continue
+ 			}
+diff --git a/setting/console_setting/config.go b/setting/console_setting/config.go
+index 7137e12..11b7967 100644
+--- a/setting/console_setting/config.go
++++ b/setting/console_setting/config.go
+@@ -4,11 +4,9 @@ import "github.com/55gY/new-api-lite/setting/config"
+ 
+ type ConsoleSetting struct {
+ 	ApiInfo              string `json:"api_info"`              // 控制台 API 信息 (JSON 数组字符串)
+-	UptimeKumaGroups     string `json:"uptime_kuma_groups"`    // Uptime Kuma 分组配置 (JSON 数组字符串)
+ 	Announcements        string `json:"announcements"`         // 系统公告 (JSON 数组字符串)
+ 	FAQ                  string `json:"faq"`                   // 常见问题 (JSON 数组字符串)
+ 	ApiInfoEnabled       bool   `json:"api_info_enabled"`      // 是否启用 API 信息面板
+-	UptimeKumaEnabled    bool   `json:"uptime_kuma_enabled"`   // 是否启用 Uptime Kuma 面板
+ 	AnnouncementsEnabled bool   `json:"announcements_enabled"` // 是否启用系统公告面板
+ 	FAQEnabled           bool   `json:"faq_enabled"`           // 是否启用常见问答面板
+ }
+@@ -16,11 +14,9 @@ type ConsoleSetting struct {
+ // 默认配置
+ var defaultConsoleSetting = ConsoleSetting{
+ 	ApiInfo:              "",
+-	UptimeKumaGroups:     "",
+ 	Announcements:        "",
+ 	FAQ:                  "",
+ 	ApiInfoEnabled:       true,
+-	UptimeKumaEnabled:    true,
+ 	AnnouncementsEnabled: true,
+ 	FAQEnabled:           true,
+ }
+diff --git a/setting/console_setting/validation.go b/setting/console_setting/validation.go
+index d6e4342..a30d465 100644
+--- a/setting/console_setting/validation.go
++++ b/setting/console_setting/validation.go
+@@ -1,13 +1,14 @@
+ package console_setting
+ 
+ import (
+-	"encoding/json"
+ 	"fmt"
+ 	"net/url"
+ 	"regexp"
+ 	"sort"
+ 	"strings"
+ 	"time"
++
++	"github.com/55gY/new-api-lite/common"
+ )
+ 
+ var (
+@@ -24,7 +25,7 @@ var (
+ 
+ func parseJSONArray(jsonStr string, typeName string) ([]map[string]interface{}, error) {
+ 	var list []map[string]interface{}
+-	if err := json.Unmarshal([]byte(jsonStr), &list); err != nil {
++	if err := common.Unmarshal([]byte(jsonStr), &list); err != nil {
+ 		return nil, fmt.Errorf("%s格式错误：%s", typeName, err.Error())
+ 	}
+ 	return list, nil
+@@ -55,7 +56,7 @@ func getJSONList(jsonStr string) []map[string]interface{} {
+ 		return []map[string]interface{}{}
+ 	}
+ 	var list []map[string]interface{}
+-	json.Unmarshal([]byte(jsonStr), &list)
++	common.Unmarshal([]byte(jsonStr), &list)
+ 	return list
+ }
+ 
+@@ -71,8 +72,6 @@ func ValidateConsoleSettings(settingsStr string, settingType string) error {
+ 		return validateAnnouncements(settingsStr)
+ 	case "FAQ":
+ 		return validateFAQ(settingsStr)
+-	case "UptimeKumaGroups":
+-		return validateUptimeKumaGroups(settingsStr)
+ 	default:
+ 		return fmt.Errorf("未知的设置类型：%s", settingType)
+ 	}
+@@ -233,72 +232,3 @@ func GetAnnouncements() []map[string]interface{} {
+ func GetFAQ() []map[string]interface{} {
+ 	return getJSONList(GetConsoleSetting().FAQ)
+ }
+-
+-func validateUptimeKumaGroups(groupsStr string) error {
+-	groups, err := parseJSONArray(groupsStr, "Uptime Kuma分组配置")
+-	if err != nil {
+-		return err
+-	}
+-
+-	if len(groups) > 20 {
+-		return fmt.Errorf("Uptime Kuma分组数量不能超过20个")
+-	}
+-
+-	nameSet := make(map[string]bool)
+-
+-	for i, group := range groups {
+-		categoryName, ok := group["categoryName"].(string)
+-		if !ok || categoryName == "" {
+-			return fmt.Errorf("第%d个分组缺少分类名称字段", i+1)
+-		}
+-		if nameSet[categoryName] {
+-			return fmt.Errorf("第%d个分组的分类名称与其他分组重复", i+1)
+-		}
+-		nameSet[categoryName] = true
+-		urlStr, ok := group["url"].(string)
+-		if !ok || urlStr == "" {
+-			return fmt.Errorf("第%d个分组缺少URL字段", i+1)
+-		}
+-		slug, ok := group["slug"].(string)
+-		if !ok || slug == "" {
+-			return fmt.Errorf("第%d个分组缺少Slug字段", i+1)
+-		}
+-		description, ok := group["description"].(string)
+-		if !ok {
+-			description = ""
+-		}
+-
+-		if err := validateURL(urlStr, i+1, "分组"); err != nil {
+-			return err
+-		}
+-
+-		if len(categoryName) > 50 {
+-			return fmt.Errorf("第%d个分组的分类名称长度不能超过50字符", i+1)
+-		}
+-		if len(urlStr) > 500 {
+-			return fmt.Errorf("第%d个分组的URL长度不能超过500字符", i+1)
+-		}
+-		if len(slug) > 100 {
+-			return fmt.Errorf("第%d个分组的Slug长度不能超过100字符", i+1)
+-		}
+-		if len(description) > 200 {
+-			return fmt.Errorf("第%d个分组的描述长度不能超过200字符", i+1)
+-		}
+-
+-		if !slugRegex.MatchString(slug) {
+-			return fmt.Errorf("第%d个分组的Slug只能包含字母、数字、下划线和连字符", i+1)
+-		}
+-
+-		if err := checkDangerousContent(description, i+1, "分组"); err != nil {
+-			return err
+-		}
+-		if err := checkDangerousContent(categoryName, i+1, "分组"); err != nil {
+-			return err
+-		}
+-	}
+-	return nil
+-}
+-
+-func GetUptimeKumaGroups() []map[string]interface{} {
+-	return getJSONList(GetConsoleSetting().UptimeKumaGroups)
+-}
+diff --git a/setting/rate_limit.go b/setting/rate_limit.go
+index 77cc8bd..16f10a1 100644
+--- a/setting/rate_limit.go
++++ b/setting/rate_limit.go
+@@ -1,7 +1,6 @@
+ package setting
+ 
+ import (
+-	"encoding/json"
+ 	"fmt"
+ 	"math"
+ 	"sync"
+@@ -20,7 +19,7 @@ func ModelRequestRateLimitGroup2JSONString() string {
+ 	ModelRequestRateLimitMutex.RLock()
+ 	defer ModelRequestRateLimitMutex.RUnlock()
+ 
+-	jsonBytes, err := json.Marshal(ModelRequestRateLimitGroup)
++	jsonBytes, err := common.Marshal(ModelRequestRateLimitGroup)
+ 	if err != nil {
+ 		common.SysLog("error marshalling model ratio: " + err.Error())
+ 	}
+@@ -32,7 +31,7 @@ func UpdateModelRequestRateLimitGroupByJSONString(jsonStr string) error {
+ 	defer ModelRequestRateLimitMutex.RUnlock()
+ 
+ 	ModelRequestRateLimitGroup = make(map[string][2]int)
+-	return json.Unmarshal([]byte(jsonStr), &ModelRequestRateLimitGroup)
++	return common.Unmarshal([]byte(jsonStr), &ModelRequestRateLimitGroup)
+ }
+ 
+ func GetGroupRateLimit(group string) (totalCount, successCount int, found bool) {
+@@ -52,7 +51,7 @@ func GetGroupRateLimit(group string) (totalCount, successCount int, found bool)
+ 
+ func CheckModelRequestRateLimitGroup(jsonStr string) error {
+ 	checkModelRequestRateLimitGroup := make(map[string][2]int)
+-	err := json.Unmarshal([]byte(jsonStr), &checkModelRequestRateLimitGroup)
++	err := common.Unmarshal([]byte(jsonStr), &checkModelRequestRateLimitGroup)
+ 	if err != nil {
+ 		return err
+ 	}
+diff --git a/setting/ratio_setting/group_ratio.go b/setting/ratio_setting/group_ratio.go
+index 04cde79..06f4d0a 100644
+--- a/setting/ratio_setting/group_ratio.go
++++ b/setting/ratio_setting/group_ratio.go
+@@ -1,9 +1,10 @@
+ package ratio_setting
+ 
+ import (
+-	"encoding/json"
+ 	"errors"
+ 
++	"github.com/55gY/new-api-lite/common"
++
+ 	"github.com/55gY/new-api-lite/setting/config"
+ 	"github.com/55gY/new-api-lite/types"
+ )
+@@ -98,7 +99,7 @@ func UpdateGroupGroupRatioByJSONString(jsonStr string) error {
+ 
+ func CheckGroupRatio(jsonStr string) error {
+ 	checkGroupRatio := make(map[string]float64)
+-	err := json.Unmarshal([]byte(jsonStr), &checkGroupRatio)
++	err := common.Unmarshal([]byte(jsonStr), &checkGroupRatio)
+ 	if err != nil {
+ 		return err
+ 	}
+diff --git a/setting/user_usable_group.go b/setting/user_usable_group.go
+index 54baed5..3c99724 100644
+--- a/setting/user_usable_group.go
++++ b/setting/user_usable_group.go
+@@ -1,7 +1,6 @@
+ package setting
+ 
+ import (
+-	"encoding/json"
+ 	"sync"
+ 
+ 	"github.com/55gY/new-api-lite/common"
+@@ -28,7 +27,7 @@ func UserUsableGroups2JSONString() string {
+ 	userUsableGroupsMutex.RLock()
+ 	defer userUsableGroupsMutex.RUnlock()
+ 
+-	jsonBytes, err := json.Marshal(userUsableGroups)
++	jsonBytes, err := common.Marshal(userUsableGroups)
+ 	if err != nil {
+ 		common.SysLog("error marshalling user groups: " + err.Error())
+ 	}
+@@ -40,7 +39,7 @@ func UpdateUserUsableGroupsByJSONString(jsonStr string) error {
+ 	defer userUsableGroupsMutex.Unlock()
+ 
+ 	userUsableGroups = make(map[string]string)
+-	return json.Unmarshal([]byte(jsonStr), &userUsableGroups)
++	return common.Unmarshal([]byte(jsonStr), &userUsableGroups)
+ }
+ 
+ func GetUsableGroupDescription(groupName string) string {
+diff --git a/web/classic/src/components/dashboard/index.jsx b/web/classic/src/components/dashboard/index.jsx
+index 4d6f448..8041cc5 100644
+--- a/web/classic/src/components/dashboard/index.jsx
++++ b/web/classic/src/components/dashboard/index.jsx
+@@ -63,7 +63,6 @@ const Dashboard = () => {
+   // ========== 统计数据 ==========
+   const { groupedStatsData } = useDashboardStats(
+     userState,
+-    dashboardData.consumeQuota,
+     dashboardData.consumeTokens,
+     dashboardData.times,
+     dashboardData.trendData,
+diff --git a/web/classic/src/components/layout/SiderBar.jsx b/web/classic/src/components/layout/SiderBar.jsx
+index 1dbd1cd..2f191d4 100644
+--- a/web/classic/src/components/layout/SiderBar.jsx
++++ b/web/classic/src/components/layout/SiderBar.jsx
+@@ -17,9 +17,10 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
+ For commercial licensing, please contact support@quantumnous.com
+ */
+ 
+-import React, { useEffect, useMemo, useState } from 'react';
++import React, { useContext, useEffect, useMemo, useState } from 'react';
+ import { Link, useLocation } from 'react-router-dom';
+ import { useTranslation } from 'react-i18next';
++import { StatusContext } from '../../context/Status';
+ import { getLucideIcon } from '../../helpers/render';
+ import { ChevronLeft } from 'lucide-react';
+ import { useSidebarCollapsed } from '../../hooks/common/useSidebarCollapsed';
+@@ -44,6 +45,7 @@ const routerMap = {
+ 
+ const SiderBar = ({ onNavigate = () => {} }) => {
+   const { t } = useTranslation();
++  const [statusState] = useContext(StatusContext);
+   const [collapsed, toggleCollapsed] = useSidebarCollapsed();
+   const {
+     isModuleVisible,
+@@ -57,16 +59,19 @@ const SiderBar = ({ onNavigate = () => {} }) => {
+   const [openedKeys, setOpenedKeys] = useState([]);
+   const location = useLocation();
+ 
++  // 使用 StatusContext（响应式）而非直接读取 localStorage：
++  // localStorage 不是响应式的，放入 useMemo 依赖不会在其变化时触发重算，
++  // 会导致会话中开关数据看板导出后侧边栏可见性不更新。
++  const dataExportEnabled =
++    String(statusState?.status?.enable_data_export) === 'true';
++
+   const workspaceItems = useMemo(() => {
+     const items = [
+       {
+         text: t('数据看板'),
+         itemKey: 'detail',
+         to: '/detail',
+-        className:
+-          localStorage.getItem('enable_data_export') === 'true'
+-            ? ''
+-            : 'tableHiddle',
++        className: dataExportEnabled ? '' : 'tableHiddle',
+       },
+       {
+         text: t('令牌管理'),
+@@ -87,11 +92,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
+     });
+ 
+     return filteredItems;
+-  }, [
+-    localStorage.getItem('enable_data_export'),
+-    t,
+-    isModuleVisible,
+-  ]);
++  }, [dataExportEnabled, t, isModuleVisible]);
+ 
+   const financeItems = useMemo(() => {
+     const items = [
+diff --git a/web/classic/src/components/settings/OtherSetting.jsx b/web/classic/src/components/settings/OtherSetting.jsx
+index a1999f0..a9ca7a2 100644
+--- a/web/classic/src/components/settings/OtherSetting.jsx
++++ b/web/classic/src/components/settings/OtherSetting.jsx
+@@ -157,10 +157,10 @@ const OtherSetting = () => {
+     try {
+       setLoadingInput((loadingInput) => ({ ...loadingInput, Logo: true }));
+       await updateOption('Logo', inputs.Logo);
+-      showSuccess('Logo 已更新');
++      showSuccess(t('Logo 已更新'));
+     } catch (error) {
+       console.error('Logo 更新失败', error);
+-      showError('Logo 更新失败');
++      showError(t('Logo 更新失败'));
+     } finally {
+       setLoadingInput((loadingInput) => ({ ...loadingInput, Logo: false }));
+     }
+@@ -173,10 +173,10 @@ const OtherSetting = () => {
+         HomePageContent: true,
+       }));
+       await updateOption(key, inputs[key]);
+-      showSuccess('首页内容已更新');
++      showSuccess(t('首页内容已更新'));
+     } catch (error) {
+       console.error('首页内容更新失败', error);
+-      showError('首页内容更新失败');
++      showError(t('首页内容更新失败'));
+     } finally {
+       setLoadingInput((loadingInput) => ({
+         ...loadingInput,
+@@ -189,10 +189,10 @@ const OtherSetting = () => {
+     try {
+       setLoadingInput((loadingInput) => ({ ...loadingInput, Footer: true }));
+       await updateOption('Footer', inputs.Footer);
+-      showSuccess('页脚内容已更新');
++      showSuccess(t('页脚内容已更新'));
+     } catch (error) {
+       console.error('页脚内容更新失败', error);
+-      showError('页脚内容更新失败');
++      showError(t('页脚内容更新失败'));
+     } finally {
+       setLoadingInput((loadingInput) => ({ ...loadingInput, Footer: false }));
+     }
+@@ -213,7 +213,7 @@ const OtherSetting = () => {
+ 
+       // Option 2: Use the JSON proxy approach which often works better with GitHub API
+       const res = await fetch(
+-        'https://api.github.com/repos/Calcium-Ion/new-api/releases/latest',
++        'https://api.github.com/repos/55gY/new-api-lite/releases/latest',
+         {
+           headers: {
+             Accept: 'application/json',
+diff --git a/web/classic/src/components/settings/SystemSetting.jsx b/web/classic/src/components/settings/SystemSetting.jsx
+index 6ed2a54..794c6b4 100644
+--- a/web/classic/src/components/settings/SystemSetting.jsx
++++ b/web/classic/src/components/settings/SystemSetting.jsx
+@@ -423,7 +423,7 @@ const SystemSetting = () => {
+                         label={t('服务器地址')}
+                         placeholder='https://yourdomain.com'
+                         extraText={t(
+-                          '该服务器地址将影响支付回调地址以及默认首页展示的地址，请确保正确配置',
++                          '该服务器地址将影响默认首页展示的地址，请确保正确配置',
+                         )}
+                       />
+                     </Col>
+diff --git a/web/classic/src/components/table/channels/modals/EditChannelModal.jsx b/web/classic/src/components/table/channels/modals/EditChannelModal.jsx
+index 71866e5..59127fa 100644
+--- a/web/classic/src/components/table/channels/modals/EditChannelModal.jsx
++++ b/web/classic/src/components/table/channels/modals/EditChannelModal.jsx
+@@ -408,10 +408,6 @@ const EditChannelModal = (props) => {
+     </Tooltip>
+   );
+ 
+-  // 2FA状态更新辅助函数
+-  const updateTwoFAState = (updates) => {
+-    setTwoFAState((prev) => ({ ...prev, ...updates }));
+-  };
+   // 重置2FA验证状态
+   const reset2FAVerifyState = () => {
+     setShow2FAVerifyModal(false);
+@@ -444,9 +440,9 @@ const EditChannelModal = (props) => {
+   const showApiConfigCard = true; // 控制是否显示 API 配置卡片
+   const getInitValues = () => ({ ...originInputs });
+ 
+-  // 处理渠道额外设置的更新
++  // 处理渠道额外设置的更新（setting 单数 blob）
+   const handleChannelSettingsChange = (key, value) => {
+-    // 更新内部状态
++    // 更新内部状态（用于界面展示）
+     setChannelSettings((prev) => ({ ...prev, [key]: value }));
+ 
+     // 同步更新到表单字段
+@@ -457,16 +453,27 @@ const EditChannelModal = (props) => {
+     // 同步更新inputs状态
+     setInputs((prev) => ({ ...prev, [key]: value }));
+ 
+-    // 生成setting JSON并更新
+-    const newSettings = { ...channelSettings, [key]: value };
+-    const settingsJson = JSON.stringify(newSettings);
+-    handleInputChange('setting', settingsJson);
++    // 从表单读取最新的 setting JSON（表单是提交时的唯一数据源，且被同步更新），
++    // 避免使用渲染闭包中已过期的 channelSettings，导致同一渲染周期内连续切换时丢失先前修改。
++    let base = {};
++    const currentSetting = formApiRef.current
++      ? formApiRef.current.getValue('setting')
++      : inputs.setting;
++    if (currentSetting) {
++      try {
++        base =
++          typeof currentSetting === 'string'
++            ? JSON.parse(currentSetting)
++            : { ...currentSetting };
++      } catch (error) {
++        console.error('解析设置失败:', error);
++      }
++    }
++    base[key] = value;
++    handleInputChange('setting', JSON.stringify(base));
+   };
+ 
+   const handleChannelOtherSettingsChange = (key, value) => {
+-    // 更新内部状态
+-    setChannelSettings((prev) => ({ ...prev, [key]: value }));
+-
+     // 同步更新到表单字段
+     if (formApiRef.current) {
+       formApiRef.current.setValue(key, value);
+@@ -475,18 +482,25 @@ const EditChannelModal = (props) => {
+     // 同步更新inputs状态
+     setInputs((prev) => ({ ...prev, [key]: value }));
+ 
+-    // 需要更新settings，是一个json，例如{"azure_responses_version": "preview"}
++    // 从表单读取最新的 settings（复数）JSON（提交时读取的即为表单值），避免使用渲染闭包中
++    // 已过期的 inputs.settings，导致同一渲染周期内连续切换多个开关时先前修改被覆盖丢失。
++    // 注意：此类 key 属于 settings（复数）blob，不应写入 channelSettings（setting 单数）桶。
+     let settings = {};
+-    if (inputs.settings) {
++    const currentSettings = formApiRef.current
++      ? formApiRef.current.getValue('settings')
++      : inputs.settings;
++    if (currentSettings) {
+       try {
+-        settings = JSON.parse(inputs.settings);
++        settings =
++          typeof currentSettings === 'string'
++            ? JSON.parse(currentSettings)
++            : { ...currentSettings };
+       } catch (error) {
+         console.error('解析设置失败:', error);
+       }
+     }
+     settings[key] = value;
+-    const settingsJson = JSON.stringify(settings);
+-    handleInputChange('settings', settingsJson);
++    handleInputChange('settings', JSON.stringify(settings));
+   };
+ 
+   const applyClipboardConfig = (config) => {
+@@ -3236,7 +3250,6 @@ const EditChannelModal = (props) => {
+                     extraText={t(
+                       '开启后该渠道不会参与定时自动测试',
+                     )}
+-                    initValue={disableAutoTest}
+                   />
+ 
+                   {/* Auto Ban - Core Config */}
+@@ -3249,7 +3262,6 @@ const EditChannelModal = (props) => {
+                     extraText={t(
+                       '仅当自动禁用开启时有效，关闭后不会自动禁用该渠道',
+                     )}
+-                    initValue={autoBan}
+                   />
+ 
+                   {/* Test Model - Core Config */}
+diff --git a/web/classic/src/constants/dashboard.constants.js b/web/classic/src/constants/dashboard.constants.js
+index 2f9b66d..390ae58 100644
+--- a/web/classic/src/constants/dashboard.constants.js
++++ b/web/classic/src/constants/dashboard.constants.js
+@@ -126,14 +126,6 @@ export const ANNOUNCEMENT_LEGEND_DATA = [
+   { color: 'red', label: '异常', type: 'error' },
+ ];
+ 
+-// ========== Uptime 状态映射 ==========
+-export const UPTIME_STATUS_MAP = {
+-  1: { color: '#10b981', label: '正常', text: '可用率' }, // UP
+-  0: { color: '#ef4444', label: '异常', text: '有异常' }, // DOWN
+-  2: { color: '#f59e0b', label: '高延迟', text: '高延迟' }, // PENDING
+-  3: { color: '#3b82f6', label: '维护中', text: '维护中' }, // MAINTENANCE
+-};
+-
+ // ========== 本地存储键名 ==========
+ export const STORAGE_KEYS = {
+   DATA_EXPORT_DEFAULT_TIME: 'data_export_default_time',
+diff --git a/web/classic/src/helpers/dashboard.jsx b/web/classic/src/helpers/dashboard.jsx
+index 794a6dd..95f3e47 100644
+--- a/web/classic/src/helpers/dashboard.jsx
++++ b/web/classic/src/helpers/dashboard.jsx
+@@ -152,88 +152,6 @@ export const handleSpeedTest = (apiUrl) => {
+   window.open(speedTestUrl, '_blank', 'noopener,noreferrer');
+ };
+ 
+-// ========== 状态映射函数 ==========
+-export const getUptimeStatusColor = (status, uptimeStatusMap) =>
+-  uptimeStatusMap[status]?.color || '#8b9aa7';
+-
+-export const getUptimeStatusText = (status, uptimeStatusMap, t) =>
+-  uptimeStatusMap[status]?.text || t('未知');
+-
+-// ========== 监控列表渲染函数 ==========
+-export const renderMonitorList = (
+-  monitors,
+-  getUptimeStatusColor,
+-  getUptimeStatusText,
+-  t,
+-) => {
+-  if (!monitors || monitors.length === 0) {
+-    return (
+-      <div className='flex justify-center items-center py-4'>
+-        <Empty
+-          image={<IllustrationConstruction style={ILLUSTRATION_SIZE} />}
+-          darkModeImage={
+-            <IllustrationConstructionDark style={ILLUSTRATION_SIZE} />
+-          }
+-          title={t('暂无监控数据')}
+-        />
+-      </div>
+-    );
+-  }
+-
+-  const grouped = {};
+-  monitors.forEach((m) => {
+-    const g = m.group || '';
+-    if (!grouped[g]) grouped[g] = [];
+-    grouped[g].push(m);
+-  });
+-
+-  const renderItem = (monitor, idx) => (
+-    <div key={idx} className='p-2 hover:bg-white rounded-lg transition-colors'>
+-      <div className='flex items-center justify-between mb-1'>
+-        <div className='flex items-center gap-2'>
+-          <div
+-            className='w-2 h-2 rounded-full flex-shrink-0'
+-            style={{ backgroundColor: getUptimeStatusColor(monitor.status) }}
+-          />
+-          <span className='text-sm font-medium text-gray-900'>
+-            {monitor.name}
+-          </span>
+-        </div>
+-        <span className='text-xs text-gray-500'>
+-          {((monitor.uptime || 0) * 100).toFixed(2)}%
+-        </span>
+-      </div>
+-      <div className='flex items-center gap-2'>
+-        <span className='text-xs text-gray-500'>
+-          {getUptimeStatusText(monitor.status)}
+-        </span>
+-        <div className='flex-1'>
+-          <Progress
+-            percent={(monitor.uptime || 0) * 100}
+-            showInfo={false}
+-            aria-label={`${monitor.name} uptime`}
+-            stroke={getUptimeStatusColor(monitor.status)}
+-          />
+-        </div>
+-      </div>
+-    </div>
+-  );
+-
+-  return Object.entries(grouped).map(([gname, list]) => (
+-    <div key={gname || 'default'} className='mb-2'>
+-      {gname && (
+-        <>
+-          <div className='text-md font-semibold text-gray-500 px-2 py-1'>
+-            {gname}
+-          </div>
+-          <Divider />
+-        </>
+-      )}
+-      {list.map(renderItem)}
+-    </div>
+-  ));
+-};
+-
+ // ========== 数据处理函数 ==========
+ export const processRawData = (
+   data,
+diff --git a/web/classic/src/helpers/data.js b/web/classic/src/helpers/data.js
+index ebb9bd5..830edca 100644
+--- a/web/classic/src/helpers/data.js
++++ b/web/classic/src/helpers/data.js
+@@ -25,7 +25,8 @@ export function setStatusData(data) {
+   localStorage.setItem('quota_per_unit', data.quota_per_unit);
+   // 兼容：保留旧字段，同时写入新的额度展示类型
+   localStorage.setItem('display_in_currency', data.display_in_currency);
+-  localStorage.setItem('quota_display_type', data.quota_display_type || 'USD');
++  // lite 版已去价格化：额度展示默认使用 TOKENS（原始额度/token），不再默认货币(USD)
++  localStorage.setItem('quota_display_type', data.quota_display_type || 'TOKENS');
+   localStorage.setItem('enable_data_export', data.enable_data_export);
+   if (!localStorage.getItem('data_export_default_time')) {
+     localStorage.setItem(
+diff --git a/web/classic/src/helpers/quota.js b/web/classic/src/helpers/quota.js
+deleted file mode 100644
+index 96f319b..0000000
+--- a/web/classic/src/helpers/quota.js
++++ /dev/null
+@@ -1,32 +0,0 @@
+-/*
+-Copyright (C) 2025 QuantumNous
+-
+-This program is free software: you can redistribute it and/or modify
+-it under the terms of the GNU Affero General Public License as
+-published by the Free Software Foundation, either version 3 of the
+-License, or (at your option) any later version.
+-
+-This program is distributed in the hope that it will be useful,
+-but WITHOUT ANY WARRANTY; without even the implied warranty of
+-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+-GNU Affero General Public License for more details.
+-
+-You should have received a copy of the GNU Affero General Public License
+-along with this program. If not, see <https://www.gnu.org/licenses/>.
+-
+-For commercial licensing, please contact support@quantumnous.com
+-*/
+-export const getQuotaPerUnit = () => {
+-  const raw = parseFloat(localStorage.getItem('quota_per_unit') || '1');
+-  return Number.isFinite(raw) && raw > 0 ? raw : 1;
+-};
+-
+-export const quotaToDisplayAmount = (quota) => {
+-  const q = Number(quota || 0);
+-  return Number.isFinite(q) ? q : 0;
+-};
+-
+-export const displayAmountToQuota = (amount) => {
+-  const val = Number(amount || 0);
+-  return Number.isFinite(val) ? Math.round(val) : 0;
+-};
+diff --git a/web/classic/src/helpers/render.jsx b/web/classic/src/helpers/render.jsx
+index 62bb926..93f0754 100644
+--- a/web/classic/src/helpers/render.jsx
++++ b/web/classic/src/helpers/render.jsx
+@@ -784,13 +784,6 @@ export function renderNumber(num) {
+   }
+ }
+ 
+-export function renderQuotaNumberWithDigit(num, digits = 2) {
+-  if (typeof num !== 'number' || isNaN(num)) {
+-    return 0;
+-  }
+-  return num.toFixed(digits);
+-}
+-
+ export function renderNumberWithPoint(num) {
+   if (num === undefined) return '';
+   num = num.toFixed(2);
+@@ -820,43 +813,6 @@ export function renderNumberWithPoint(num) {
+   return num;
+ }
+ 
+-export function getQuotaPerUnit() {
+-  let quotaPerUnit = localStorage.getItem('quota_per_unit');
+-  quotaPerUnit = parseFloat(quotaPerUnit);
+-  return quotaPerUnit;
+-}
+-
+-export function renderUnitWithQuota(quota) {
+-  let quotaPerUnit = localStorage.getItem('quota_per_unit');
+-  quotaPerUnit = parseFloat(quotaPerUnit);
+-  quota = parseFloat(quota);
+-  return quotaPerUnit * quota;
+-}
+-
+-export function getQuotaWithUnit(quota, digits = 6) {
+-  let quotaPerUnit = localStorage.getItem('quota_per_unit');
+-  quotaPerUnit = parseFloat(quotaPerUnit);
+-  return (quota / quotaPerUnit).toFixed(digits);
+-}
+-
+-export function renderQuotaWithAmount(amount) {
+-  const numericAmount = Number(amount);
+-  return Number.isFinite(numericAmount) ? renderNumber(numericAmount) : amount;
+-}
+-
+-export function renderQuota(quota, digits = 2) {
+-  const numericQuota = Number(quota);
+-  if (!Number.isFinite(numericQuota)) return quota;
+-  return renderNumber(numericQuota);
+-}
+-export function renderQuotaWithPrompt(quota, digits) {
+-  const quotaDisplayType = localStorage.getItem('quota_display_type') || 'USD';
+-  if (quotaDisplayType !== 'TOKENS') {
+-    return i18next.t('等价金额：') + renderQuota(quota, digits);
+-  }
+-  return '';
+-}
+-
+ export function rehypeSplitWordsIntoSpans(options = {}) {
+   const { previousContentLength = 0 } = options;
+ 
+diff --git a/web/classic/src/hooks/dashboard/useDashboardStats.jsx b/web/classic/src/hooks/dashboard/useDashboardStats.jsx
+index 28b7605..df5ad05 100644
+--- a/web/classic/src/hooks/dashboard/useDashboardStats.jsx
++++ b/web/classic/src/hooks/dashboard/useDashboardStats.jsx
+@@ -30,7 +30,6 @@ import { createSectionTitle } from '../../helpers/dashboard';
+ 
+ export const useDashboardStats = (
+   userState,
+-  consumeQuota,
+   consumeTokens,
+   times,
+   trendData,
+diff --git a/web/classic/src/pages/Setting/Operation/SettingsMonitoring.jsx b/web/classic/src/pages/Setting/Operation/SettingsMonitoring.jsx
+index e4ee116..6f575e7 100644
+--- a/web/classic/src/pages/Setting/Operation/SettingsMonitoring.jsx
++++ b/web/classic/src/pages/Setting/Operation/SettingsMonitoring.jsx
+@@ -139,10 +139,10 @@ export default function SettingsMonitoring(props) {
+                   checkedText='｜'
+                   uncheckedText='〇'
+                   onChange={(value) =>
+-                    setInputs({
+-                      ...inputs,
++                    setInputs((prev) => ({
++                      ...prev,
+                       'monitor_setting.auto_test_channel_enabled': value,
+-                    })
++                    }))
+                   }
+                 />
+               </Col>
+@@ -156,11 +156,11 @@ export default function SettingsMonitoring(props) {
+                   placeholder={''}
+                   field={'monitor_setting.auto_test_channel_minutes'}
+                   onChange={(value) =>
+-                    setInputs({
+-                      ...inputs,
++                    setInputs((prev) => ({
++                      ...prev,
+                       'monitor_setting.auto_test_channel_minutes':
+                         parseInt(value),
+-                    })
++                    }))
+                   }
+                 />
+               </Col>
+@@ -178,10 +178,10 @@ export default function SettingsMonitoring(props) {
+                   placeholder={''}
+                   field={'ChannelDisableThreshold'}
+                   onChange={(value) =>
+-                    setInputs({
+-                      ...inputs,
++                    setInputs((prev) => ({
++                      ...prev,
+                       ChannelDisableThreshold: String(value),
+-                    })
++                    }))
+                   }
+                 />
+               </Col>
+@@ -195,10 +195,10 @@ export default function SettingsMonitoring(props) {
+                   placeholder={''}
+                   field={'QuotaRemindThreshold'}
+                   onChange={(value) =>
+-                    setInputs({
+-                      ...inputs,
++                    setInputs((prev) => ({
++                      ...prev,
+                       QuotaRemindThreshold: String(value),
+-                    })
++                    }))
+                   }
+                 />
+               </Col>
+@@ -212,10 +212,10 @@ export default function SettingsMonitoring(props) {
+                   checkedText='｜'
+                   uncheckedText='〇'
+                   onChange={(value) => {
+-                    setInputs({
+-                      ...inputs,
++                    setInputs((prev) => ({
++                      ...prev,
+                       AutomaticDisableChannelEnabled: value,
+-                    });
++                    }));
+                   }}
+                 />
+               </Col>
+@@ -227,10 +227,10 @@ export default function SettingsMonitoring(props) {
+                   checkedText='｜'
+                   uncheckedText='〇'
+                   onChange={(value) =>
+-                    setInputs({
+-                      ...inputs,
++                    setInputs((prev) => ({
++                      ...prev,
+                       AutomaticEnableChannelEnabled: value,
+-                    })
++                    }))
+                   }
+                 />
+               </Col>
+@@ -245,7 +245,10 @@ export default function SettingsMonitoring(props) {
+                   )}
+                   field={'AutomaticDisableStatusCodes'}
+                   onChange={(value) =>
+-                    setInputs({ ...inputs, AutomaticDisableStatusCodes: value })
++                    setInputs((prev) => ({
++                      ...prev,
++                      AutomaticDisableStatusCodes: value,
++                    }))
+                   }
+                   parsed={parsedAutoDisableStatusCodes}
+                   invalidText={t('自动禁用状态码格式不正确')}
+@@ -258,7 +261,10 @@ export default function SettingsMonitoring(props) {
+                   )}
+                   field={'AutomaticRetryStatusCodes'}
+                   onChange={(value) =>
+-                    setInputs({ ...inputs, AutomaticRetryStatusCodes: value })
++                    setInputs((prev) => ({
++                      ...prev,
++                      AutomaticRetryStatusCodes: value,
++                    }))
+                   }
+                   parsed={parsedAutoRetryStatusCodes}
+                   invalidText={t('自动重试状态码格式不正确')}
+@@ -272,7 +278,10 @@ export default function SettingsMonitoring(props) {
+                   field={'AutomaticDisableKeywords'}
+                   autosize={{ minRows: 6, maxRows: 12 }}
+                   onChange={(value) =>
+-                    setInputs({ ...inputs, AutomaticDisableKeywords: value })
++                    setInputs((prev) => ({
++                      ...prev,
++                      AutomaticDisableKeywords: value,
++                    }))
+                   }
+                 />
+               </Col>

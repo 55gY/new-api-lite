@@ -157,10 +157,10 @@ const OtherSetting = () => {
     try {
       setLoadingInput((loadingInput) => ({ ...loadingInput, Logo: true }));
       await updateOption('Logo', inputs.Logo);
-      showSuccess('Logo 已更新');
+      showSuccess(t('Logo 已更新'));
     } catch (error) {
       console.error('Logo 更新失败', error);
-      showError('Logo 更新失败');
+      showError(t('Logo 更新失败'));
     } finally {
       setLoadingInput((loadingInput) => ({ ...loadingInput, Logo: false }));
     }
@@ -173,10 +173,10 @@ const OtherSetting = () => {
         HomePageContent: true,
       }));
       await updateOption(key, inputs[key]);
-      showSuccess('首页内容已更新');
+      showSuccess(t('首页内容已更新'));
     } catch (error) {
       console.error('首页内容更新失败', error);
-      showError('首页内容更新失败');
+      showError(t('首页内容更新失败'));
     } finally {
       setLoadingInput((loadingInput) => ({
         ...loadingInput,
@@ -189,10 +189,10 @@ const OtherSetting = () => {
     try {
       setLoadingInput((loadingInput) => ({ ...loadingInput, Footer: true }));
       await updateOption('Footer', inputs.Footer);
-      showSuccess('页脚内容已更新');
+      showSuccess(t('页脚内容已更新'));
     } catch (error) {
       console.error('页脚内容更新失败', error);
-      showError('页脚内容更新失败');
+      showError(t('页脚内容更新失败'));
     } finally {
       setLoadingInput((loadingInput) => ({ ...loadingInput, Footer: false }));
     }
@@ -213,7 +213,7 @@ const OtherSetting = () => {
 
       // Option 2: Use the JSON proxy approach which often works better with GitHub API
       const res = await fetch(
-        'https://api.github.com/repos/Calcium-Ion/new-api/releases/latest',
+        'https://api.github.com/repos/55gY/new-api-lite/releases/latest',
         {
           headers: {
             Accept: 'application/json',

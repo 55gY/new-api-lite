@@ -80,7 +80,7 @@ func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayIn
 		return nil, err
 	}
 	if info.SupportStreamOptions && info.IsStream {
-		oaiReq.StreamOptions = &dto.StreamOptions{IncludeUsage: true}
+		oaiReq.StreamOptions = &dto.StreamOptions{IncludeUsage: lo.ToPtr(true)}
 	}
 	return a.ConvertOpenAIRequest(c, info, oaiReq)
 }

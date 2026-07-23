@@ -370,7 +370,10 @@ func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int
 	if group != "" {
 		tx = tx.Where("logs."+logGroupCol+" = ?", group)
 	}
-	err = tx.Model(&Log{}).Limit(logSearchCountLimit).Count(&total).Error
+	// 注意：GORM 的 Count 会忽略 Limit，此处此前的 Limit(logSearchCountLimit) 实际不生效
+	// （仍返回精确总数）。移除误导性的 Limit 调用；如需限制超大日志表的计数成本，
+	// 应改用带上限的估算方案而非依赖此处的 Limit。
+	err = tx.Model(&Log{}).Count(&total).Error
 	if err != nil {
 		common.SysError("failed to count user logs: " + err.Error())
 		return nil, 0, errors.New("查询日志失败")

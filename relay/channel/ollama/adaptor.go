@@ -29,8 +29,9 @@ func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayIn
 	if err != nil {
 		return nil, err
 	}
+	streamIncludeUsage := true
 	openaiRequest.(*dto.GeneralOpenAIRequest).StreamOptions = &dto.StreamOptions{
-		IncludeUsage: true,
+		IncludeUsage: &streamIncludeUsage,
 	}
 	// map to ollama chat request (Claude -> OpenAI -> Ollama chat)
 	return openAIChatToOllamaChat(c, openaiRequest.(*dto.GeneralOpenAIRequest))

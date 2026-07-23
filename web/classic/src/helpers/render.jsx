@@ -784,13 +784,6 @@ export function renderNumber(num) {
   }
 }
 
-export function renderQuotaNumberWithDigit(num, digits = 2) {
-  if (typeof num !== 'number' || isNaN(num)) {
-    return 0;
-  }
-  return num.toFixed(digits);
-}
-
 export function renderNumberWithPoint(num) {
   if (num === undefined) return '';
   num = num.toFixed(2);
@@ -818,43 +811,6 @@ export function renderNumberWithPoint(num) {
 
   // If the number is less than 100,000, return it unmodified
   return num;
-}
-
-export function getQuotaPerUnit() {
-  let quotaPerUnit = localStorage.getItem('quota_per_unit');
-  quotaPerUnit = parseFloat(quotaPerUnit);
-  return quotaPerUnit;
-}
-
-export function renderUnitWithQuota(quota) {
-  let quotaPerUnit = localStorage.getItem('quota_per_unit');
-  quotaPerUnit = parseFloat(quotaPerUnit);
-  quota = parseFloat(quota);
-  return quotaPerUnit * quota;
-}
-
-export function getQuotaWithUnit(quota, digits = 6) {
-  let quotaPerUnit = localStorage.getItem('quota_per_unit');
-  quotaPerUnit = parseFloat(quotaPerUnit);
-  return (quota / quotaPerUnit).toFixed(digits);
-}
-
-export function renderQuotaWithAmount(amount) {
-  const numericAmount = Number(amount);
-  return Number.isFinite(numericAmount) ? renderNumber(numericAmount) : amount;
-}
-
-export function renderQuota(quota, digits = 2) {
-  const numericQuota = Number(quota);
-  if (!Number.isFinite(numericQuota)) return quota;
-  return renderNumber(numericQuota);
-}
-export function renderQuotaWithPrompt(quota, digits) {
-  const quotaDisplayType = localStorage.getItem('quota_display_type') || 'USD';
-  if (quotaDisplayType !== 'TOKENS') {
-    return i18next.t('等价金额：') + renderQuota(quota, digits);
-  }
-  return '';
 }
 
 export function rehypeSplitWordsIntoSpans(options = {}) {

@@ -1,7 +1,6 @@
 package model
 
 import (
-	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -110,6 +109,13 @@ func InitDB() (err error) {
 		sqlDB.SetMaxOpenConns(common.GetEnvOrDefault("SQL_MAX_OPEN_CONNS", 1000))
 		sqlDB.SetConnMaxLifetime(time.Second * time.Duration(common.GetEnvOrDefault("SQL_MAX_LIFETIME", 60)))
 
+		// SQLite 并发优化：启用 WAL 日志模式（读不阻塞写、写不阻塞读），显著降低高并发下的
+		// SQLITE_BUSY。journal_mode 是库文件级持久设置，执行一次即写入库文件头，对连接池中
+		// 后续连接同样生效。仅对本地 SQLite 有效，失败时仅告警、不致命。
+		if journalErr := DB.Exec("PRAGMA journal_mode=WAL;").Error; journalErr != nil {
+			common.SysError("failed to enable SQLite WAL mode: " + journalErr.Error())
+		}
+
 		if !common.IsMasterNode {
 			return nil
 		}
@@ -152,56 +158,6 @@ func migrateDB() error {
 	if err != nil {
 		return err
 	}
-	return nil
-}
-
-func migrateDBFast() error {
-
-	var wg sync.WaitGroup
-
-	migrations := []struct {
-		model interface{}
-		name  string
-	}{
-		{&Channel{}, "Channel"},
-		{&Token{}, "Token"},
-		{&User{}, "User"},
-		{&Option{}, "Option"},
-		{&Ability{}, "Ability"},
-		{&Log{}, "Log"},
-		{&QuotaData{}, "QuotaData"},
-		{&Model{}, "Model"},
-		{&Vendor{}, "Vendor"},
-		{&Setup{}, "Setup"},
-		{&TwoFA{}, "TwoFA"},
-		{&TwoFABackupCode{}, "TwoFABackupCode"},
-		{&Checkin{}, "Checkin"},
-		{&PerfMetric{}, "PerfMetric"},
-	}
-	// 动态计算migration数量，确保errChan缓冲区足够大
-	errChan := make(chan error, len(migrations))
-
-	for _, m := range migrations {
-		wg.Add(1)
-		go func(model interface{}, name string) {
-			defer wg.Done()
-			if err := DB.AutoMigrate(model); err != nil {
-				errChan <- fmt.Errorf("failed to migrate %s: %v", name, err)
-			}
-		}(m.model, m.name)
-	}
-
-	// Wait for all migrations to complete
-	wg.Wait()
-	close(errChan)
-
-	// Check for any errors
-	for err := range errChan {
-		if err != nil {
-			return err
-		}
-	}
-	common.SysLog("database migrated")
 	return nil
 }
 

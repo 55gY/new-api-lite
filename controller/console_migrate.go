@@ -3,7 +3,6 @@
 package controller
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/55gY/new-api-lite/common"
@@ -30,11 +29,11 @@ func MigrateConsoleSetting(c *gin.Context) {
 	// 处理 APIInfo
 	if v := valMap["ApiInfo"]; v != "" {
 		var arr []map[string]interface{}
-		if err := json.Unmarshal([]byte(v), &arr); err == nil {
+		if err := common.Unmarshal([]byte(v), &arr); err == nil {
 			if len(arr) > 50 {
 				arr = arr[:50]
 			}
-			bytes, _ := json.Marshal(arr)
+			bytes, _ := common.Marshal(arr)
 			model.UpdateOption("console_setting.api_info", string(bytes))
 		}
 		model.UpdateOption("ApiInfo", "")
@@ -47,7 +46,7 @@ func MigrateConsoleSetting(c *gin.Context) {
 	// FAQ 转换
 	if v := valMap["FAQ"]; v != "" {
 		var arr []map[string]interface{}
-		if err := json.Unmarshal([]byte(v), &arr); err == nil {
+		if err := common.Unmarshal([]byte(v), &arr); err == nil {
 			out := []map[string]interface{}{}
 			for _, item := range arr {
 				q, _ := item["question"].(string)
@@ -65,38 +64,13 @@ func MigrateConsoleSetting(c *gin.Context) {
 			if len(out) > 50 {
 				out = out[:50]
 			}
-			bytes, _ := json.Marshal(out)
+			bytes, _ := common.Marshal(out)
 			model.UpdateOption("console_setting.faq", string(bytes))
 		}
 		model.UpdateOption("FAQ", "")
 	}
-	// Uptime Kuma 迁移到新的 groups 结构（console_setting.uptime_kuma_groups）
-	url := valMap["UptimeKumaUrl"]
-	slug := valMap["UptimeKumaSlug"]
-	if url != "" && slug != "" {
-		// 仅当同时存在 URL 与 Slug 时才进行迁移
-		groups := []map[string]interface{}{
-			{
-				"id":           1,
-				"categoryName": "old",
-				"url":          url,
-				"slug":         slug,
-				"description":  "",
-			},
-		}
-		bytes, _ := json.Marshal(groups)
-		model.UpdateOption("console_setting.uptime_kuma_groups", string(bytes))
-	}
-	// 清空旧键内容
-	if url != "" {
-		model.UpdateOption("UptimeKumaUrl", "")
-	}
-	if slug != "" {
-		model.UpdateOption("UptimeKumaSlug", "")
-	}
-
 	// 删除旧键记录
-	oldKeys := []string{"ApiInfo", "Announcements", "FAQ", "UptimeKumaUrl", "UptimeKumaSlug"}
+	oldKeys := []string{"ApiInfo", "Announcements", "FAQ"}
 	model.DB.Where("key IN ?", oldKeys).Delete(&model.Option{})
 
 	// 重新加载 OptionMap

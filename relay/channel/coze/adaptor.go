@@ -1,13 +1,13 @@
 package coze
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"time"
 
+	commonpkg "github.com/55gY/new-api-lite/common"
 	"github.com/55gY/new-api-lite/dto"
 	"github.com/55gY/new-api-lite/relay/channel"
 	"github.com/55gY/new-api-lite/relay/common"
@@ -74,7 +74,7 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *common.RelayInfo, requestBody 
 	if err != nil {
 		return nil, err
 	}
-	err = json.Unmarshal(respBody, &cozeResponse)
+	err = commonpkg.Unmarshal(respBody, &cozeResponse)
 	if cozeResponse.Code != 0 {
 		return nil, errors.New(cozeResponse.Msg)
 	}

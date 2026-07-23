@@ -237,6 +237,20 @@
 - [x] Phase 9 完成后：读取本文件，并提示 Phase 10 的下一步内容。
 - [x] Phase 10 完成后：读取本文件，并汇总最终结果。
 
+## 本轮调整计划摘要（2026-07-22）：安全优化与代码健康度提升
+
+在保证现有功能安全可用的前提下，梳理可优化项并分级：
+
+- 已核实用户报告的「渠道·禁止自动测试」保存后重载关闭问题，当前 HEAD 已修复（`6f05eaf` 引入、`cb6572f`/`2316a5a`/`0338b56` 修复；`model/channel.go` 专用 `DisableAutoTest *int` 列、`controller/channel-test.go` 生效）。若线上仍复现为旧构建产物，需重新构建前端后再构建后端。
+- P0 正确性/安全：渠道表单 settings 往返闭包隐患（同族兄弟 bug）、relay 上行 DTO 显式零值（规则 5）、CORS 非法组合、SiderBar/SettingsMonitoring 闭包状态、upstream update 不存在列、渠道 BaseURL SSRF 校验。
+- P1 性能/稳定：SQLite WAL + 连接池、渠道选择热路径每请求 DB、日志分页双全扫、user.Insert 多余往返。
+- P2 代码健康/Lite 一致性：规则 1 JSON 合规、危险死代码（migrateDBFast）、孤立/死分支（uptime_kuma、checkin）、货币化残留清理、更新检查仓库修正。
+- P3 i18n：硬编码中文补 t() 与多语言。
+- P4（可选）：继续 `.plan/20260721-01.md` 的 P2/P3 relay 增强。
+
+> 状态：Phase A–F 已完成（含 2026-07-23 跟进的 H1 全量转换、Uptime Kuma 整体移除、H6 死 quota 清理），全部通过构建+测试+冒烟。仅 I1 完整翻译与 Phase G 可选功能留待后续。详见 .plan/20260722-01.md。
+
 ## 详细计划索引
 
 - [.plan/20260721-01.md](.plan/20260721-01.md) — relay层安全修复与功能增强移植计划（进行中）
+- [.plan/20260722-01.md](.plan/20260722-01.md) — 安全优化与代码健康度提升计划（Phase A–F 已完成并验证，含 H1 全量/Uptime 整体移除/H6 清理；仅 I1 翻译与 Phase G 可选项留待后续）

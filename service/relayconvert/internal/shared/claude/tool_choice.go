@@ -38,7 +38,8 @@ func MapOpenAIToolChoice(toolChoice any, parallelToolCalls *bool) *dto.ClaudeToo
 			}
 		}
 		if claudeToolChoice.Type != "none" {
-			claudeToolChoice.DisableParallelToolUse = !*parallelToolCalls
+			disableParallel := !*parallelToolCalls
+			claudeToolChoice.DisableParallelToolUse = &disableParallel
 		}
 	}
 

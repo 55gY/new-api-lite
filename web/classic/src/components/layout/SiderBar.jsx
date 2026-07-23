@@ -17,9 +17,10 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { StatusContext } from '../../context/Status';
 import { getLucideIcon } from '../../helpers/render';
 import { ChevronLeft } from 'lucide-react';
 import { useSidebarCollapsed } from '../../hooks/common/useSidebarCollapsed';
@@ -44,6 +45,7 @@ const routerMap = {
 
 const SiderBar = ({ onNavigate = () => {} }) => {
   const { t } = useTranslation();
+  const [statusState] = useContext(StatusContext);
   const [collapsed, toggleCollapsed] = useSidebarCollapsed();
   const {
     isModuleVisible,
@@ -57,16 +59,19 @@ const SiderBar = ({ onNavigate = () => {} }) => {
   const [openedKeys, setOpenedKeys] = useState([]);
   const location = useLocation();
 
+  // 使用 StatusContext（响应式）而非直接读取 localStorage：
+  // localStorage 不是响应式的，放入 useMemo 依赖不会在其变化时触发重算，
+  // 会导致会话中开关数据看板导出后侧边栏可见性不更新。
+  const dataExportEnabled =
+    String(statusState?.status?.enable_data_export) === 'true';
+
   const workspaceItems = useMemo(() => {
     const items = [
       {
         text: t('数据看板'),
         itemKey: 'detail',
         to: '/detail',
-        className:
-          localStorage.getItem('enable_data_export') === 'true'
-            ? ''
-            : 'tableHiddle',
+        className: dataExportEnabled ? '' : 'tableHiddle',
       },
       {
         text: t('令牌管理'),
@@ -87,11 +92,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
     });
 
     return filteredItems;
-  }, [
-    localStorage.getItem('enable_data_export'),
-    t,
-    isModuleVisible,
-  ]);
+  }, [dataExportEnabled, t, isModuleVisible]);
 
   const financeItems = useMemo(() => {
     const items = [

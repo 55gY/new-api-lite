@@ -30,7 +30,6 @@ import { createSectionTitle } from '../../helpers/dashboard';
 
 export const useDashboardStats = (
   userState,
-  consumeQuota,
   consumeTokens,
   times,
   trendData,

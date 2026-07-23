@@ -2,7 +2,6 @@ package model
 
 import (
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -73,7 +72,7 @@ func (user *User) SetAccessToken(token string) {
 func (user *User) GetSetting() dto.UserSetting {
 	setting := dto.UserSetting{}
 	if user.Setting != "" {
-		err := json.Unmarshal([]byte(user.Setting), &setting)
+		err := common.Unmarshal([]byte(user.Setting), &setting)
 		if err != nil {
 			common.SysLog("failed to unmarshal setting: " + err.Error())
 		}
@@ -82,7 +81,7 @@ func (user *User) GetSetting() dto.UserSetting {
 }
 
 func (user *User) SetSetting(setting dto.UserSetting) {
-	settingBytes, err := json.Marshal(setting)
+	settingBytes, err := common.Marshal(setting)
 	if err != nil {
 		common.SysLog("failed to marshal setting: " + err.Error())
 		return
@@ -351,18 +350,18 @@ func (user *User) Insert(inviterId int) error {
 		return result.Error
 	}
 
-	// 用户创建成功后，根据角色初始化边栏配置
-	// 需要重新获取用户以确保有正确的ID和Role
-	var createdUser User
-	if err := DB.Where("username = ?", user.Username).First(&createdUser).Error; err == nil {
-		// 生成基于角色的默认边栏配置
-		defaultSidebarConfig := generateDefaultSidebarConfigForRole(createdUser.Role)
-		if defaultSidebarConfig != "" {
-			currentSetting := createdUser.GetSetting()
-			currentSetting.SidebarModules = defaultSidebarConfig
-			createdUser.SetSetting(currentSetting)
-			createdUser.Update(false)
-			common.SysLog(fmt.Sprintf("为新用户 %s (角色: %d) 初始化边栏配置", createdUser.Username, createdUser.Role))
+	// 用户创建成功后，根据角色初始化边栏配置。
+	// 直接使用刚创建的 user（Create 后已填充 Id 与调用方设置的 Role），
+	// 避免多余的按 username 二次查询。
+	defaultSidebarConfig := generateDefaultSidebarConfigForRole(user.Role)
+	if defaultSidebarConfig != "" {
+		currentSetting := user.GetSetting()
+		currentSetting.SidebarModules = defaultSidebarConfig
+		user.SetSetting(currentSetting)
+		if err := user.Update(false); err != nil {
+			common.SysError("failed to init sidebar config for new user: " + err.Error())
+		} else {
+			common.SysLog(fmt.Sprintf("为新用户 %s (角色: %d) 初始化边栏配置", user.Username, user.Role))
 		}
 	}
 

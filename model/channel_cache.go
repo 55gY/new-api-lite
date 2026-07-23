@@ -185,6 +185,11 @@ func filterDisabledModels(channelIDs []int, model string) []int {
 		return channelIDs
 	}
 
+	// 热路径优化：一次性批量查询这些渠道在该模型上被标记为不可用（自动禁用）的能力，
+	// 避免此前对每个候选渠道各查询一次数据库（每个 relay 请求会产生 N 次查询）。
+	// 仍为实时读取数据库，不引入缓存陈旧风险。
+	unavailableChannels := getUnavailableAbilityChannels(channelIDs, model)
+
 	filtered := make([]int, 0, len(channelIDs))
 	for _, channelID := range channelIDs {
 		channel, ok := channelsIDM[channelID]
@@ -195,10 +200,8 @@ func filterDisabledModels(channelIDs []int, model string) []int {
 		if channel.Status != common.ChannelStatusEnabled {
 			continue
 		}
-		// 检查 ability 表中该模型的状态
-		ability := getAbilityStatus(channelID, model)
-		if ability != nil && ability.TestStatus == AbilityTestStatusUnavailable {
-			// 该模型已标记为不可用（自动禁用），跳过
+		// 该模型已标记为不可用（自动禁用），跳过
+		if unavailableChannels[channelID] {
 			continue
 		}
 		filtered = append(filtered, channelID)
@@ -206,15 +209,27 @@ func filterDisabledModels(channelIDs []int, model string) []int {
 	return filtered
 }
 
-// getAbilityStatus 获取指定渠道和模型的能力状态（从缓存或数据库）
-func getAbilityStatus(channelID int, model string) *Ability {
-	// 简化实现：直接查询数据库
-	var ability Ability
-	err := DB.Where("channel_id = ? AND model = ?", channelID, model).First(&ability).Error
-	if err != nil {
-		return nil
+// getUnavailableAbilityChannels 批量返回在指定模型上 test_status 为不可用的渠道 ID 集合。
+// 用单次查询替代逐渠道查询；查询出错时返回空集合（行为退化为不过滤，与原逐条查询出错返回 nil 一致）。
+func getUnavailableAbilityChannels(channelIDs []int, model string) map[int]bool {
+	result := make(map[int]bool, len(channelIDs))
+	if len(channelIDs) == 0 {
+		return result
 	}
-	return &ability
+	var rows []struct {
+		ChannelId int `gorm:"column:channel_id"`
+	}
+	err := DB.Model(&Ability{}).
+		Where("channel_id IN ? AND model = ? AND test_status = ?", channelIDs, model, AbilityTestStatusUnavailable).
+		Select("channel_id").
+		Find(&rows).Error
+	if err != nil {
+		return result
+	}
+	for _, r := range rows {
+		result[r.ChannelId] = true
+	}
+	return result
 }
 
 func getChannelsForModel(groupModelChannels map[string]map[string][]int, group string, model string) []int {

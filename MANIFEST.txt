@@ -1,0 +1,150 @@
+new-api-lite —— 本次会话改动清单
+基线提交(HEAD): 4699ea0
+生成时间: 2026-07-23 08:33:51 CST
+
+================================================================
+内容说明
+================================================================
+本压缩包按项目目录结构保存了本次会话「调整过的文件」(修改+新增)，
+用于你在本地手动验证。三种使用方式任选其一：
+
+  A) 直接覆盖：将本目录下的项目文件(controller/、model/、web/、dto/ 等
+     以及 plan.md、.plan/)覆盖到你本地仓库对应路径；并按“已删除文件”手动删除 2 个文件。
+  B) 应用补丁：在你本地仓库根目录执行  git apply changes.patch  (或 git apply --3way changes.patch)
+     —— 该补丁已包含修改/新增/删除(含 2 个删除)，最完整。补丁基线为上面的 HEAD。
+  C) 仅审阅：直接阅读 changes.patch。
+
+注意：git 里 .agents/skills/i18n-translate/SKILL.md 只是 CRLF→LF 行尾归一化，
+并非本次内容改动，已从压缩包与补丁中排除。
+
+================================================================
+已删除文件(方式 A 时请在本地手动删除这 2 个)
+================================================================
+  - controller/uptime_kuma.go
+  - web/classic/src/helpers/quota.js
+
+================================================================
+本次会话调整/新增文件(85 个)
+================================================================
+  .plan/20260722-01.md
+  controller/channel-test.go
+  controller/channel.go
+  controller/channel_upstream_update.go
+  controller/console_migrate.go
+  controller/deployment.go
+  controller/misc.go
+  controller/option.go
+  controller/user.go
+  dto/claude.go
+  dto/embedding.go
+  dto/openai_image.go
+  dto/openai_request.go
+  dto/openai_response.go
+  dto/rule5_pointer_test.go
+  dto/values.go
+  middleware/cors.go
+  middleware/turnstile-check.go
+  model/channel_cache.go
+  model/checkin.go
+  model/log.go
+  model/main.go
+  model/user.go
+  pkg/cachex/codec.go
+  pkg/ionet/client.go
+  pkg/ionet/container.go
+  pkg/ionet/deployment.go
+  pkg/ionet/hardware.go
+  pkg/ionet/jsonutil.go
+  plan.md
+  relay/channel/ali/adaptor.go
+  relay/channel/ali/rerank.go
+  relay/channel/aws/dto.go
+  relay/channel/aws/relay-aws.go
+  relay/channel/baidu/relay-baidu.go
+  relay/channel/claude/relay-claude.go
+  relay/channel/cloudflare/relay_cloudflare.go
+  relay/channel/cohere/relay-cohere.go
+  relay/channel/coze/adaptor.go
+  relay/channel/coze/relay-coze.go
+  relay/channel/dify/relay-dify.go
+  relay/channel/gemini/relay-gemini.go
+  relay/channel/jimeng/adaptor.go
+  relay/channel/jimeng/image.go
+  relay/channel/jimeng/sign.go
+  relay/channel/mokaai/relay-mokaai.go
+  relay/channel/ollama/adaptor.go
+  relay/channel/ollama/relay-ollama.go
+  relay/channel/ollama/stream.go
+  relay/channel/openai/adaptor.go
+  relay/channel/palm/relay-palm.go
+  relay/channel/replicate/adaptor.go
+  relay/channel/siliconflow/relay-siliconflow.go
+  relay/channel/tencent/relay-tencent.go
+  relay/channel/vertex/adaptor.go
+  relay/channel/vertex/service_account.go
+  relay/channel/xunfei/relay-xunfei.go
+  relay/channel/zhipu/relay-zhipu.go
+  relay/compatible_handler.go
+  service/codex_oauth.go
+  service/convert.go
+  service/download.go
+  service/relayconvert/internal/oai_chat/to_claude_messages_req.go
+  service/relayconvert/internal/oai_chat/to_oai_responses_req.go
+  service/relayconvert/internal/shared/claude/tool_choice.go
+  service/user_notify.go
+  service/webhook.go
+  setting/chat.go
+  setting/config/config.go
+  setting/console_setting/config.go
+  setting/console_setting/validation.go
+  setting/rate_limit.go
+  setting/ratio_setting/group_ratio.go
+  setting/user_usable_group.go
+  web/classic/src/components/dashboard/index.jsx
+  web/classic/src/components/layout/SiderBar.jsx
+  web/classic/src/components/settings/OtherSetting.jsx
+  web/classic/src/components/settings/SystemSetting.jsx
+  web/classic/src/components/table/channels/modals/EditChannelModal.jsx
+  web/classic/src/constants/dashboard.constants.js
+  web/classic/src/helpers/dashboard.jsx
+  web/classic/src/helpers/data.js
+  web/classic/src/helpers/render.jsx
+  web/classic/src/hooks/dashboard/useDashboardStats.jsx
+  web/classic/src/pages/Setting/Operation/SettingsMonitoring.jsx
+
+================================================================
+本地验证步骤(与容器内一致)
+================================================================
+后端(Go 1.25.1，go.mod 要求)：
+  export CGO_ENABLED=0
+  # 无嵌入前端也可编译校验：
+  go build -tags noembed ./...
+  go test  -tags noembed ./...
+  # 正式(内嵌前端)构建需先构建前端产物到 web/classic/dist：
+  go build ./...
+  go build -ldflags="-s -w" -trimpath -o new-api-lite .
+
+前端(项目优先 Bun；无 Bun 时用 npm)：
+  cd web/classic
+  bun install && bun run build
+  # 或(无 bun)：
+  npm install --legacy-peer-deps          # 依赖存在 peer 冲突，需 --legacy-peer-deps
+  NODE_OPTIONS=--max-old-space-size=3584 npx vite build   # 构建内存需 >2GB，故调大堆
+
+冒烟：
+  启动后 /api/status 返回 200；/ (SPA) 200；/v1/models 未授权 401；
+  确认 /api/status 响应中已无 uptime_kuma_enabled；SQLite 生成 one-api.db-wal(WAL 生效)。
+
+================================================================
+本次会话改动摘要(详见 .plan/20260722-01.md)
+================================================================
+Phase A 后端正确性/安全：C2 relay DTO 指针化(+Rule5 单测) / C3 CORS 去非法 AllowCredentials /
+  C6 移除 upstream 更新不存在的 tag 列(SQLite 会报错的真实修复) / C7 渠道 BaseURL SSRF 校验。
+Phase B 前端正确性：C1 渠道 settings 往返改从表单读取(消除过期闭包丢设置) /
+  C4 SiderBar 改 StatusContext 响应式 / C5 SettingsMonitoring 函数式 setState / H8 去开关冗余 initValue。
+Phase C 性能/稳定：P1 SQLite WAL / P2 渠道选择热路径 N→1 批量查询 / P3 去无效 Limit / P4 user.Insert 精简。
+Phase D 健康度：H2 删 migrateDBFast / H4 删 checkin 死分支 / H5 删坏死 2FA 辅助 /
+  H6 额度默认 TOKENS+去支付文案+删死 quota 函数/文件+去 consumeQuota 死参 / H7 更新检查指向本 fork /
+  H3 Uptime Kuma 休眠功能整体移除(前后端)。
+Phase E 规则1：H1 全部业务代码 json.Marshal/Unmarshal/NewDecoder → common.*(全量覆盖)。
+Phase F i18n：I1 代表性(OtherSetting toasts)；完整多语言翻译留待后续。

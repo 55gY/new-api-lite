@@ -126,14 +126,6 @@ export const ANNOUNCEMENT_LEGEND_DATA = [
   { color: 'red', label: '异常', type: 'error' },
 ];
 
-// ========== Uptime 状态映射 ==========
-export const UPTIME_STATUS_MAP = {
-  1: { color: '#10b981', label: '正常', text: '可用率' }, // UP
-  0: { color: '#ef4444', label: '异常', text: '有异常' }, // DOWN
-  2: { color: '#f59e0b', label: '高延迟', text: '高延迟' }, // PENDING
-  3: { color: '#3b82f6', label: '维护中', text: '维护中' }, // MAINTENANCE
-};
-
 // ========== 本地存储键名 ==========
 export const STORAGE_KEYS = {
   DATA_EXPORT_DEFAULT_TIME: 'data_export_default_time',
