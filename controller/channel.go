@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -18,7 +20,6 @@ import (
 	"github.com/55gY/new-api-lite/relay/channel/gemini"
 	"github.com/55gY/new-api-lite/relay/channel/ollama"
 	"github.com/55gY/new-api-lite/service"
-	"github.com/55gY/new-api-lite/setting/system_setting"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -434,6 +435,43 @@ func validateTwoFactorAuth(twoFA *model.TwoFA, code string) bool {
 	return false
 }
 
+// validateChannelBaseURLSafety 校验渠道 BaseURL 是否指向云实例元数据/链路本地地址。
+//
+// 设计取舍：
+//   - 只拦截 169.254.0.0/16、fe80::/10 等链路本地地址与已知元数据域名——这些是真实的 SSRF
+//     攻击目标（例如读取云厂商实例凭据），且不存在合法的上游会部署在那里；
+//   - 不限制端口，也不禁止内网/回环地址：管理员把渠道指向自建上游（局域网 IP、127.0.0.1、
+//     非标准端口）是常规部署方式，拦截会造成误伤；
+//   - 不对域名做 DNS 解析后再判定：避免引入额外延迟与解析结果不一致的问题。
+func validateChannelBaseURLSafety(rawBaseURL string) error {
+	baseURL := strings.TrimSpace(rawBaseURL)
+	if baseURL == "" {
+		return nil
+	}
+	parsed, err := url.Parse(baseURL)
+	if err != nil {
+		// 解析失败交由后续流程处理，这里不额外报错
+		return nil
+	}
+	host := strings.ToLower(strings.TrimSpace(parsed.Hostname()))
+	if host == "" {
+		return nil
+	}
+	// 已知云厂商元数据域名
+	switch host {
+	case "metadata.google.internal", "metadata.goog":
+		return fmt.Errorf("渠道 BaseURL 不能指向云实例元数据服务（%s）", host)
+	}
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return nil
+	}
+	if ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
+		return fmt.Errorf("渠道 BaseURL 不能指向链路本地/实例元数据地址（%s）", host)
+	}
+	return nil
+}
+
 // validateChannel 通用的渠道校验函数
 func validateChannel(channel *model.Channel, isAdd bool) error {
 	// 校验 channel settings
@@ -441,14 +479,14 @@ func validateChannel(channel *model.Channel, isAdd bool) error {
 		return fmt.Errorf("渠道额外设置[channel setting] 格式错误：%s", err.Error())
 	}
 
-	// SSRF 防护：校验管理员填写的渠道 BaseURL，避免被用于探测内网/元数据服务。
-	// 仅在系统开启 SSRF 防护时实际生效（未开启时 ValidateURLWithFetchSetting 直接返回 nil）。
+	// 安全校验：只拦截指向云实例元数据/链路本地地址的 BaseURL（典型 SSRF 目标）。
+	//
+	// 注意：这里刻意 **不** 复用 ValidateURLWithFetchSetting。那套配置面向的是用户提交的
+	// 下载/回调 URL，默认仅允许 80/443/8080/8443 且禁止内网地址；而渠道 BaseURL 由管理员
+	// 填写，自建上游使用局域网地址或非标准端口是完全正常的用法，套用该规则会大面积误伤。
 	if channel.BaseURL != nil {
-		if baseURL := strings.TrimSpace(*channel.BaseURL); baseURL != "" {
-			fetchSetting := system_setting.GetFetchSetting()
-			if err := common.ValidateURLWithFetchSetting(baseURL, fetchSetting.EnableSSRFProtection, fetchSetting.AllowPrivateIp, fetchSetting.DomainFilterMode, fetchSetting.IpFilterMode, fetchSetting.DomainList, fetchSetting.IpList, fetchSetting.AllowedPorts, fetchSetting.ApplyIPFilterForDomain); err != nil {
-				return fmt.Errorf("渠道 BaseURL 未通过 SSRF 安全校验：%s", err.Error())
-			}
+		if err := validateChannelBaseURLSafety(*channel.BaseURL); err != nil {
+			return err
 		}
 	}
 

@@ -2195,6 +2195,28 @@ const EditChannelModal = (props) => {
                           >
                             {t('填入透传模版')}
                           </Text>
+                          {/* 部分上游（自建中转/网关）会按客户端身份放行，默认的 Go-http-client
+                              会被判定为未授权客户端，这里提供一键填入 Claude Code 客户端身份 */}
+                          <Text
+                            className='!text-semi-color-primary cursor-pointer'
+                            onClick={() =>
+                              handleInputChange(
+                                'header_override',
+                                JSON.stringify(
+                                  {
+                                    'User-Agent': 'claude-cli/2.1.39 (external, cli)',
+                                    'x-app': 'cli',
+                                    'anthropic-beta':
+                                      'claude-code-20250219,oauth-2025-04-20',
+                                  },
+                                  null,
+                                  2,
+                                ),
+                              )
+                            }
+                          >
+                            {t('填入 Claude Code 客户端头')}
+                          </Text>
                           <Text
                             className='!text-semi-color-primary cursor-pointer'
                             onClick={() => formatJsonField('header_override')}

@@ -192,11 +192,355 @@ index 0000000..2693c33
 +- [ ] Phase D 完成后：汇报并提示 Phase E。
 +- [ ] Phase E 完成后：汇报并提示 Phase F。
 +- [ ] Phase F 完成后：汇报并提示 Phase G（或收尾）。
+diff --git a/.plan/20260731-01.md b/.plan/20260731-01.md
+new file mode 100644
+index 0000000..1d4f919
+--- /dev/null
++++ b/.plan/20260731-01.md
+@@ -0,0 +1,145 @@
++# 渠道测试报错定位与测试报错中文化计划
++
++> 状态：**已完成并验证**（后端构建 + 全量测试 + 真实上游实测）
++
++## 执行规则
++
++- 遵循 AGENTS.md：规则 1（JSON 走 common/json.go 封装）、规则 2（仅 SQLite）、规则 7/8（禁止引入计费/额度/音视频/任务）、规则 9（计划记录）。
++- 绝对安全优先：不改变正常 JSON/SSE 响应的既有行为，仅在明确的网页响应场景增加拦截与说明。
++
++## 问题背景（用户报告）
++
++渠道测试返回 `invalid character '<' looking for beginning of value`，且需要把测试相关英文报错改为中文说明，并实测给定上游为何失败。
++
++- 上游 BaseURL：`https://agentrouter.org/v1`、`https://ps.air-outer.com/v1`
++- 端点类型：OpenAI；测试模型：`claude-opus-4-8` / `claude-opus-4-7` / `claude-opus-4-6`
++
++## 根因（已实测确认）
++
++两个上游对本服务器的请求**返回 HTTP 200 + `Content-Type: text/html`**，响应体是**阿里云 WAF 滑块人机验证页**
++（特征：`aliyun_waf_aa`、`initAliyunCaptcha`、`sceneId`、"访问验证"）。
++
++- 因为状态码是 200，网关不会走错误分支（`service.RelayErrorHandler` 未触发），
++  直接在 `relay/channel/openai/relay-openai.go:217` 执行 `common.Unmarshal(responseBody, &simpleResponse)`；
++- Go 的 JSON 解析器读到首字符 `<` 即报 `invalid character '<' looking for beginning of value`；
++- 该原始错误经 `controller/channel-test.go` 的 `TestChannel` 原样回显到前端，故使用者只看到晦涩的英文。
++
++实测结论：2 个域名 × 3 个模型 = 6/6 组合全部被 WAF 拦截；GET `/v1/models`、根路径、无鉴权请求同样返回验证页，
++说明与密钥、模型名无关，是**出口 IP 被上游 WAF 要求人机验证**。两域名 WAF 指纹（`aliyun_waf_aa` 值、userId）一致，属同一后端。
++
++## 改动内容
++
++| File | Change | 说明 |
++| --- | --- | --- |
++| `controller/channel_test_error_i18n.go` | create | 测试报错中文化模块：错误模式→中文说明表；网页响应提前拦截；常见拦截页特征识别 |
++| `controller/channel_test_error_i18n_test.go` | create | 单测：HTML/状态码/网络类错误中文化、真实 WAF 页样本识别、JSON/SSE 不被误伤、nil 安全 |
++| `controller/channel-test.go` | modify | 1) 200+网页响应提前拦截并给出中文说明；2) 26 处英文报错改中文；3) 输出与测试记录统一走中文化 |
++
++### 关键实现
++
++1. `detectNonJSONUpstreamResponse(resp)`：在 `DoResponse` 之前，仅当 `Content-Type` 为 `text/html` /
++   `application/xhtml+xml` 时判定为网页响应，返回中文说明（含状态码、Content-Type、响应片段）。
++   **只拦截明确的网页类型**，JSON、SSE(`text/event-stream`)、`text/plain`、无 Content-Type、二进制均不受影响。
++2. `describeKnownInterceptPage(preview)`：识别阿里云 WAF、Cloudflare、通用 captcha、404、502/504、nginx 默认页，
++   给出更精准的中文原因与处置建议。
++3. `LocalizeChannelTestErrorText(raw)`：模式匹配（由具体到宽泛）翻译为中文，**并在末尾保留 `（原始错误：…）`**，
++   不丢失排查信息；未命中模式（含已中文化文本）原样返回。
++   覆盖：非 JSON/JSON 截断/字段类型不符、401/403/404/429/500/502/503/504、
++   DNS 解析失败、连接被拒/被重置、超时（context deadline / Client.Timeout / i/o timeout）、
++   TLS 握手与证书、代理连接、EOF、模型不存在、参数不合法、usage 缺失、流式响应异常等。
++4. `TestChannel` 与 `testAllChannels`：回显给前端的 `message`、写入 ability 测试记录的原因、
++   以及自动禁用原因，统一使用中文化文本。
++
++### 遵循约束
++
++- 未引入任何计费/额度/倍率逻辑（规则 7），未触碰音视频/任务（规则 8）。
++- 未新增 `encoding/json` 直接调用（规则 1）；未涉及数据库结构变更（规则 2）。
++
++## Verify
++
++- [x] `go build -tags noembed ./...` 通过；`go build ./...`（内嵌）与主二进制构建通过（约 52MB）
++- [x] `go vet ./controller/...` 通过
++- [x] `go test ./...` 全量通过（含新增 7 个中文化/拦截单测）
++- [x] 真实上游实测：6/6 组合均被识别为「阿里云 WAF 人机验证页」，输出中文说明而非 `invalid character '<'`
++
++## 追加发现（同日，用户本机实测）
++
++用户在本机运行时得到的是**应用层 401**，而非 WAF 网页：
++
++```
++bad response status code 401, message: unauthorized client detected, ...
++body: {"error":{"message":"unauthorized client detected, ..."},
++       "message":"UNAUTHENTICATED","success":false,"type":"unauthorized_client_error"}
++```
++
++结论修正：本项目所在沙箱出口 IP 被上游 WAF 挑战（拿不到应用层响应，故只观察到 HTML 验证页）；
++而用户本机可穿过 WAF 到达应用层，上游应用层**明确拒绝“非指定客户端”的调用**
++（`type=unauthorized_client_error`）。即该上游存在**反中转/反网关**策略，
++只允许其文档列出的指定客户端直接调用；这既不是密钥问题，也不是本网关配置问题。
++
++因此两层现象都真实存在，只是观察位置不同：
++- 网络层（WAF 挑战）→ 表现为 `invalid character '<'`（已由本次网页响应拦截解决说明问题）；
++- 应用层（客户端限制）→ 表现为 401 `unauthorized_client_error`。
++
++补充改动：在中文化规则表中，把 `unauthorized_client` / `unauthorized client` / `client not allowed`
++规则**排在 401/403 规则之前**，避免被误判为“密钥无效”，并明确提示这是上游的客户端/中转限制。
++新增单测 `TestLocalizeChannelTestErrorTextUnauthorizedClient` 使用真实报错原文做回归保护。
++
++## 使用者侧处置建议（非代码问题）
++
++1. 让上游把服务器出口 IP 加入白名单，或关闭该 WAF 人机验证；
++2. 本地用 `curl -i <BaseURL>/chat/completions` 确认返回是否为网页；
++3. 顺带核对 BaseURL 是否重复/缺少 `/v1`；
++4. 确认 `claude-opus-4-8/-7/-6` 在上游确实存在（WAF 放行后才能验证）。
++
++## Risks / Rollback
++
++- 风险：若某上游以 `text/html` 返回**合法 JSON**（极少见且不符合规范），会被判为网页响应。
++  缓解：仅匹配网页类 MIME，且错误信息附带响应片段便于识别；如需放行可移除该 Content-Type 判定。
++- 回滚：删除 `controller/channel_test_error_i18n*.go`，并还原 `controller/channel-test.go` 的三处输出与拦截改动。
++
++
++## 追加（2026-08-02）：路径 B 落地验证 + C7 回归修复
++
++### 背景
++用户上游服务端为其自有部署（第三方一键封装版），与 new-api-lite **不在同一台服务器**，
++无法修改上游程序，需通过网关侧「请求头覆盖」呈现上游期望的客户端身份来完成对接。
++
++### 发现并修复：C7 引入的回归（重要）
++`.plan/20260722-01.md` 的 C7 曾直接复用 `common.ValidateURLWithFetchSetting` 校验渠道 BaseURL。
++但该配置默认值为 `EnableSSRFProtection=true`、`AllowedPorts=[80,443,8080,8443]`、`AllowPrivateIp=false`，
++面向的是「用户提交的下载/回调 URL」。套用到**管理员填写的渠道 BaseURL** 会大面积误伤：
++自建上游使用局域网地址、`127.0.0.1` 或非标准端口（如 `:3000`、`:9999`）是常规部署方式。
++
++实测复现：创建 `base_url=http://127.0.0.1:9999` 的渠道被拒——
++`渠道 BaseURL 未通过 SSRF 安全校验：port 9999 is not allowed`。
++
++修复：改为 `controller/channel.go` 中新增的 `validateChannelBaseURLSafety`，
++**只拦截链路本地/云实例元数据地址**（169.254.0.0/16、fe80::/10、metadata.google.internal、metadata.goog），
++不限制端口、不禁止内网/回环地址、不对域名做 DNS 解析。
++新增 `controller/channel_baseurl_safety_test.go` 双向回归保护（放行自建上游 / 拦截元数据地址）。
++
++### 路径 B 端到端验证（真实实例 + 本地回显上游）
++搭建回显上游（记录收到的请求头）+ 启动真实 new-api-lite 实例，走完整渠道测试链路：
++
++| 渠道类型 | 端点类型 | 上游实际收到的 path | 鉴权头 | UA 覆盖 | 结果 |
++| --- | --- | --- | --- | --- | --- |
++| OpenAI(type=1) | openai | `/v1/chat/completions` | `Authorization: Bearer` | ✅ 生效 | success:true |
++| Anthropic(type=14) | anthropic | `/v1/messages` | `X-Api-Key` | ✅ 生效 | success:true |
++
++上游收到的头（示例）：
++```
++User-Agent: claude-cli/2.1.39 (external, cli)
++X-App: cli
++Anthropic-Version: 2023-06-01
++Anthropic-Beta: claude-code-20250219,oauth-2025-04-20
++```
++
++结论：`header_override` 在 `SetupRequestHeader` 之后应用（优先级最高），
++可覆盖 `User-Agent` 等任意头，且**渠道测试路径同样生效**。
++注意：渠道测试时会跳过 `{client_header:...}` 占位符与 `*` / `re:` 透传规则，故须填**静态值**。
++
++### Verify
++- [x] `go build`（noembed + embed）通过
++- [x] `go test ./...` 全量通过（含新增 BaseURL 安全校验双向单测）
++- [x] 真实实例端到端：两种端点类型均 success:true，且上游确认收到覆盖后的请求头
 diff --git a/controller/channel-test.go b/controller/channel-test.go
-index 000d18a..f82376e 100644
+index 000d18a..0d54b02 100644
 --- a/controller/channel-test.go
 +++ b/controller/channel-test.go
-@@ -755,7 +755,7 @@ func buildTestRequest(model string, endpointType string, channel *model.Channel,
+@@ -67,10 +67,10 @@ func resolveChannelTestUserID(c *gin.Context) (int, error) {
+ 
+ 	var rootUser model.User
+ 	if err := model.DB.Select("id").Where("role = ?", common.RoleRootUser).First(&rootUser).Error; err != nil {
+-		return 0, fmt.Errorf("failed to resolve channel test user: %w", err)
++		return 0, fmt.Errorf("获取渠道测试所需的用户信息失败：%w", err)
+ 	}
+ 	if rootUser.Id == 0 {
+-		return 0, errors.New("failed to resolve channel test user")
++		return 0, errors.New("获取渠道测试所需的用户信息失败：未找到可用的管理员用户")
+ 	}
+ 	return rootUser.Id, nil
+ }
+@@ -95,7 +95,7 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
+ 	if lo.Contains(unsupportedTestChannelTypes, channel.Type) {
+ 		channelTypeName := constant.GetChannelTypeName(channel.Type)
+ 		return testResult{
+-			localErr: fmt.Errorf("%s channel test is not supported", channelTypeName),
++			localErr: fmt.Errorf("暂不支持测试 %s 类型的渠道", channelTypeName),
+ 		}
+ 	}
+ 	w := httptest.NewRecorder()
+@@ -283,16 +283,16 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
+ 		apiType != constant.APITypeCodex {
+ 		return testResult{
+ 			context:     c,
+-			localErr:    fmt.Errorf("responses compaction test only supports openai/codex channels, got api type %d", apiType),
+-			newAPIError: types.NewError(fmt.Errorf("unsupported api type: %d", apiType), types.ErrorCodeInvalidApiType),
++			localErr:    fmt.Errorf("responses 压缩接口测试仅支持 openai/codex 类型渠道，当前渠道的 API 类型为 %d", apiType),
++			newAPIError: types.NewError(fmt.Errorf("不支持的 API 类型：%d", apiType), types.ErrorCodeInvalidApiType),
+ 		}
+ 	}
+ 	adaptor := relay.GetAdaptor(apiType)
+ 	if adaptor == nil {
+ 		return testResult{
+ 			context:     c,
+-			localErr:    fmt.Errorf("invalid api type: %d, adaptor is nil", apiType),
+-			newAPIError: types.NewError(fmt.Errorf("invalid api type: %d, adaptor is nil", apiType), types.ErrorCodeInvalidApiType),
++			localErr:    fmt.Errorf("无效的 API 类型：%d，未找到对应的渠道适配器", apiType),
++			newAPIError: types.NewError(fmt.Errorf("无效的 API 类型：%d，未找到对应的渠道适配器", apiType), types.ErrorCodeInvalidApiType),
+ 		}
+ 	}
+ 
+@@ -322,8 +322,8 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
+ 		} else {
+ 			return testResult{
+ 				context:     c,
+-				localErr:    errors.New("invalid embedding request type"),
+-				newAPIError: types.NewError(errors.New("invalid embedding request type"), types.ErrorCodeConvertRequestFailed),
++				localErr:    errors.New("embedding 测试请求类型不正确"),
++				newAPIError: types.NewError(errors.New("embedding 测试请求类型不正确"), types.ErrorCodeConvertRequestFailed),
+ 			}
+ 		}
+ 	case relayconstant.RelayModeImagesGenerations:
+@@ -333,8 +333,8 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
+ 		} else {
+ 			return testResult{
+ 				context:     c,
+-				localErr:    errors.New("invalid image request type"),
+-				newAPIError: types.NewError(errors.New("invalid image request type"), types.ErrorCodeConvertRequestFailed),
++				localErr:    errors.New("图像生成测试请求类型不正确"),
++				newAPIError: types.NewError(errors.New("图像生成测试请求类型不正确"), types.ErrorCodeConvertRequestFailed),
+ 			}
+ 		}
+ 	case relayconstant.RelayModeRerank:
+@@ -344,8 +344,8 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
+ 		} else {
+ 			return testResult{
+ 				context:     c,
+-				localErr:    errors.New("invalid rerank request type"),
+-				newAPIError: types.NewError(errors.New("invalid rerank request type"), types.ErrorCodeConvertRequestFailed),
++				localErr:    errors.New("rerank 测试请求类型不正确"),
++				newAPIError: types.NewError(errors.New("rerank 测试请求类型不正确"), types.ErrorCodeConvertRequestFailed),
+ 			}
+ 		}
+ 	case relayconstant.RelayModeResponses:
+@@ -355,8 +355,8 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
+ 		} else {
+ 			return testResult{
+ 				context:     c,
+-				localErr:    errors.New("invalid response request type"),
+-				newAPIError: types.NewError(errors.New("invalid response request type"), types.ErrorCodeConvertRequestFailed),
++				localErr:    errors.New("responses 测试请求类型不正确"),
++				newAPIError: types.NewError(errors.New("responses 测试请求类型不正确"), types.ErrorCodeConvertRequestFailed),
+ 			}
+ 		}
+ 	case relayconstant.RelayModeResponsesCompact:
+@@ -374,8 +374,8 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
+ 		default:
+ 			return testResult{
+ 				context:     c,
+-				localErr:    errors.New("invalid response compaction request type"),
+-				newAPIError: types.NewError(errors.New("invalid response compaction request type"), types.ErrorCodeConvertRequestFailed),
++				localErr:    errors.New("responses 压缩测试请求类型不正确"),
++				newAPIError: types.NewError(errors.New("responses 压缩测试请求类型不正确"), types.ErrorCodeConvertRequestFailed),
+ 			}
+ 		}
+ 	default:
+@@ -385,8 +385,8 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
+ 		} else {
+ 			return testResult{
+ 				context:     c,
+-				localErr:    errors.New("invalid general request type"),
+-				newAPIError: types.NewError(errors.New("invalid general request type"), types.ErrorCodeConvertRequestFailed),
++				localErr:    errors.New("对话测试请求类型不正确"),
++				newAPIError: types.NewError(errors.New("对话测试请求类型不正确"), types.ErrorCodeConvertRequestFailed),
+ 			}
+ 		}
+ 	}
+@@ -465,6 +465,20 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
+ 				newAPIError: types.NewOpenAIError(err, types.ErrorCodeBadResponse, http.StatusInternalServerError),
+ 			}
+ 		}
++		// 状态码为 200 但返回网页内容（常见于 WAF/人机验证拦截页、反代错误页、BaseURL 指向网页），
++		// 提前拦截并给出明确说明，避免后续按 JSON 解析时抛出难以理解的 `invalid character '<'`。
++		if nonJSONErr := detectNonJSONUpstreamResponse(httpResp); nonJSONErr != nil {
++			common.SysError(fmt.Sprintf(
++				"channel test non-json response: channel_id=%d name=%s type=%d model=%s endpoint_type=%s status=%d content_type=%s",
++				channel.Id, channel.Name, channel.Type, testModel, endpointType,
++				httpResp.StatusCode, httpResp.Header.Get("Content-Type"),
++			))
++			return testResult{
++				context:     c,
++				localErr:    nonJSONErr,
++				newAPIError: types.NewOpenAIError(nonJSONErr, types.ErrorCodeBadResponseBody, http.StatusInternalServerError),
++			}
++		}
+ 	}
+ 	usageA, respErr := adaptor.DoResponse(c, httpResp, info)
+ 	if respErr != nil {
+@@ -538,7 +552,7 @@ func coerceTestUsage(usageAny any, isStream bool, estimatePromptTokens int) (*dt
+ 		return &u, nil
+ 	case nil:
+ 		if !isStream {
+-			return nil, errors.New("usage is nil")
++			return nil, errors.New("上游未返回用量（usage）信息")
+ 		}
+ 		usage := &dto.Usage{
+ 			PromptTokens: estimatePromptTokens,
+@@ -547,7 +561,7 @@ func coerceTestUsage(usageAny any, isStream bool, estimatePromptTokens int) (*dt
+ 		return usage, nil
+ 	default:
+ 		if !isStream {
+-			return nil, fmt.Errorf("invalid usage type: %T", usageAny)
++			return nil, fmt.Errorf("上游返回的用量（usage）类型不正确：%T", usageAny)
+ 		}
+ 		usage := &dto.Usage{
+ 			PromptTokens: estimatePromptTokens,
+@@ -585,7 +599,7 @@ func detectErrorFromTestResponseBody(respBody []byte) error {
+ 		return nil
+ 	}
+ 	if message := detectErrorMessageFromJSONBytes(b); message != "" {
+-		return fmt.Errorf("upstream error: %s", message)
++		return fmt.Errorf("上游返回错误：%s", message)
+ 	}
+ 
+ 	for _, line := range bytes.Split(b, []byte{'\n'}) {
+@@ -601,7 +615,7 @@ func detectErrorFromTestResponseBody(respBody []byte) error {
+ 			continue
+ 		}
+ 		if message := detectErrorMessageFromJSONBytes(payload); message != "" {
+-			return fmt.Errorf("upstream error: %s", message)
++			return fmt.Errorf("上游返回错误：%s", message)
+ 		}
+ 	}
+ 
+@@ -611,7 +625,7 @@ func detectErrorFromTestResponseBody(respBody []byte) error {
+ func validateStreamTestResponseBody(respBody []byte) error {
+ 	b := bytes.TrimSpace(respBody)
+ 	if len(b) == 0 {
+-		return errors.New("stream response body is empty")
++		return errors.New("流式响应内容为空")
+ 	}
+ 
+ 	for _, line := range bytes.Split(b, []byte{'\n'}) {
+@@ -627,7 +641,7 @@ func validateStreamTestResponseBody(respBody []byte) error {
+ 		return nil
+ 	}
+ 
+-	return errors.New("stream response body does not contain a valid stream event")
++	return errors.New("流式响应中没有有效的流事件")
+ }
+ 
+ func validateTestResponseBody(respBody []byte, isStream bool) error {
+@@ -648,7 +662,7 @@ func autoDisableChannelIfAllModelsUnavailable(channel *model.Channel, testedMode
+ 	if channel == nil || !channel.GetAutoBan() {
+ 		return
+ 	}
+-	reason := fmt.Sprintf("all channel models are unavailable after testing model %s", testedModel)
++	reason := fmt.Sprintf("测试模型 %s 后，该渠道所有模型均不可用", testedModel)
+ 	if strings.TrimSpace(testError) != "" {
+ 		reason = fmt.Sprintf("%s: %s", reason, testError)
+ 	}
+@@ -755,7 +769,7 @@ func buildTestRequest(model string, endpointType string, channel *model.Channel,
  				MaxTokens: lo.ToPtr(maxTokens),
  			}
  			if isStream {
@@ -205,7 +549,7 @@ index 000d18a..f82376e 100644
  			}
  			return req
  		}
-@@ -811,7 +811,7 @@ func buildTestRequest(model string, endpointType string, channel *model.Channel,
+@@ -811,7 +825,7 @@ func buildTestRequest(model string, endpointType string, channel *model.Channel,
  		},
  	}
  	if isStream {
@@ -214,37 +558,135 @@ index 000d18a..f82376e 100644
  	}
  
  	if strings.HasPrefix(model, "o") {
+@@ -863,11 +877,13 @@ func TestChannel(c *gin.Context) {
+ 		testedModel = strings.TrimSpace(testModel)
+ 	}
+ 	if result.localErr != nil {
+-		_ = model.UpdateAbilityTestResultAndStatus(channel.Id, testedModel, model.AbilityTestStatusUnavailable, 0, result.localErr.Error(), "", common.ChannelStatusAutoDisabled)
+-		autoDisableChannelIfAllModelsUnavailable(channel, testedModel, result.localErr.Error())
++		// 统一转换为中文说明后再回显给前端并写入测试记录
++		localizedMessage := localizeChannelTestError(result.localErr)
++		_ = model.UpdateAbilityTestResultAndStatus(channel.Id, testedModel, model.AbilityTestStatusUnavailable, 0, localizedMessage, "", common.ChannelStatusAutoDisabled)
++		autoDisableChannelIfAllModelsUnavailable(channel, testedModel, localizedMessage)
+ 		resp := gin.H{
+ 			"success": false,
+-			"message": result.localErr.Error(),
++			"message": localizedMessage,
+ 			"time":    0.0,
+ 		}
+ 		if result.newAPIError != nil {
+@@ -881,11 +897,13 @@ func TestChannel(c *gin.Context) {
+ 	go channel.UpdateResponseTime(milliseconds)
+ 	consumedTime := float64(milliseconds) / 1000.0
+ 	if result.newAPIError != nil {
+-		_ = model.UpdateAbilityTestResultAndStatus(channel.Id, testedModel, model.AbilityTestStatusUnavailable, int(milliseconds), result.newAPIError.Error(), "", common.ChannelStatusAutoDisabled)
+-		autoDisableChannelIfAllModelsUnavailable(channel, testedModel, result.newAPIError.Error())
++		// 统一转换为中文说明后再回显给前端并写入测试记录
++		localizedMessage := localizeChannelTestError(result.newAPIError)
++		_ = model.UpdateAbilityTestResultAndStatus(channel.Id, testedModel, model.AbilityTestStatusUnavailable, int(milliseconds), localizedMessage, "", common.ChannelStatusAutoDisabled)
++		autoDisableChannelIfAllModelsUnavailable(channel, testedModel, localizedMessage)
+ 		c.JSON(http.StatusOK, gin.H{
+ 			"success":    false,
+-			"message":    result.newAPIError.Error(),
++			"message":    localizedMessage,
+ 			"time":       consumedTime,
+ 			"error_code": result.newAPIError.GetErrorCode(),
+ 		})
+@@ -979,11 +997,13 @@ func testAllChannels(notify bool) error {
+ 					testedModel = testModel
+ 				}
+ 				if result.localErr != nil {
+-					_ = model.UpdateAbilityTestResultAndStatus(channel.Id, testedModel, model.AbilityTestStatusUnavailable, int(milliseconds), result.localErr.Error(), "", common.ChannelStatusAutoDisabled)
+-					lastUnavailableReason = result.localErr.Error()
++					localizedMessage := localizeChannelTestError(result.localErr)
++					_ = model.UpdateAbilityTestResultAndStatus(channel.Id, testedModel, model.AbilityTestStatusUnavailable, int(milliseconds), localizedMessage, "", common.ChannelStatusAutoDisabled)
++					lastUnavailableReason = localizedMessage
+ 				} else if result.newAPIError != nil {
+-					_ = model.UpdateAbilityTestResultAndStatus(channel.Id, testedModel, model.AbilityTestStatusUnavailable, int(milliseconds), result.newAPIError.Error(), "", common.ChannelStatusAutoDisabled)
+-					lastUnavailableReason = result.newAPIError.Error()
++					localizedMessage := localizeChannelTestError(result.newAPIError)
++					_ = model.UpdateAbilityTestResultAndStatus(channel.Id, testedModel, model.AbilityTestStatusUnavailable, int(milliseconds), localizedMessage, "", common.ChannelStatusAutoDisabled)
++					lastUnavailableReason = localizedMessage
+ 				} else if common.AutomaticDisableChannelEnabled && milliseconds > disableThreshold {
+ 					err := fmt.Errorf("响应时间 %.2fs 超过阈值 %.2fs", float64(milliseconds)/1000.0, float64(disableThreshold)/1000.0)
+ 					_ = model.UpdateAbilityTestResultAndStatus(channel.Id, testedModel, model.AbilityTestStatusUnavailable, int(milliseconds), err.Error(), result.responseText, common.ChannelStatusAutoDisabled)
 diff --git a/controller/channel.go b/controller/channel.go
-index ff1c9aa..e2c819e 100644
+index ff1c9aa..469fb3b 100644
 --- a/controller/channel.go
 +++ b/controller/channel.go
-@@ -18,6 +18,7 @@ import (
- 	"github.com/55gY/new-api-lite/relay/channel/gemini"
- 	"github.com/55gY/new-api-lite/relay/channel/ollama"
- 	"github.com/55gY/new-api-lite/service"
-+	"github.com/55gY/new-api-lite/setting/system_setting"
+@@ -5,7 +5,9 @@ import (
+ 	"encoding/json"
+ 	"fmt"
+ 	"io"
++	"net"
+ 	"net/http"
++	"net/url"
+ 	"strconv"
+ 	"strings"
+ 	"time"
+@@ -433,6 +435,43 @@ func validateTwoFactorAuth(twoFA *model.TwoFA, code string) bool {
+ 	return false
+ }
  
- 	"github.com/gin-gonic/gin"
- 	"gorm.io/gorm"
-@@ -440,6 +441,17 @@ func validateChannel(channel *model.Channel, isAdd bool) error {
++// validateChannelBaseURLSafety 校验渠道 BaseURL 是否指向云实例元数据/链路本地地址。
++//
++// 设计取舍：
++//   - 只拦截 169.254.0.0/16、fe80::/10 等链路本地地址与已知元数据域名——这些是真实的 SSRF
++//     攻击目标（例如读取云厂商实例凭据），且不存在合法的上游会部署在那里；
++//   - 不限制端口，也不禁止内网/回环地址：管理员把渠道指向自建上游（局域网 IP、127.0.0.1、
++//     非标准端口）是常规部署方式，拦截会造成误伤；
++//   - 不对域名做 DNS 解析后再判定：避免引入额外延迟与解析结果不一致的问题。
++func validateChannelBaseURLSafety(rawBaseURL string) error {
++	baseURL := strings.TrimSpace(rawBaseURL)
++	if baseURL == "" {
++		return nil
++	}
++	parsed, err := url.Parse(baseURL)
++	if err != nil {
++		// 解析失败交由后续流程处理，这里不额外报错
++		return nil
++	}
++	host := strings.ToLower(strings.TrimSpace(parsed.Hostname()))
++	if host == "" {
++		return nil
++	}
++	// 已知云厂商元数据域名
++	switch host {
++	case "metadata.google.internal", "metadata.goog":
++		return fmt.Errorf("渠道 BaseURL 不能指向云实例元数据服务（%s）", host)
++	}
++	ip := net.ParseIP(host)
++	if ip == nil {
++		return nil
++	}
++	if ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
++		return fmt.Errorf("渠道 BaseURL 不能指向链路本地/实例元数据地址（%s）", host)
++	}
++	return nil
++}
++
+ // validateChannel 通用的渠道校验函数
+ func validateChannel(channel *model.Channel, isAdd bool) error {
+ 	// 校验 channel settings
+@@ -440,6 +479,17 @@ func validateChannel(channel *model.Channel, isAdd bool) error {
  		return fmt.Errorf("渠道额外设置[channel setting] 格式错误：%s", err.Error())
  	}
  
-+	// SSRF 防护：校验管理员填写的渠道 BaseURL，避免被用于探测内网/元数据服务。
-+	// 仅在系统开启 SSRF 防护时实际生效（未开启时 ValidateURLWithFetchSetting 直接返回 nil）。
++	// 安全校验：只拦截指向云实例元数据/链路本地地址的 BaseURL（典型 SSRF 目标）。
++	//
++	// 注意：这里刻意 **不** 复用 ValidateURLWithFetchSetting。那套配置面向的是用户提交的
++	// 下载/回调 URL，默认仅允许 80/443/8080/8443 且禁止内网地址；而渠道 BaseURL 由管理员
++	// 填写，自建上游使用局域网地址或非标准端口是完全正常的用法，套用该规则会大面积误伤。
 +	if channel.BaseURL != nil {
-+		if baseURL := strings.TrimSpace(*channel.BaseURL); baseURL != "" {
-+			fetchSetting := system_setting.GetFetchSetting()
-+			if err := common.ValidateURLWithFetchSetting(baseURL, fetchSetting.EnableSSRFProtection, fetchSetting.AllowPrivateIp, fetchSetting.DomainFilterMode, fetchSetting.IpFilterMode, fetchSetting.DomainList, fetchSetting.IpList, fetchSetting.AllowedPorts, fetchSetting.ApplyIPFilterForDomain); err != nil {
-+				return fmt.Errorf("渠道 BaseURL 未通过 SSRF 安全校验：%s", err.Error())
-+			}
++		if err := validateChannelBaseURLSafety(*channel.BaseURL); err != nil {
++			return err
 +		}
 +	}
 +
  	// 如果是添加操作，检查 channel 和 key 是否为空
  	if isAdd {
  		if channel == nil || channel.Key == "" {
-@@ -548,7 +560,7 @@ func getVertexArrayKeys(keys string) ([]string, error) {
+@@ -548,7 +598,7 @@ func getVertexArrayKeys(keys string) ([]string, error) {
  		case string:
  			keyStr = strings.TrimSpace(v)
  		default:
@@ -253,7 +695,7 @@ index ff1c9aa..e2c819e 100644
  			if err != nil {
  				return nil, fmt.Errorf("Vertex AI key JSON 编码失败: %w", err)
  			}
-@@ -813,7 +825,7 @@ func UpdateChannel(c *gin.Context) {
+@@ -813,7 +863,7 @@ func UpdateChannel(c *gin.Context) {
  				if strings.HasPrefix(strings.TrimSpace(originChannel.Key), "[") {
  					// JSON数组格式
  					var arr []json.RawMessage
@@ -262,7 +704,7 @@ index ff1c9aa..e2c819e 100644
  						existingKeys = make([]string, len(arr))
  						for i, v := range arr {
  							existingKeys[i] = string(v)
-@@ -1923,7 +1935,7 @@ func OllamaPullModelStream(c *gin.Context) {
+@@ -1923,7 +1973,7 @@ func OllamaPullModelStream(c *gin.Context) {
  
  	// 创建进度回调函数
  	progressCallback := func(progress ollama.OllamaPullResponse) {
@@ -271,7 +713,7 @@ index ff1c9aa..e2c819e 100644
  		fmt.Fprintf(c.Writer, "data: %s\n\n", string(data))
  		c.Writer.Flush()
  	}
-@@ -1932,12 +1944,12 @@ func OllamaPullModelStream(c *gin.Context) {
+@@ -1932,12 +1982,12 @@ func OllamaPullModelStream(c *gin.Context) {
  	err = ollama.PullOllamaModelStream(baseURL, key, req.ModelName, progressCallback)
  
  	if err != nil {
@@ -286,6 +728,526 @@ index ff1c9aa..e2c819e 100644
  			"message": fmt.Sprintf("Model %s pulled successfully", req.ModelName),
  		})
  		fmt.Fprintf(c.Writer, "data: %s\n\n", string(successData))
+diff --git a/controller/channel_baseurl_safety_test.go b/controller/channel_baseurl_safety_test.go
+new file mode 100644
+index 0000000..2b6af42
+--- /dev/null
++++ b/controller/channel_baseurl_safety_test.go
+@@ -0,0 +1,47 @@
++package controller
++
++import (
++	"strings"
++	"testing"
++)
++
++// 渠道 BaseURL 安全校验：只拦截云实例元数据/链路本地地址，
++// 不得误伤自建上游（局域网 IP、回环地址、非标准端口）。
++func TestValidateChannelBaseURLSafetyAllowsSelfHostedUpstreams(t *testing.T) {
++	allowed := []string{
++		"",                                // 未填写
++		"https://api.openai.com/v1",       // 公网标准端口
++		"http://127.0.0.1:3000",           // 本机自建上游
++		"http://127.0.0.1:9999/v1",        // 本机非标准端口
++		"http://192.168.1.50:3000/v1",     // 局域网自建上游
++		"http://10.0.0.8:8317",            // 内网非标准端口
++		"http://172.16.5.4:23000/v1",      // 内网非标准端口
++		"https://relay.example.com:23000", // 公网域名 + 非标准端口
++		"http://localhost:3000",           // localhost
++		"not a url",                       // 非法 URL 交由后续流程处理
++	}
++	for _, u := range allowed {
++		if err := validateChannelBaseURLSafety(u); err != nil {
++			t.Fatalf("BaseURL %q 属于合法自建/常规用法，不应被拦截，实际报错：%v", u, err)
++		}
++	}
++}
++
++func TestValidateChannelBaseURLSafetyBlocksMetadataEndpoints(t *testing.T) {
++	blocked := []string{
++		"http://169.254.169.254/latest/meta-data/", // AWS/阿里云等实例元数据
++		"http://169.254.169.254",
++		"http://[fe80::1]/v1",                  // IPv6 链路本地
++		"http://metadata.google.internal/v1",   // GCP 元数据域名
++		"http://metadata.goog/computeMetadata", // GCP 备用域名
++	}
++	for _, u := range blocked {
++		err := validateChannelBaseURLSafety(u)
++		if err == nil {
++			t.Fatalf("BaseURL %q 指向实例元数据/链路本地地址，应被拦截", u)
++		}
++		if !strings.Contains(err.Error(), "元数据") && !strings.Contains(err.Error(), "链路本地") {
++			t.Fatalf("BaseURL %q 的报错应说明原因，实际：%v", u, err)
++		}
++	}
++}
+diff --git a/controller/channel_test_error_i18n.go b/controller/channel_test_error_i18n.go
+new file mode 100644
+index 0000000..8b3fe72
+--- /dev/null
++++ b/controller/channel_test_error_i18n.go
+@@ -0,0 +1,295 @@
++package controller
++
++import (
++	"fmt"
++	"io"
++	"mime"
++	"net/http"
++	"strings"
++)
++
++// 渠道测试错误信息中文化。
++//
++// 背景：渠道测试失败时，底层返回的多是 Go 运行时/上游原始英文错误
++// （例如 `invalid character '<' looking for beginning of value`），
++// 对使用者不友好且难以定位。这里统一把测试相关的英文报错翻译成中文说明，
++// 并给出常见原因提示，同时在末尾保留原始错误，便于进一步排查。
++
++// channelTestErrorExplanation 一条错误匹配规则。
++// keywords 全部命中（不区分大小写）才算匹配，便于表达“既包含 A 又包含 B”的组合条件。
++type channelTestErrorExplanation struct {
++	keywords []string
++	message  string
++}
++
++// channelTestErrorExplanations 按“由具体到宽泛”的顺序匹配，命中第一条即返回。
++var channelTestErrorExplanations = []channelTestErrorExplanation{
++	// —— 响应体不是 JSON ——
++	{
++		keywords: []string{"invalid character '<'"},
++		message:  "上游返回的是 HTML 页面而不是 JSON 数据，说明请求没有真正到达接口。常见原因：BaseURL 配置错误（多写或少写 /v1、结尾多了斜杠）、上游启用了人机验证/WAF 拦截（返回验证页）、被反向代理挡下返回了 404/502 等错误页。可用 curl 直接请求该地址，查看返回的是否为网页内容。",
++	},
++	{
++		keywords: []string{"looking for beginning of value"},
++		message:  "上游返回的内容不是合法 JSON，无法解析。请确认 BaseURL 指向的是 API 接口而非网页，且上游未返回验证页或错误页。",
++	},
++	{
++		keywords: []string{"unexpected end of json input"},
++		message:  "上游返回的 JSON 不完整（可能被截断或连接提前中断）。请检查网络稳定性、反向代理超时设置，或上游是否异常断开。",
++	},
++	{
++		keywords: []string{"cannot unmarshal"},
++		message:  "上游返回的 JSON 结构与预期不一致（字段类型不符）。可能是该上游并非标准 OpenAI 兼容格式，或端点类型选择有误。",
++	},
++
++	// —— 客户端/调用方被上游限制（必须排在 401/403 之前，否则会被误判为密钥问题）——
++	{
++		keywords: []string{"unauthorized_client"},
++		message:  "上游拒绝了调用方客户端（unauthorized client）：该服务只允许其指定的客户端直接调用，不接受经由中转/网关（本项目即属于此类）转发的请求。这不是密钥错误，也不是本网关配置错误。请改用上游文档中支持的客户端直接调用，或联系上游确认是否允许网关中转、能否为你的用途开通权限。",
++	},
++	{
++		keywords: []string{"unauthorized client"},
++		message:  "上游拒绝了调用方客户端（unauthorized client）：该服务只允许其指定的客户端直接调用，不接受经由中转/网关转发的请求。这不是密钥错误。请改用上游支持的客户端，或联系上游确认中转授权。",
++	},
++	{
++		keywords: []string{"client not allowed"},
++		message:  "上游拒绝了调用方客户端：该服务限制了允许调用的客户端类型，当前以网关中转方式调用被拒绝。请联系上游确认授权方式。",
++	},
++
++	// —— HTTP 状态码类 ——
++	{
++		keywords: []string{"status code 401"},
++		message:  "上游返回 401 未授权：密钥无效、已过期或格式不正确。请检查渠道密钥是否填写正确、是否包含多余空格。",
++	},
++	{
++		keywords: []string{"status code 403"},
++		message:  "上游返回 403 拒绝访问：密钥无该模型/接口权限，或来源 IP 被上游限制。",
++	},
++	{
++		keywords: []string{"status code 404"},
++		message:  "上游返回 404 接口不存在：BaseURL 或端点类型配置有误（例如应填到 /v1 而未填、或重复了 /v1）。",
++	},
++	{
++		keywords: []string{"status code 429"},
++		message:  "上游返回 429 请求过于频繁：已触发上游限流，请降低测试频率或稍后重试。",
++	},
++	{
++		keywords: []string{"status code 500"},
++		message:  "上游返回 500 内部错误：上游服务自身异常，请稍后重试或联系上游。",
++	},
++	{
++		keywords: []string{"status code 502"},
++		message:  "上游返回 502 网关错误：上游或其反向代理不可用。",
++	},
++	{
++		keywords: []string{"status code 503"},
++		message:  "上游返回 503 服务不可用：上游暂时过载或维护中。",
++	},
++	{
++		keywords: []string{"status code 504"},
++		message:  "上游返回 504 网关超时：上游处理超时。",
++	},
++
++	// —— 网络/传输类 ——
++	{
++		keywords: []string{"no such host"},
++		message:  "域名解析失败：BaseURL 中的域名无法解析，请检查域名拼写与服务器 DNS 配置。",
++	},
++	{
++		keywords: []string{"connection refused"},
++		message:  "连接被拒绝：目标地址或端口未开放，请检查 BaseURL 的地址与端口、以及上游是否在运行。",
++	},
++	{
++		keywords: []string{"connection reset by peer"},
++		message:  "连接被对端重置：可能被上游防火墙/WAF 主动断开，或网络链路不稳定。",
++	},
++	{
++		keywords: []string{"context deadline exceeded"},
++		message:  "请求超时：上游在超时时间内未响应。可适当调大超时设置，或检查网络与上游负载。",
++	},
++	{
++		keywords: []string{"client.timeout"},
++		message:  "请求超时：等待上游响应超过客户端超时时间。",
++	},
++	{
++		keywords: []string{"i/o timeout"},
++		message:  "网络读写超时：与上游之间的连接超时，请检查网络连通性与代理设置。",
++	},
++	{
++		keywords: []string{"tls: handshake"},
++		message:  "TLS 握手失败：可能是协议版本/加密套件不兼容，或中间设备拦截了 HTTPS 连接。",
++	},
++	{
++		keywords: []string{"x509"},
++		message:  "TLS 证书校验失败：上游证书不受信任或已过期（自签证书需在服务器信任该证书）。",
++	},
++	{
++		keywords: []string{"certificate"},
++		message:  "TLS 证书异常：请检查上游证书是否有效、域名是否匹配。",
++	},
++	{
++		keywords: []string{"proxyconnect"},
++		message:  "代理连接失败：渠道配置的代理不可用，请检查代理地址与凭据。",
++	},
++	{
++		keywords: []string{"unexpected eof"},
++		message:  "连接被意外中断：上游在返回完整响应前关闭了连接。",
++	},
++
++	// —— 模型/参数类 ——
++	{
++		keywords: []string{"model_not_found"},
++		message:  "上游报告模型不存在：请确认该模型名在上游确实可用，以及是否需要通过模型重定向映射为上游的真实模型名。",
++	},
++	{
++		keywords: []string{"model", "not found"},
++		message:  "上游报告模型不存在或不可用：请确认模型名拼写，以及该密钥是否有权访问此模型。",
++	},
++	{
++		keywords: []string{"does not exist"},
++		message:  "上游报告所请求的对象不存在（通常是模型名不正确）。请核对模型名或配置模型重定向。",
++	},
++	{
++		keywords: []string{"invalid_request_error"},
++		message:  "上游报告请求参数不合法：请检查模型名、端点类型与参数覆盖设置。",
++	},
++
++	// —— 测试流程自身 ——
++	{
++		keywords: []string{"usage is nil"},
++		message:  "上游未返回用量（usage）信息：非流式响应缺少 usage 字段，可能该上游不兼容标准返回格式。",
++	},
++	{
++		keywords: []string{"stream response body is empty"},
++		message:  "流式响应内容为空：上游未返回任何流式数据。",
++	},
++	{
++		keywords: []string{"does not contain a valid stream event"},
++		message:  "流式响应中没有有效的流事件：返回内容不符合 SSE 流式格式，请确认上游是否支持流式输出。",
++	},
++	{
++		keywords: []string{"upstream error"},
++		message:  "上游返回了错误信息。",
++	},
++}
++
++// LocalizeChannelTestErrorText 把渠道测试的原始错误文本转换为中文说明。
++// 未匹配到已知模式时原样返回，避免丢失信息。
++func LocalizeChannelTestErrorText(raw string) string {
++	trimmed := strings.TrimSpace(raw)
++	if trimmed == "" {
++		return ""
++	}
++
++	lower := strings.ToLower(trimmed)
++	for _, item := range channelTestErrorExplanations {
++		matched := true
++		for _, kw := range item.keywords {
++			if !strings.Contains(lower, kw) {
++				matched = false
++				break
++			}
++		}
++		if matched {
++			return fmt.Sprintf("%s（原始错误：%s）", item.message, trimmed)
++		}
++	}
++	return trimmed
++}
++
++// localizeChannelTestError 是 LocalizeChannelTestErrorText 的 error 版本封装。
++func localizeChannelTestError(err error) string {
++	if err == nil {
++		return ""
++	}
++	return LocalizeChannelTestErrorText(err.Error())
++}
++
++const (
++	// nonJSONUpstreamSniffBytes 用于识别拦截页特征时读取的字节数（越多越容易命中特征）。
++	nonJSONUpstreamSniffBytes = 1024
++	// nonJSONUpstreamPreviewRunes 最终展示给使用者的响应片段长度（避免提示过长）。
++	nonJSONUpstreamPreviewRunes = 160
++)
++
++// truncateRunes 按字符数截断并在超长时追加省略号，避免截断多字节字符。
++func truncateRunes(s string, limit int) string {
++	runes := []rune(s)
++	if len(runes) <= limit {
++		return s
++	}
++	return string(runes[:limit]) + "…"
++}
++
++// detectNonJSONUpstreamResponse 在解析响应前先判断上游是否返回了网页等非 API 内容。
++//
++// 典型场景：上游被 WAF/人机验证拦截，或 BaseURL 指向了网页，此时会返回
++// Content-Type 为 text/html 的页面，且状态码可能仍是 200，
++// 后续按 JSON 解析就会得到 `invalid character '<'` 这类难以理解的报错。
++// 这里提前拦截并给出明确的中文说明与响应片段。
++func detectNonJSONUpstreamResponse(resp *http.Response) error {
++	if resp == nil {
++		return nil
++	}
++	rawContentType := resp.Header.Get("Content-Type")
++	if rawContentType == "" {
++		return nil
++	}
++	mediaType, _, err := mime.ParseMediaType(rawContentType)
++	if err != nil {
++		mediaType = strings.ToLower(strings.TrimSpace(strings.Split(rawContentType, ";")[0]))
++	}
++	mediaType = strings.ToLower(mediaType)
++
++	// 仅对明确的网页类响应做拦截，避免误伤 JSON / SSE / 二进制等正常返回。
++	if mediaType != "text/html" && mediaType != "application/xhtml+xml" {
++		return nil
++	}
++
++	sniffed := ""
++	if resp.Body != nil {
++		if data, readErr := io.ReadAll(io.LimitReader(resp.Body, nonJSONUpstreamSniffBytes)); readErr == nil {
++			sniffed = strings.TrimSpace(string(data))
++		}
++		// 该响应必定无法作为 API 结果使用，直接关闭，避免连接泄漏。
++		_ = resp.Body.Close()
++	}
++	// 特征识别用较长的内容，展示给使用者的片段做截断
++	preview := truncateRunes(strings.Join(strings.Fields(sniffed), " "), nonJSONUpstreamPreviewRunes)
++
++	message := fmt.Sprintf(
++		"上游返回的是网页内容（Content-Type: %s，HTTP 状态码 %d）而不是 JSON 接口数据，请求没有真正到达 API。"+
++			"常见原因：BaseURL 配置错误（多写或少写 /v1）、上游启用了人机验证或 WAF 拦截（返回验证页）、"+
++			"被反向代理挡下返回了错误页、或服务器出口 IP 被上游限制。",
++		rawContentType, resp.StatusCode,
++	)
++	if sniffed != "" {
++		if hint := describeKnownInterceptPage(sniffed); hint != "" {
++			message += hint
++		}
++		message += fmt.Sprintf("响应片段：%s", preview)
++	}
++	return fmt.Errorf("%s", message)
++}
++
++// describeKnownInterceptPage 识别常见的拦截页特征，给出更精准的中文提示。
++func describeKnownInterceptPage(preview string) string {
++	lower := strings.ToLower(preview)
++	switch {
++	case strings.Contains(lower, "aliyun_waf") || strings.Contains(lower, "aliyuncaptcha"):
++		return "检测到阿里云 WAF 人机验证页：上游已对本服务器的请求要求滑块验证，程序无法自动通过。" +
++			"请联系上游将服务器出口 IP 加入白名单或关闭该验证。"
++	case strings.Contains(lower, "cf-browser-verification") || strings.Contains(lower, "cloudflare"):
++		return "检测到 Cloudflare 人机验证/拦截页：上游要求浏览器验证，程序无法自动通过。" +
++			"请联系上游放行本服务器出口 IP。"
++	case strings.Contains(lower, "captcha") || strings.Contains(lower, "verification"):
++		return "检测到人机验证页：上游要求完成验证，程序无法自动通过。"
++	case strings.Contains(lower, "<title>404") || strings.Contains(lower, "not found"):
++		return "检测到 404 页面：接口路径不存在，请检查 BaseURL 与端点类型配置。"
++	case strings.Contains(lower, "502 bad gateway") || strings.Contains(lower, "504 gateway"):
++		return "检测到网关错误页：上游或其反向代理不可用。"
++	case strings.Contains(lower, "nginx") || strings.Contains(lower, "openresty"):
++		return "检测到反向代理默认页：请求被反向代理处理而未转发到 API 服务。"
++	}
++	return ""
++}
+diff --git a/controller/channel_test_error_i18n_test.go b/controller/channel_test_error_i18n_test.go
+new file mode 100644
+index 0000000..2a85b8b
+--- /dev/null
++++ b/controller/channel_test_error_i18n_test.go
+@@ -0,0 +1,160 @@
++package controller
++
++import (
++	"io"
++	"net/http"
++	"strings"
++	"testing"
++)
++
++// 真实复现样本：上游被阿里云 WAF 拦截时返回的滑块验证页（状态码 200、Content-Type: text/html）。
++const aliyunWAFPageSample = `<!doctypehtml><meta charset="UTF-8"><meta name="aliyun_waf_aa"content="ff926c7f07e45e2e487a29a6197d3460">` +
++	`<title></title><script>initAliyunCaptcha(e)</script><div>访问验证</div>`
++
++func newTestResponse(statusCode int, contentType string, body string) *http.Response {
++	header := make(http.Header)
++	if contentType != "" {
++		header.Set("Content-Type", contentType)
++	}
++	return &http.Response{
++		StatusCode: statusCode,
++		Header:     header,
++		Body:       io.NopCloser(strings.NewReader(body)),
++	}
++}
++
++func TestLocalizeChannelTestErrorTextHTMLResponse(t *testing.T) {
++	raw := "invalid character '<' looking for beginning of value"
++	got := LocalizeChannelTestErrorText(raw)
++
++	if !strings.Contains(got, "HTML") {
++		t.Fatalf("期望说明中包含 HTML 关键信息，实际：%s", got)
++	}
++	if !strings.Contains(got, "BaseURL") {
++		t.Fatalf("期望说明中包含 BaseURL 排查提示，实际：%s", got)
++	}
++	// 必须保留原始错误，便于进一步排查
++	if !strings.Contains(got, raw) {
++		t.Fatalf("期望保留原始错误，实际：%s", got)
++	}
++}
++
++func TestLocalizeChannelTestErrorTextStatusCodes(t *testing.T) {
++	cases := map[string]string{
++		"bad response status code 401": "401",
++		"bad response status code 404": "404",
++		"bad response status code 429": "429",
++	}
++	for raw, want := range cases {
++		got := LocalizeChannelTestErrorText(raw)
++		if !strings.Contains(got, want) {
++			t.Fatalf("原始错误 %q 期望包含 %q，实际：%s", raw, want, got)
++		}
++		if got == raw {
++			t.Fatalf("原始错误 %q 未被中文化", raw)
++		}
++	}
++}
++
++// 真实样本：上游应用层拒绝“非指定客户端”的调用（状态码 401，但原因不是密钥无效）。
++func TestLocalizeChannelTestErrorTextUnauthorizedClient(t *testing.T) {
++	raw := `bad response status code 401, message: unauthorized client detected, contact support for assistance at https://discord.gg/aYq5B4RW3, ` +
++		`body: {"error":{"message":"unauthorized client detected, contact support for assistance at https://discord.gg/aYq5B4RW3"},` +
++		`"message":"UNAUTHENTICATED","success":false,"type":"unauthorized_client_error"}`
++
++	got := LocalizeChannelTestErrorText(raw)
++
++	if !strings.Contains(got, "拒绝了调用方客户端") {
++		t.Fatalf("期望识别为客户端被上游限制，实际：%s", got)
++	}
++	// 关键：不得被更靠后的 401 规则误判为“密钥无效”
++	if strings.Contains(got, "密钥无效") {
++		t.Fatalf("不应误判为密钥无效，实际：%s", got)
++	}
++	if !strings.Contains(got, "中转") {
++		t.Fatalf("期望说明中转/网关不被接受，实际：%s", got)
++	}
++	if !strings.Contains(got, raw) {
++		t.Fatalf("期望保留原始错误，实际：%s", got)
++	}
++}
++
++func TestLocalizeChannelTestErrorTextKeepsUnknownAndEmpty(t *testing.T) {
++	if got := LocalizeChannelTestErrorText(""); got != "" {
++		t.Fatalf("空错误应返回空字符串，实际：%q", got)
++	}
++	// 已是中文的自有报错不应被再次包装
++	raw := "暂不支持测试 Midjourney 类型的渠道"
++	if got := LocalizeChannelTestErrorText(raw); got != raw {
++		t.Fatalf("未知/已中文化的错误应原样返回，实际：%s", got)
++	}
++}
++
++func TestDetectNonJSONUpstreamResponseAliyunWAF(t *testing.T) {
++	// 关键点：状态码是 200，只有 Content-Type 与响应体能暴露问题
++	resp := newTestResponse(http.StatusOK, "text/html; charset=utf-8", aliyunWAFPageSample)
++
++	err := detectNonJSONUpstreamResponse(resp)
++	if err == nil {
++		t.Fatal("期望识别出网页响应并返回错误，实际为 nil")
++	}
++	msg := err.Error()
++	if !strings.Contains(msg, "网页内容") {
++		t.Fatalf("期望提示返回的是网页内容，实际：%s", msg)
++	}
++	if !strings.Contains(msg, "阿里云 WAF") {
++		t.Fatalf("期望识别出阿里云 WAF 验证页，实际：%s", msg)
++	}
++	if !strings.Contains(msg, "响应片段") {
++		t.Fatalf("期望附带响应片段以便排查，实际：%s", msg)
++	}
++}
++
++func TestDetectNonJSONUpstreamResponseAllowsValidTypes(t *testing.T) {
++	cases := []struct {
++		name        string
++		contentType string
++		body        string
++	}{
++		{"JSON", "application/json", `{"id":"x","choices":[]}`},
++		{"SSE 流式", "text/event-stream", "data: {\"id\":\"x\"}\n\ndata: [DONE]\n"},
++		{"无 Content-Type", "", `{"id":"x"}`},
++		{"纯文本", "text/plain; charset=utf-8", `{"id":"x"}`},
++	}
++	for _, tc := range cases {
++		t.Run(tc.name, func(t *testing.T) {
++			resp := newTestResponse(http.StatusOK, tc.contentType, tc.body)
++			if err := detectNonJSONUpstreamResponse(resp); err != nil {
++				t.Fatalf("%s 响应不应被判定为网页内容，实际报错：%v", tc.name, err)
++			}
++		})
++	}
++}
++
++func TestDetectNonJSONUpstreamResponseNilSafe(t *testing.T) {
++	if err := detectNonJSONUpstreamResponse(nil); err != nil {
++		t.Fatalf("nil 响应应安全返回 nil，实际：%v", err)
++	}
++}
++
++func TestDescribeKnownInterceptPage(t *testing.T) {
++	cases := map[string]string{
++		aliyunWAFPageSample:                      "阿里云 WAF",
++		`<html><head><title>404 Not Found`:       "404",
++		`<html><body>502 Bad Gateway</body>`:     "网关错误页",
++		`<html><body><h1>nginx</h1></body>`:      "反向代理",
++		`<div>Please complete the captcha</div>`: "人机验证",
++	}
++	for page, want := range cases {
++		if got := describeKnownInterceptPage(page); !strings.Contains(got, want) {
++			t.Fatalf("页面片段 %q 期望识别为 %q，实际：%s", page[:min(40, len(page))], want, got)
++		}
++	}
++}
++
++func min(a, b int) int {
++	if a < b {
++		return a
++	}
++	return b
++}
 diff --git a/controller/channel_upstream_update.go b/controller/channel_upstream_update.go
 index 802935b..a45ed27 100644
 --- a/controller/channel_upstream_update.go
@@ -1557,10 +2519,10 @@ index 0b3219c..576be69 100644
  	}
  	*target = wrapper.Data
 diff --git a/plan.md b/plan.md
-index a28bd5a..6eb9416 100644
+index a28bd5a..fed7c77 100644
 --- a/plan.md
 +++ b/plan.md
-@@ -237,6 +237,20 @@
+@@ -237,6 +237,21 @@
  - [x] Phase 9 完成后：读取本文件，并提示 Phase 10 的下一步内容。
  - [x] Phase 10 完成后：读取本文件，并汇总最终结果。
  
@@ -1581,6 +2543,7 @@ index a28bd5a..6eb9416 100644
  
  - [.plan/20260721-01.md](.plan/20260721-01.md) — relay层安全修复与功能增强移植计划（进行中）
 +- [.plan/20260722-01.md](.plan/20260722-01.md) — 安全优化与代码健康度提升计划（Phase A–F 已完成并验证，含 H1 全量/Uptime 整体移除/H6 清理；仅 I1 翻译与 Phase G 可选项留待后续）
++- [.plan/20260731-01.md](.plan/20260731-01.md) — 渠道测试报错定位与测试报错中文化计划（已完成：定位 `invalid character '<'` 根因为上游 WAF 网页响应；新增网页响应拦截与测试报错中文化）
 diff --git a/relay/channel/ali/adaptor.go b/relay/channel/ali/adaptor.go
 index 16faecd..32fbf34 100644
 --- a/relay/channel/ali/adaptor.go
@@ -3258,7 +4221,7 @@ index 6ed2a54..794c6b4 100644
                        />
                      </Col>
 diff --git a/web/classic/src/components/table/channels/modals/EditChannelModal.jsx b/web/classic/src/components/table/channels/modals/EditChannelModal.jsx
-index 71866e5..59127fa 100644
+index 71866e5..b26bd9b 100644
 --- a/web/classic/src/components/table/channels/modals/EditChannelModal.jsx
 +++ b/web/classic/src/components/table/channels/modals/EditChannelModal.jsx
 @@ -408,10 +408,6 @@ const EditChannelModal = (props) => {
@@ -3350,7 +4313,36 @@ index 71866e5..59127fa 100644
    };
  
    const applyClipboardConfig = (config) => {
-@@ -3236,7 +3250,6 @@ const EditChannelModal = (props) => {
+@@ -2181,6 +2195,28 @@ const EditChannelModal = (props) => {
+                           >
+                             {t('填入透传模版')}
+                           </Text>
++                          {/* 部分上游（自建中转/网关）会按客户端身份放行，默认的 Go-http-client
++                              会被判定为未授权客户端，这里提供一键填入 Claude Code 客户端身份 */}
++                          <Text
++                            className='!text-semi-color-primary cursor-pointer'
++                            onClick={() =>
++                              handleInputChange(
++                                'header_override',
++                                JSON.stringify(
++                                  {
++                                    'User-Agent': 'claude-cli/2.1.39 (external, cli)',
++                                    'x-app': 'cli',
++                                    'anthropic-beta':
++                                      'claude-code-20250219,oauth-2025-04-20',
++                                  },
++                                  null,
++                                  2,
++                                ),
++                              )
++                            }
++                          >
++                            {t('填入 Claude Code 客户端头')}
++                          </Text>
+                           <Text
+                             className='!text-semi-color-primary cursor-pointer'
+                             onClick={() => formatJsonField('header_override')}
+@@ -3236,7 +3272,6 @@ const EditChannelModal = (props) => {
                      extraText={t(
                        '开启后该渠道不会参与定时自动测试',
                      )}
@@ -3358,7 +4350,7 @@ index 71866e5..59127fa 100644
                    />
  
                    {/* Auto Ban - Core Config */}
-@@ -3249,7 +3262,6 @@ const EditChannelModal = (props) => {
+@@ -3249,7 +3284,6 @@ const EditChannelModal = (props) => {
                      extraText={t(
                        '仅当自动禁用开启时有效，关闭后不会自动禁用该渠道',
                      )}
@@ -3604,6 +4596,18 @@ index 28b7605..df5ad05 100644
    consumeTokens,
    times,
    trendData,
+diff --git a/web/classic/src/i18n/locales/zh-CN.json b/web/classic/src/i18n/locales/zh-CN.json
+index 98eb2b3..3796f8c 100644
+--- a/web/classic/src/i18n/locales/zh-CN.json
++++ b/web/classic/src/i18n/locales/zh-CN.json
+@@ -1046,6 +1046,7 @@
+     "填入路径": "填入路径",
+     "填入透传完整模版": "填入透传完整模版",
+     "填入透传模版": "填入透传模版",
++    "填入 Claude Code 客户端头": "填入 Claude Code 客户端头",
+     "填写 Issuer URL 后自动生成：": "填写 Issuer URL 后自动生成：",
+     "填写Gotify服务器的完整URL地址": "填写Gotify服务器的完整URL地址",
+     "填写后会自动拼接预设端点": "填写后会自动拼接预设端点",
 diff --git a/web/classic/src/pages/Setting/Operation/SettingsMonitoring.jsx b/web/classic/src/pages/Setting/Operation/SettingsMonitoring.jsx
 index e4ee116..6f575e7 100644
 --- a/web/classic/src/pages/Setting/Operation/SettingsMonitoring.jsx

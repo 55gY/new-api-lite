@@ -67,10 +67,10 @@ func resolveChannelTestUserID(c *gin.Context) (int, error) {
 
 	var rootUser model.User
 	if err := model.DB.Select("id").Where("role = ?", common.RoleRootUser).First(&rootUser).Error; err != nil {
-		return 0, fmt.Errorf("failed to resolve channel test user: %w", err)
+		return 0, fmt.Errorf("获取渠道测试所需的用户信息失败：%w", err)
 	}
 	if rootUser.Id == 0 {
-		return 0, errors.New("failed to resolve channel test user")
+		return 0, errors.New("获取渠道测试所需的用户信息失败：未找到可用的管理员用户")
 	}
 	return rootUser.Id, nil
 }
@@ -95,7 +95,7 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 	if lo.Contains(unsupportedTestChannelTypes, channel.Type) {
 		channelTypeName := constant.GetChannelTypeName(channel.Type)
 		return testResult{
-			localErr: fmt.Errorf("%s channel test is not supported", channelTypeName),
+			localErr: fmt.Errorf("暂不支持测试 %s 类型的渠道", channelTypeName),
 		}
 	}
 	w := httptest.NewRecorder()
@@ -283,16 +283,16 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 		apiType != constant.APITypeCodex {
 		return testResult{
 			context:     c,
-			localErr:    fmt.Errorf("responses compaction test only supports openai/codex channels, got api type %d", apiType),
-			newAPIError: types.NewError(fmt.Errorf("unsupported api type: %d", apiType), types.ErrorCodeInvalidApiType),
+			localErr:    fmt.Errorf("responses 压缩接口测试仅支持 openai/codex 类型渠道，当前渠道的 API 类型为 %d", apiType),
+			newAPIError: types.NewError(fmt.Errorf("不支持的 API 类型：%d", apiType), types.ErrorCodeInvalidApiType),
 		}
 	}
 	adaptor := relay.GetAdaptor(apiType)
 	if adaptor == nil {
 		return testResult{
 			context:     c,
-			localErr:    fmt.Errorf("invalid api type: %d, adaptor is nil", apiType),
-			newAPIError: types.NewError(fmt.Errorf("invalid api type: %d, adaptor is nil", apiType), types.ErrorCodeInvalidApiType),
+			localErr:    fmt.Errorf("无效的 API 类型：%d，未找到对应的渠道适配器", apiType),
+			newAPIError: types.NewError(fmt.Errorf("无效的 API 类型：%d，未找到对应的渠道适配器", apiType), types.ErrorCodeInvalidApiType),
 		}
 	}
 
@@ -322,8 +322,8 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 		} else {
 			return testResult{
 				context:     c,
-				localErr:    errors.New("invalid embedding request type"),
-				newAPIError: types.NewError(errors.New("invalid embedding request type"), types.ErrorCodeConvertRequestFailed),
+				localErr:    errors.New("embedding 测试请求类型不正确"),
+				newAPIError: types.NewError(errors.New("embedding 测试请求类型不正确"), types.ErrorCodeConvertRequestFailed),
 			}
 		}
 	case relayconstant.RelayModeImagesGenerations:
@@ -333,8 +333,8 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 		} else {
 			return testResult{
 				context:     c,
-				localErr:    errors.New("invalid image request type"),
-				newAPIError: types.NewError(errors.New("invalid image request type"), types.ErrorCodeConvertRequestFailed),
+				localErr:    errors.New("图像生成测试请求类型不正确"),
+				newAPIError: types.NewError(errors.New("图像生成测试请求类型不正确"), types.ErrorCodeConvertRequestFailed),
 			}
 		}
 	case relayconstant.RelayModeRerank:
@@ -344,8 +344,8 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 		} else {
 			return testResult{
 				context:     c,
-				localErr:    errors.New("invalid rerank request type"),
-				newAPIError: types.NewError(errors.New("invalid rerank request type"), types.ErrorCodeConvertRequestFailed),
+				localErr:    errors.New("rerank 测试请求类型不正确"),
+				newAPIError: types.NewError(errors.New("rerank 测试请求类型不正确"), types.ErrorCodeConvertRequestFailed),
 			}
 		}
 	case relayconstant.RelayModeResponses:
@@ -355,8 +355,8 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 		} else {
 			return testResult{
 				context:     c,
-				localErr:    errors.New("invalid response request type"),
-				newAPIError: types.NewError(errors.New("invalid response request type"), types.ErrorCodeConvertRequestFailed),
+				localErr:    errors.New("responses 测试请求类型不正确"),
+				newAPIError: types.NewError(errors.New("responses 测试请求类型不正确"), types.ErrorCodeConvertRequestFailed),
 			}
 		}
 	case relayconstant.RelayModeResponsesCompact:
@@ -374,8 +374,8 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 		default:
 			return testResult{
 				context:     c,
-				localErr:    errors.New("invalid response compaction request type"),
-				newAPIError: types.NewError(errors.New("invalid response compaction request type"), types.ErrorCodeConvertRequestFailed),
+				localErr:    errors.New("responses 压缩测试请求类型不正确"),
+				newAPIError: types.NewError(errors.New("responses 压缩测试请求类型不正确"), types.ErrorCodeConvertRequestFailed),
 			}
 		}
 	default:
@@ -385,8 +385,8 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 		} else {
 			return testResult{
 				context:     c,
-				localErr:    errors.New("invalid general request type"),
-				newAPIError: types.NewError(errors.New("invalid general request type"), types.ErrorCodeConvertRequestFailed),
+				localErr:    errors.New("对话测试请求类型不正确"),
+				newAPIError: types.NewError(errors.New("对话测试请求类型不正确"), types.ErrorCodeConvertRequestFailed),
 			}
 		}
 	}
@@ -465,6 +465,20 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 				newAPIError: types.NewOpenAIError(err, types.ErrorCodeBadResponse, http.StatusInternalServerError),
 			}
 		}
+		// 状态码为 200 但返回网页内容（常见于 WAF/人机验证拦截页、反代错误页、BaseURL 指向网页），
+		// 提前拦截并给出明确说明，避免后续按 JSON 解析时抛出难以理解的 `invalid character '<'`。
+		if nonJSONErr := detectNonJSONUpstreamResponse(httpResp); nonJSONErr != nil {
+			common.SysError(fmt.Sprintf(
+				"channel test non-json response: channel_id=%d name=%s type=%d model=%s endpoint_type=%s status=%d content_type=%s",
+				channel.Id, channel.Name, channel.Type, testModel, endpointType,
+				httpResp.StatusCode, httpResp.Header.Get("Content-Type"),
+			))
+			return testResult{
+				context:     c,
+				localErr:    nonJSONErr,
+				newAPIError: types.NewOpenAIError(nonJSONErr, types.ErrorCodeBadResponseBody, http.StatusInternalServerError),
+			}
+		}
 	}
 	usageA, respErr := adaptor.DoResponse(c, httpResp, info)
 	if respErr != nil {
@@ -538,7 +552,7 @@ func coerceTestUsage(usageAny any, isStream bool, estimatePromptTokens int) (*dt
 		return &u, nil
 	case nil:
 		if !isStream {
-			return nil, errors.New("usage is nil")
+			return nil, errors.New("上游未返回用量（usage）信息")
 		}
 		usage := &dto.Usage{
 			PromptTokens: estimatePromptTokens,
@@ -547,7 +561,7 @@ func coerceTestUsage(usageAny any, isStream bool, estimatePromptTokens int) (*dt
 		return usage, nil
 	default:
 		if !isStream {
-			return nil, fmt.Errorf("invalid usage type: %T", usageAny)
+			return nil, fmt.Errorf("上游返回的用量（usage）类型不正确：%T", usageAny)
 		}
 		usage := &dto.Usage{
 			PromptTokens: estimatePromptTokens,
@@ -585,7 +599,7 @@ func detectErrorFromTestResponseBody(respBody []byte) error {
 		return nil
 	}
 	if message := detectErrorMessageFromJSONBytes(b); message != "" {
-		return fmt.Errorf("upstream error: %s", message)
+		return fmt.Errorf("上游返回错误：%s", message)
 	}
 
 	for _, line := range bytes.Split(b, []byte{'\n'}) {
@@ -601,7 +615,7 @@ func detectErrorFromTestResponseBody(respBody []byte) error {
 			continue
 		}
 		if message := detectErrorMessageFromJSONBytes(payload); message != "" {
-			return fmt.Errorf("upstream error: %s", message)
+			return fmt.Errorf("上游返回错误：%s", message)
 		}
 	}
 
@@ -611,7 +625,7 @@ func detectErrorFromTestResponseBody(respBody []byte) error {
 func validateStreamTestResponseBody(respBody []byte) error {
 	b := bytes.TrimSpace(respBody)
 	if len(b) == 0 {
-		return errors.New("stream response body is empty")
+		return errors.New("流式响应内容为空")
 	}
 
 	for _, line := range bytes.Split(b, []byte{'\n'}) {
@@ -627,7 +641,7 @@ func validateStreamTestResponseBody(respBody []byte) error {
 		return nil
 	}
 
-	return errors.New("stream response body does not contain a valid stream event")
+	return errors.New("流式响应中没有有效的流事件")
 }
 
 func validateTestResponseBody(respBody []byte, isStream bool) error {
@@ -648,7 +662,7 @@ func autoDisableChannelIfAllModelsUnavailable(channel *model.Channel, testedMode
 	if channel == nil || !channel.GetAutoBan() {
 		return
 	}
-	reason := fmt.Sprintf("all channel models are unavailable after testing model %s", testedModel)
+	reason := fmt.Sprintf("测试模型 %s 后，该渠道所有模型均不可用", testedModel)
 	if strings.TrimSpace(testError) != "" {
 		reason = fmt.Sprintf("%s: %s", reason, testError)
 	}
@@ -863,11 +877,13 @@ func TestChannel(c *gin.Context) {
 		testedModel = strings.TrimSpace(testModel)
 	}
 	if result.localErr != nil {
-		_ = model.UpdateAbilityTestResultAndStatus(channel.Id, testedModel, model.AbilityTestStatusUnavailable, 0, result.localErr.Error(), "", common.ChannelStatusAutoDisabled)
-		autoDisableChannelIfAllModelsUnavailable(channel, testedModel, result.localErr.Error())
+		// 统一转换为中文说明后再回显给前端并写入测试记录
+		localizedMessage := localizeChannelTestError(result.localErr)
+		_ = model.UpdateAbilityTestResultAndStatus(channel.Id, testedModel, model.AbilityTestStatusUnavailable, 0, localizedMessage, "", common.ChannelStatusAutoDisabled)
+		autoDisableChannelIfAllModelsUnavailable(channel, testedModel, localizedMessage)
 		resp := gin.H{
 			"success": false,
-			"message": result.localErr.Error(),
+			"message": localizedMessage,
 			"time":    0.0,
 		}
 		if result.newAPIError != nil {
@@ -881,11 +897,13 @@ func TestChannel(c *gin.Context) {
 	go channel.UpdateResponseTime(milliseconds)
 	consumedTime := float64(milliseconds) / 1000.0
 	if result.newAPIError != nil {
-		_ = model.UpdateAbilityTestResultAndStatus(channel.Id, testedModel, model.AbilityTestStatusUnavailable, int(milliseconds), result.newAPIError.Error(), "", common.ChannelStatusAutoDisabled)
-		autoDisableChannelIfAllModelsUnavailable(channel, testedModel, result.newAPIError.Error())
+		// 统一转换为中文说明后再回显给前端并写入测试记录
+		localizedMessage := localizeChannelTestError(result.newAPIError)
+		_ = model.UpdateAbilityTestResultAndStatus(channel.Id, testedModel, model.AbilityTestStatusUnavailable, int(milliseconds), localizedMessage, "", common.ChannelStatusAutoDisabled)
+		autoDisableChannelIfAllModelsUnavailable(channel, testedModel, localizedMessage)
 		c.JSON(http.StatusOK, gin.H{
 			"success":    false,
-			"message":    result.newAPIError.Error(),
+			"message":    localizedMessage,
 			"time":       consumedTime,
 			"error_code": result.newAPIError.GetErrorCode(),
 		})
@@ -979,11 +997,13 @@ func testAllChannels(notify bool) error {
 					testedModel = testModel
 				}
 				if result.localErr != nil {
-					_ = model.UpdateAbilityTestResultAndStatus(channel.Id, testedModel, model.AbilityTestStatusUnavailable, int(milliseconds), result.localErr.Error(), "", common.ChannelStatusAutoDisabled)
-					lastUnavailableReason = result.localErr.Error()
+					localizedMessage := localizeChannelTestError(result.localErr)
+					_ = model.UpdateAbilityTestResultAndStatus(channel.Id, testedModel, model.AbilityTestStatusUnavailable, int(milliseconds), localizedMessage, "", common.ChannelStatusAutoDisabled)
+					lastUnavailableReason = localizedMessage
 				} else if result.newAPIError != nil {
-					_ = model.UpdateAbilityTestResultAndStatus(channel.Id, testedModel, model.AbilityTestStatusUnavailable, int(milliseconds), result.newAPIError.Error(), "", common.ChannelStatusAutoDisabled)
-					lastUnavailableReason = result.newAPIError.Error()
+					localizedMessage := localizeChannelTestError(result.newAPIError)
+					_ = model.UpdateAbilityTestResultAndStatus(channel.Id, testedModel, model.AbilityTestStatusUnavailable, int(milliseconds), localizedMessage, "", common.ChannelStatusAutoDisabled)
+					lastUnavailableReason = localizedMessage
 				} else if common.AutomaticDisableChannelEnabled && milliseconds > disableThreshold {
 					err := fmt.Errorf("响应时间 %.2fs 超过阈值 %.2fs", float64(milliseconds)/1000.0, float64(disableThreshold)/1000.0)
 					_ = model.UpdateAbilityTestResultAndStatus(channel.Id, testedModel, model.AbilityTestStatusUnavailable, int(milliseconds), err.Error(), result.responseText, common.ChannelStatusAutoDisabled)

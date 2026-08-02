@@ -1,39 +1,51 @@
-new-api-lite —— 本次会话改动清单
+new-api-lite —— 累计改动清单（重新生成于 2026-08-02 08:54:18；原截至 2026-08-02 08:11:38 CST）
 基线提交(HEAD): 4699ea0
-生成时间: 2026-07-23 08:33:51 CST
 
 ================================================================
-内容说明
+使用方式（三选一）
 ================================================================
-本压缩包按项目目录结构保存了本次会话「调整过的文件」(修改+新增)，
-用于你在本地手动验证。三种使用方式任选其一：
+A) 应用补丁【推荐，最完整，自动处理删除】
+   在本地仓库根目录执行：
+       git apply changes.patch
+   或允许三方合并：
+       git apply --3way changes.patch
 
-  A) 直接覆盖：将本目录下的项目文件(controller/、model/、web/、dto/ 等
-     以及 plan.md、.plan/)覆盖到你本地仓库对应路径；并按“已删除文件”手动删除 2 个文件。
-  B) 应用补丁：在你本地仓库根目录执行  git apply changes.patch  (或 git apply --3way changes.patch)
-     —— 该补丁已包含修改/新增/删除(含 2 个删除)，最完整。补丁基线为上面的 HEAD。
-  C) 仅审阅：直接阅读 changes.patch。
+B) 直接覆盖
+   把本目录下的项目文件覆盖到本地仓库对应路径，
+   然后【务必手动删除】下面「已删除文件」列出的 2 个文件，否则会编译失败。
 
-注意：git 里 .agents/skills/i18n-translate/SKILL.md 只是 CRLF→LF 行尾归一化，
-并非本次内容改动，已从压缩包与补丁中排除。
+C) 仅审阅
+   直接阅读 changes.patch。
+
+注意：.agents/skills/i18n-translate/SKILL.md 只是 git 的 CRLF→LF 行尾归一化，
+非本次内容改动，已从压缩包与补丁中排除。
 
 ================================================================
-已删除文件(方式 A 时请在本地手动删除这 2 个)
+已删除文件（方式 B 必须手动删除这 2 个）
 ================================================================
   - controller/uptime_kuma.go
   - web/classic/src/helpers/quota.js
 
+  说明：
+   - controller/uptime_kuma.go        不删会报 console_setting.GetUptimeKumaGroups 未定义
+   - web/classic/src/helpers/quota.js 已无引用，不删不报错，但建议一并删除
+
 ================================================================
-本次会话调整/新增文件(85 个)
+改动/新增文件（91 个）
 ================================================================
   .plan/20260722-01.md
+  .plan/20260731-01.md
   controller/channel-test.go
   controller/channel.go
+  controller/channel_baseurl_safety_test.go
+  controller/channel_test_error_i18n.go
+  controller/channel_test_error_i18n_test.go
   controller/channel_upstream_update.go
   controller/console_migrate.go
   controller/deployment.go
   controller/misc.go
   controller/option.go
+  controller/uptime_kuma.go
   controller/user.go
   dto/claude.go
   dto/embedding.go
@@ -108,43 +120,104 @@ new-api-lite —— 本次会话改动清单
   web/classic/src/constants/dashboard.constants.js
   web/classic/src/helpers/dashboard.jsx
   web/classic/src/helpers/data.js
+  web/classic/src/helpers/quota.js
   web/classic/src/helpers/render.jsx
   web/classic/src/hooks/dashboard/useDashboardStats.jsx
   web/classic/src/pages/Setting/Operation/SettingsMonitoring.jsx
 
 ================================================================
-本地验证步骤(与容器内一致)
+本地验证步骤
 ================================================================
-后端(Go 1.25.1，go.mod 要求)：
+后端（需 Go 1.25.1）：
   export CGO_ENABLED=0
-  # 无嵌入前端也可编译校验：
-  go build -tags noembed ./...
+  go build -tags noembed ./...      # 无需前端产物即可编译校验
   go test  -tags noembed ./...
-  # 正式(内嵌前端)构建需先构建前端产物到 web/classic/dist：
-  go build ./...
+  # 正式构建（内嵌前端，需先构建前端产物到 web/classic/dist）：
   go build -ldflags="-s -w" -trimpath -o new-api-lite .
 
-前端(项目优先 Bun；无 Bun 时用 npm)：
+前端（优先 Bun；无 Bun 用 npm）：
   cd web/classic
   bun install && bun run build
-  # 或(无 bun)：
-  npm install --legacy-peer-deps          # 依赖存在 peer 冲突，需 --legacy-peer-deps
-  NODE_OPTIONS=--max-old-space-size=3584 npx vite build   # 构建内存需 >2GB，故调大堆
+  # 或：
+  npm install --legacy-peer-deps
+  NODE_OPTIONS=--max-old-space-size=3584 npx vite build   # 构建内存需 >2GB
 
-冒烟：
-  启动后 /api/status 返回 200；/ (SPA) 200；/v1/models 未授权 401；
-  确认 /api/status 响应中已无 uptime_kuma_enabled；SQLite 生成 one-api.db-wal(WAL 生效)。
+冒烟要点：
+  /api/status 200；/ (SPA) 200；/v1/models 未授权 401；
+  /api/status 中已无 uptime_kuma_enabled；SQLite 生成 one-api.db-wal（WAL 生效）。
 
 ================================================================
-本次会话改动摘要(详见 .plan/20260722-01.md)
+改动分组说明（详见 plan.md 与 .plan/*.md）
 ================================================================
-Phase A 后端正确性/安全：C2 relay DTO 指针化(+Rule5 单测) / C3 CORS 去非法 AllowCredentials /
-  C6 移除 upstream 更新不存在的 tag 列(SQLite 会报错的真实修复) / C7 渠道 BaseURL SSRF 校验。
-Phase B 前端正确性：C1 渠道 settings 往返改从表单读取(消除过期闭包丢设置) /
-  C4 SiderBar 改 StatusContext 响应式 / C5 SettingsMonitoring 函数式 setState / H8 去开关冗余 initValue。
-Phase C 性能/稳定：P1 SQLite WAL / P2 渠道选择热路径 N→1 批量查询 / P3 去无效 Limit / P4 user.Insert 精简。
-Phase D 健康度：H2 删 migrateDBFast / H4 删 checkin 死分支 / H5 删坏死 2FA 辅助 /
-  H6 额度默认 TOKENS+去支付文案+删死 quota 函数/文件+去 consumeQuota 死参 / H7 更新检查指向本 fork /
-  H3 Uptime Kuma 休眠功能整体移除(前后端)。
-Phase E 规则1：H1 全部业务代码 json.Marshal/Unmarshal/NewDecoder → common.*(全量覆盖)。
-Phase F i18n：I1 代表性(OtherSetting toasts)；完整多语言翻译留待后续。
+【第一批：安全优化与代码健康度】.plan/20260722-01.md
+  A 正确性/安全：relay DTO 指针化(规则5)、CORS 去非法 AllowCredentials、
+                 移除 upstream 更新不存在的 tag 列、渠道 BaseURL 安全校验
+  B 前端正确性：渠道 settings 往返闭包修复、SiderBar 响应式、
+                 SettingsMonitoring 函数式 setState、去开关冗余 initValue
+  C 性能/稳定：SQLite WAL、渠道选择热路径 N→1 批量查询、
+                 去无效 Limit、user.Insert 精简
+  D 健康度：删 migrateDBFast / checkin 死分支 / 坏死 2FA 代码；
+             Uptime Kuma 休眠功能整体移除；额度展示默认 TOKENS；
+             去支付文案；更新检查改指向本 fork；死 quota 函数清理
+  E 规则1：全部业务代码 encoding/json → common.*（75 文件全覆盖）
+  F i18n：OtherSetting toast 中文化（完整多语言翻译待后续）
+
+【第二批：渠道测试报错定位与中文化】.plan/20260731-01.md
+  - 定位 `invalid character '<'` 根因：上游返回 HTTP 200 + text/html（WAF 验证页）
+  - 新增 controller/channel_test_error_i18n.go：
+      * 解析前拦截网页响应，识别阿里云 WAF / Cloudflare / captcha / 404 / 502 / nginx
+      * 错误模式→中文说明表（保留原始错误），覆盖非 JSON、各状态码、
+        DNS/连接/超时/TLS、模型不存在、usage 缺失、流式异常等
+      * unauthorized_client 规则前置于 401，避免误判为「密钥无效」
+  - channel-test.go：26 处英文报错改中文；测试结果/记录/自动禁用原因统一中文化
+
+【第三批：C7 回归修复（重要）】
+  - controller/channel.go：原先复用 ValidateURLWithFetchSetting 校验渠道 BaseURL，
+    但其默认 AllowedPorts=[80,443,8080,8443]、AllowPrivateIp=false，
+    会误伤「自建上游 + 内网地址 / 非标准端口」的常规部署。
+    已收窄为 validateChannelBaseURLSafety：仅拦截链路本地/云元数据地址
+    （169.254.0.0/16、fe80::/10、metadata.google.internal、metadata.goog），
+    不限制端口、不禁止内网/回环地址。
+  - 新增 controller/channel_baseurl_safety_test.go 双向回归单测。
+  ★ 若你的上游在另一台服务器且使用非标准端口，必须包含此修复，否则渠道存不进去。
+
+================================================================
+路径 B（请求头覆盖）配置提示
+================================================================
+渠道 → 编辑 → 「请求头覆盖」填 JSON，例如：
+  {
+    "User-Agent": "claude-cli/2.1.39 (external, cli)",
+    "x-app": "cli",
+    "anthropic-beta": "claude-code-20250219,oauth-2025-04-20"
+  }
+- UA 具体值以你上游日志报的为准（docker logs 过滤 client/user-agent/unauthorized）
+- 渠道测试会跳过 {client_header:...} 占位符与 * / re: 透传规则，必须填静态值
+- Claude 中转类上游走 /v1/messages：渠道类型选 Anthropic、端点类型选 anthropic
+已实测：header_override 在 SetupRequestHeader 之后应用，可覆盖 User-Agent，
+        且渠道测试路径同样生效（OpenAI 与 Anthropic 两种类型均验证通过）。
+
+
+================================================================
+追加（2026-08-02）：请求头覆盖 一键预填按钮
+================================================================
+背景：网关默认不设置 User-Agent，Go 运行时会发出 `User-Agent: Go-http-client/2.0`，
+      被做客户端门禁的上游判定为未授权客户端（unauthorized_client_error）。
+
+改动：
+  web/classic/src/components/table/channels/modals/EditChannelModal.jsx
+    在「请求头覆盖」下方新增预填链接「填入 Claude Code 客户端头」，
+    与既有「填入模板 / 填入透传模版 / 格式化」并排，点击填入：
+      {
+        "User-Agent": "claude-cli/2.1.39 (external, cli)",
+        "x-app": "cli",
+        "anthropic-beta": "claude-code-20250219,oauth-2025-04-20"
+      }
+  web/classic/src/i18n/locales/zh-CN.json
+    补充对应 i18n 词条（仅新增 1 行，未重排原文件）。
+
+设计取舍：刻意**不做全局默认**。header_override 是渠道级配置，若设为全局默认会让
+OpenAI / Gemini 等其它渠道也收到 Claude Code 专有头与伪装 UA，可能被那些上游拒绝。
+一键预填在省事与安全之间取得平衡；如需“自动生效”，建议改为
+“仅当渠道自身 header_override 为空 + 限定渠道类型”的系统级默认（尚未实现）。
+
+验证：前端 vite build 通过；后端 go build（noembed + embed）与 go test ./... 全量通过。
