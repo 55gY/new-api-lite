@@ -490,6 +490,10 @@ func validateChannel(channel *model.Channel, isAdd bool) error {
 		}
 	}
 
+	if err := validateChannelCheckinTaskAssociation(channel.CheckinTaskId); err != nil {
+		return fmt.Errorf("签到任务关联无效: %s", err.Error())
+	}
+
 	// 如果是添加操作，检查 channel 和 key 是否为空
 	if isAdd {
 		if channel == nil || channel.Key == "" {
@@ -812,8 +816,9 @@ func DeleteChannelModelsBatch(c *gin.Context) {
 
 type PatchChannel struct {
 	model.Channel
-	MultiKeyMode *string `json:"multi_key_mode"`
-	KeyMode      *string `json:"key_mode"` // 多key模式下密钥覆盖或者追加
+	MultiKeyMode      *string `json:"multi_key_mode"`
+	KeyMode           *string `json:"key_mode"` // 多key模式下密钥覆盖或者追加
+	ClearCheckinTask  bool    `json:"clear_checkin_task"`
 }
 
 func UpdateChannel(c *gin.Context) {
@@ -934,6 +939,13 @@ func UpdateChannel(c *gin.Context) {
 	if err != nil {
 		common.ApiError(c, err)
 		return
+	}
+	if channel.ClearCheckinTask {
+		if err = model.DB.Model(&model.Channel{}).Where("id = ?", channel.Id).Update("checkin_task_id", nil).Error; err != nil {
+			common.ApiError(c, err)
+			return
+		}
+		channel.CheckinTaskId = nil
 	}
 	model.InitChannelCache()
 	service.ResetProxyClientCache()

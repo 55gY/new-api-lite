@@ -174,7 +174,6 @@ const EditChannelModal = (props) => {
     name: '',
     type: 1,
     key: '',
-    max_input_tokens: 0,
     base_url: '',
     other: '',
     model_mapping: '',
@@ -215,6 +214,7 @@ const EditChannelModal = (props) => {
     upstream_model_update_last_detected_models: [],
     upstream_model_update_ignored_models: '',
     disable_auto_test: 0,
+    checkin_task_id: 0,
   };
   const [batch, setBatch] = useState(false);
   const [multiToSingle, setMultiToSingle] = useState(false);
@@ -228,6 +228,9 @@ const EditChannelModal = (props) => {
   const [isModalOpenurl, setIsModalOpenurl] = useState(false);
   const [modelModalVisible, setModelModalVisible] = useState(false);
   const [fetchedModels, setFetchedModels] = useState([]);
+  const [checkinTaskOptions, setCheckinTaskOptions] = useState(() => [
+    { label: t('不关联签到任务'), value: 0 },
+  ]);
   const [modelMappingValueModalVisible, setModelMappingValueModalVisible] =
     useState(false);
   const [modelMappingValueModalModels, setModelMappingValueModalModels] =
@@ -246,6 +249,43 @@ const EditChannelModal = (props) => {
   const [keyMode, setKeyMode] = useState('append'); // 密钥模式：replace（覆盖）或 append（追加）
   const [isEnterpriseAccount, setIsEnterpriseAccount] = useState(false); // 是否为企业账户
   const [doubaoApiEditUnlocked, setDoubaoApiEditUnlocked] = useState(false); // 豆包渠道自定义 API 地址隐藏入口
+  useEffect(() => {
+    const loadCheckinTaskOptions = async () => {
+      try {
+        const res = await API.get('/api/channel-checkin-task/');
+        if (res.data?.success) {
+          const tasks = res.data.data?.items || [];
+          setCheckinTaskOptions([
+            { label: t('不关联签到任务'), value: 0 },
+            ...tasks.map((task) => ({
+              label:
+                task.status === 1
+                  ? task.name
+                  : `${task.name} (${t('已停用')})`,
+              value: task.id,
+            })),
+          ]);
+        }
+      } catch (error) {
+        console.error('load channel check-in task options failed:', error);
+      }
+    };
+    loadCheckinTaskOptions();
+  }, [t]);
+
+  const currentChannelModels = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          (Array.isArray(inputs.models) ? inputs.models : [])
+            .map((model) => String(model ?? '').trim())
+            .filter(Boolean),
+        ),
+      ),
+    [inputs.models],
+  );
+  // 模型重定向的实际模型只能来自当前表单的渠道模型，避免复用复制来源的缓存。
+  const modelMappingCandidateModels = currentChannelModels;
   const redirectModelList = useMemo(() => {
     const mapping = inputs.model_mapping;
     if (typeof mapping !== 'string') return [];
@@ -1020,7 +1060,7 @@ const EditChannelModal = (props) => {
       return;
     }
 
-    let modelsToUse = fetchedModels;
+    let modelsToUse = modelMappingCandidateModels;
     if (!Array.isArray(modelsToUse) || modelsToUse.length === 0) {
       const fetched = await fetchUpstreamModelList('models', { silent: true });
       if (Array.isArray(fetched)) {
@@ -1634,7 +1674,6 @@ const EditChannelModal = (props) => {
       }
     }
 
-
     settings.upstream_model_update_check_enabled =
       localInputs.upstream_model_update_check_enabled === true;
     settings.upstream_model_update_auto_sync_enabled =
@@ -1661,6 +1700,20 @@ const EditChannelModal = (props) => {
     localInputs.settings = JSON.stringify(settings);
 
     // 清理不需要发送到后端的字段
+    // 编辑接口以 Channel 为请求主体；下列字段来自回填数据或 UI 派生状态，
+    // 不能参与更新，否则可能用过期数据覆盖运行时指标或把未知字段绑定进模型。
+    [
+      'created_time',
+      'test_time',
+      'response_time',
+      'balance',
+      'balance_updated_time',
+      'used_quota',
+      'other_info',
+      'channel_info',
+      'keys',
+      'max_input_tokens',
+    ].forEach((field) => delete localInputs[field]);
     delete localInputs.force_format;
     delete localInputs.thinking_to_content;
     delete localInputs.proxy;
@@ -1668,6 +1721,8 @@ const EditChannelModal = (props) => {
     delete localInputs.system_prompt;
     delete localInputs.system_prompt_override;
     delete localInputs.is_enterprise_account;
+    // azure_responses_version 已写入 settings（复数）JSON，不应作为 Channel 顶层字段发送。
+    delete localInputs.azure_responses_version;
     // 顶层的 vertex_key_type 不应发送给后端
     delete localInputs.vertex_key_type;
     // 顶层的 aws_key_type 不应发送给后端
@@ -1686,6 +1741,20 @@ const EditChannelModal = (props) => {
     delete localInputs.upstream_model_update_last_check_time;
     delete localInputs.upstream_model_update_last_detected_models;
     delete localInputs.upstream_model_update_ignored_models;
+    if (!localInputs.checkin_task_id || Number(localInputs.checkin_task_id) <= 0) {
+      delete localInputs.checkin_task_id;
+      // GORM 的 Updates 会跳过 nil 指针；编辑时需使用显式标记解除已有签到任务关联。
+      if (isEdit) {
+        localInputs.clear_checkin_task = true;
+      }
+    } else {
+      delete localInputs.clear_checkin_task;
+    }
+    // 新增请求的 multi_key_mode 属于 AddChannelRequest 外层包装字段，不能嵌入 Channel。
+    if (!isEdit) {
+      delete localInputs.multi_key_mode;
+      delete localInputs.key_mode;
+    }
 
     let res;
     localInputs.auto_ban = localInputs.auto_ban ? 1 : 0;
@@ -2464,6 +2533,20 @@ const EditChannelModal = (props) => {
                       autoComplete='new-password'
                     />
 
+                    <Form.Select
+                      field='checkin_task_id'
+                      label={t('签到任务（可选）')}
+                      placeholder={t('请选择关联的签到任务')}
+                      optionList={checkinTaskOptions}
+                      style={{ width: '100%' }}
+                      onChange={(value) =>
+                        handleInputChange('checkin_task_id', value)
+                      }
+                      extraText={t(
+                        '关联后可在“签到任务”中统一管理该渠道的受限第三方签到请求。',
+                      )}
+                    />
+
                     {inputs.type === 33 && (
                       <>
                         <Form.Select
@@ -3235,6 +3318,18 @@ const EditChannelModal = (props) => {
                     template={MODEL_MAPPING_EXAMPLE}
                     templateLabel={t('填入模板')}
                     editorType='keyValue'
+                    getDefaultKey={({ existingKeys }) =>
+                      modelMappingCandidateModels.find(
+                        (model) => !existingKeys.includes(model),
+                      ) || ''
+                    }
+                    onDefaultKeyUnavailable={() => {
+                      showInfo(
+                        modelMappingCandidateModels.length > 0
+                          ? t('当前渠道中的模型已全部添加到重定向映射')
+                          : t('请先添加渠道模型或获取上游模型列表'),
+                      );
+                    }}
                     formApi={formApiRef.current}
                     keyPlaceholder={t('实际模型')}
                     valuePlaceholder={t('请求模型1,请求模型2')}

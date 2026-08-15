@@ -64,6 +64,8 @@ const JSONEditor = ({
   valuePlaceholder,
   renderKeySuffix,
   renderStringValueSuffix,
+  getDefaultKey,
+  onDefaultKeyUnavailable,
   ...props
 }) => {
   const { t } = useTranslation();
@@ -269,12 +271,24 @@ const JSONEditor = ({
   // 添加键值对
   const addKeyValue = useCallback(() => {
     const newPairs = [...keyValuePairs];
-    const existingKeys = newPairs.map((p) => p.key);
-    let counter = 1;
-    let newKey = `field_${counter}`;
-    while (existingKeys.includes(newKey)) {
-      counter += 1;
+    const existingKeys = newPairs.map((pair) => pair.key);
+    const preferredKey = getDefaultKey?.({
+      existingKeys,
+      keyValuePairs: newPairs,
+    });
+
+    let newKey = String(preferredKey ?? '').trim();
+    if (getDefaultKey && (!newKey || existingKeys.includes(newKey))) {
+      onDefaultKeyUnavailable?.();
+      return;
+    }
+    if (!newKey || existingKeys.includes(newKey)) {
+      let counter = 1;
       newKey = `field_${counter}`;
+      while (existingKeys.includes(newKey)) {
+        counter += 1;
+        newKey = `field_${counter}`;
+      }
     }
     newPairs.push({
       id: generateUniqueId(),
@@ -282,7 +296,12 @@ const JSONEditor = ({
       value: '',
     });
     handleVisualChange(newPairs);
-  }, [keyValuePairs, handleVisualChange]);
+  }, [
+    keyValuePairs,
+    handleVisualChange,
+    getDefaultKey,
+    onDefaultKeyUnavailable,
+  ]);
 
   // 删除键值对
   const removeKeyValue = useCallback(

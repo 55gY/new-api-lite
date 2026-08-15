@@ -94,6 +94,7 @@ import {
   Settings,
   CircleUser,
   Package,
+  CalendarCheck,
 } from 'lucide-react';
 
 // 获取侧边栏Lucide图标组件
@@ -120,6 +121,8 @@ export function getLucideIcon(key, selected = false) {
       return <BarChart3 {...commonProps} color={iconColor} />;
     case 'channel':
       return <Layers {...commonProps} color={iconColor} />;
+    case 'channelCheckinTask':
+      return <CalendarCheck {...commonProps} color={iconColor} />;
     case 'user':
     case 'personal':
       return <User {...commonProps} color={iconColor} />;
