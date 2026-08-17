@@ -62,6 +62,7 @@ import SingleModelSelectModal from './SingleModelSelectModal';
 import OllamaModelModal from './OllamaModelModal';
 import CodexOAuthModal from './CodexOAuthModal';
 import ParamOverrideEditorModal from './ParamOverrideEditorModal';
+import CheckinTaskEditModal from './CheckinTaskEditModal';
 import JSONEditor from '../../../common/ui/JSONEditor';
 import StatusCodeRiskGuardModal from './StatusCodeRiskGuardModal';
 import { parseChannelConnectionString } from '../../../../helpers/token';
@@ -79,6 +80,7 @@ import {
   IconBolt,
   IconSearch,
   IconChevronDown,
+  IconPlus,
 } from '@douyinfe/semi-icons';
 
 const { Text, Title } = Typography;
@@ -231,6 +233,8 @@ const EditChannelModal = (props) => {
   const [checkinTaskOptions, setCheckinTaskOptions] = useState(() => [
     { label: t('不关联签到任务'), value: 0 },
   ]);
+  const [checkinTaskModalVisible, setCheckinTaskModalVisible] =
+    useState(false);
   const [modelMappingValueModalVisible, setModelMappingValueModalVisible] =
     useState(false);
   const [modelMappingValueModalModels, setModelMappingValueModalModels] =
@@ -2535,7 +2539,26 @@ const EditChannelModal = (props) => {
 
                     <Form.Select
                       field='checkin_task_id'
-                      label={t('签到任务（可选）')}
+                      label={
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                          }}
+                        >
+                          {t('签到任务（可选）')}
+                          <Button
+                            size='small'
+                            theme='borderless'
+                            type='primary'
+                            icon={<IconPlus />}
+                            onClick={() => setCheckinTaskModalVisible(true)}
+                          >
+                            {t('快速新增')}
+                          </Button>
+                        </span>
+                      }
                       placeholder={t('请选择关联的签到任务')}
                       optionList={checkinTaskOptions}
                       style={{ width: '100%' }}
@@ -3528,6 +3551,28 @@ const EditChannelModal = (props) => {
         onSave={(nextValue) => {
           handleInputChange('param_override', nextValue);
           setParamOverrideEditorVisible(false);
+        }}
+      />
+
+      <CheckinTaskEditModal
+        visible={checkinTaskModalVisible}
+        editingTask={null}
+        onCancel={() => setCheckinTaskModalVisible(false)}
+        onSaved={(task) => {
+          setCheckinTaskModalVisible(false);
+          if (task?.id) {
+            setCheckinTaskOptions((prev) => [
+              ...prev,
+              {
+                label:
+                  task.status === 1
+                    ? task.name
+                    : `${task.name} (${t('已停用')})`,
+                value: task.id,
+              },
+            ]);
+            handleInputChange('checkin_task_id', task.id);
+          }
         }}
       />
 

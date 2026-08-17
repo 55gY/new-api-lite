@@ -17,13 +17,12 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
   Card,
   Descriptions,
-  Form,
   Modal,
   Popconfirm,
   Space,
@@ -40,21 +39,7 @@ import {
   IconRefresh,
 } from '@douyinfe/semi-icons';
 import { API, showError, showSuccess } from '../helpers';
-
-const defaultTask = {
-  name: '',
-  status: 1,
-  request_url: '',
-  request_method: 'POST',
-  auth_type: 'system_access_token',
-  api_user: '',
-  secret: '',
-  proxy_url: '',
-  clear_proxy: false,
-  timeout_seconds: 20,
-  retry_count: 1,
-  interval_minutes: 1440,
-};
+import CheckinTaskEditModal from '../components/table/channels/modals/CheckinTaskEditModal';
 
 const formatTimestamp = (timestamp) => {
   if (!timestamp) return '-';
@@ -63,10 +48,8 @@ const formatTimestamp = (timestamp) => {
 
 const ChannelCheckinTask = () => {
   const { t } = useTranslation();
-  const formApiRef = useRef(null);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [logs, setLogs] = useState([]);
@@ -101,32 +84,6 @@ const ChannelCheckinTask = () => {
   const openEdit = (task) => {
     setEditingTask(task);
     setModalVisible(true);
-  };
-
-  const submitTask = async () => {
-    const values = formApiRef.current?.getValues();
-    if (!values) return;
-    const errors = await formApiRef.current?.validate();
-    if (errors) return;
-    setSaving(true);
-    try {
-      const payload = { ...values };
-      if (editingTask) payload.id = editingTask.id;
-      const res = editingTask
-        ? await API.put('/api/channel-checkin-task/', payload)
-        : await API.post('/api/channel-checkin-task/', payload);
-      if (!res.data?.success) {
-        showError(res.data?.message || t('保存签到任务失败'));
-        return;
-      }
-      showSuccess(t('保存成功'));
-      setModalVisible(false);
-      await loadTasks();
-    } catch (error) {
-      showError(error);
-    } finally {
-      setSaving(false);
-    }
   };
 
   const deleteTask = async (task) => {
@@ -266,15 +223,6 @@ const ChannelCheckinTask = () => {
     },
   ];
 
-  const taskFormValues = editingTask
-    ? {
-        ...editingTask,
-        secret: '',
-        proxy_url: '',
-        clear_proxy: false,
-      }
-    : defaultTask;
-
   return (
     <div className='mt-[60px] px-2'>
       <Card
@@ -309,115 +257,15 @@ const ChannelCheckinTask = () => {
         />
       </Card>
 
-      <Modal
+      <CheckinTaskEditModal
         visible={modalVisible}
-        title={editingTask ? t('编辑签到任务') : t('新增签到任务')}
+        editingTask={editingTask}
         onCancel={() => setModalVisible(false)}
-        onOk={submitTask}
-        confirmLoading={saving}
-        okText={t('保存')}
-        style={{ maxWidth: 680 }}
-      >
-        <Form
-          key={editingTask?.id || 'new'}
-          initValues={taskFormValues}
-          getFormApi={(api) => (formApiRef.current = api)}
-          labelPosition='top'
-        >
-          <Form.Input
-            field='name'
-            label={t('任务名称')}
-            rules={[{ required: true, message: t('请输入任务名称') }]}
-          />
-          <Form.Select
-            field='status'
-            label={t('状态')}
-            optionList={[
-              { value: 1, label: t('启用') },
-              { value: 0, label: t('停用') },
-            ]}
-          />
-          <Form.Input
-            field='request_url'
-            label={t('签到请求地址')}
-            placeholder='https://example.com/api/user/checkin'
-            rules={[
-              { required: true, message: t('请输入 HTTPS 签到请求地址') },
-            ]}
-          />
-          <Form.Select
-            field='request_method'
-            label={t('请求方法')}
-            optionList={[
-              { value: 'POST', label: 'POST' },
-              { value: 'GET', label: 'GET' },
-            ]}
-          />
-          <Form.Select
-            field='auth_type'
-            label={t('认证方式')}
-            optionList={[
-              { value: 'system_access_token', label: t('系统访问令牌') },
-              { value: 'cookie', label: t('Cookie') },
-            ]}
-          />
-          <Form.Input
-            field='api_user'
-            label={t('用户 ID')}
-            rules={[{ required: true, message: t('请输入用户 ID') }]}
-          />
-          <Form.Input
-            field='secret'
-            mode='password'
-            label={
-              editingTask ? t('更新认证凭据（留空则保持不变）') : t('认证凭据')
-            }
-            rules={
-              editingTask
-                ? []
-                : [{ required: true, message: t('请输入认证凭据') }]
-            }
-          />
-          <Form.Input
-            field='proxy_url'
-            mode='password'
-            label={t('固定代理地址（可选）')}
-            placeholder='https://proxy.example.com:8443'
-            extraText={
-              editingTask?.has_proxy_url
-                ? t('已保存固定代理；留空则保持不变。')
-                : t('仅用于常规网络连通性；不支持代理池、轮换或自动切换。')
-            }
-          />
-          {editingTask?.has_proxy_url && (
-            <Form.Switch
-              field='clear_proxy'
-              label={t('清除已保存的固定代理')}
-            />
-          )}
-          <Form.InputNumber
-            field='timeout_seconds'
-            label={t('请求超时（秒）')}
-            min={5}
-            max={120}
-          />
-          <Form.InputNumber
-            field='retry_count'
-            label={t('网络失败重试次数')}
-            min={0}
-            max={2}
-            extraText={t(
-              '仅对网络或服务暂时不可用重试；验证码、403 和风控响应不会重试。',
-            )}
-          />
-          <Form.InputNumber
-            field='interval_minutes'
-            label={t('执行间隔（分钟）')}
-            min={60}
-            extraText={t('最短 60 分钟；建议每日执行一次。')}
-          />
-        </Form>
-      </Modal>
+        onSaved={() => {
+          setModalVisible(false);
+          loadTasks();
+        }}
+      />
 
       <Modal
         visible={logsVisible}
