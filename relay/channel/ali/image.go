@@ -132,10 +132,14 @@ func getImageBase64sFromForm(c *gin.Context, fieldName string) ([]string, error)
 			return nil, errors.New("failed to open image file")
 		}
 
-		// 读取文件内容
-		imageData, err := io.ReadAll(image)
-		if err != nil {
+		// 读取文件内容；无论读取是否失败都释放 multipart 文件句柄。
+		imageData, readErr := io.ReadAll(image)
+		closeErr := image.Close()
+		if readErr != nil {
 			return nil, errors.New("failed to read image file")
+		}
+		if closeErr != nil {
+			return nil, errors.New("failed to close image file")
 		}
 
 		// 获取MIME类型
@@ -147,7 +151,6 @@ func getImageBase64sFromForm(c *gin.Context, fieldName string) ([]string, error)
 		// 构造data URL格式
 		dataURL := fmt.Sprintf("data:%s;base64,%s", mimeType, base64Data)
 		imageBase64s = append(imageBase64s, dataURL)
-		image.Close()
 	}
 	return imageBase64s, nil
 }
@@ -207,6 +210,10 @@ func updateTask(info *relaycommon.RelayInfo, taskID string) (*AliResponse, error
 	defer resp.Body.Close()
 
 	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		common.SysLog("updateTask read response body err: " + err.Error())
+		return &aliResponse, err, nil
+	}
 
 	var response AliResponse
 	err = common.Unmarshal(responseBody, &response)

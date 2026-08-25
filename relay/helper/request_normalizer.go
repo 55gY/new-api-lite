@@ -98,18 +98,6 @@ func cleanToolFunctionParameters(fn *dto.FunctionRequest) {
 	cleanNullValues(params)
 }
 
-// cleanClaudeToolParameters 清洗 Claude 格式的 tool parameters
-func cleanClaudeToolParameters(tool *dto.Tool) {
-	if tool.InputSchema == nil {
-		return
-	}
-
-	// InputSchema 已经是 map[string]interface{} 类型，直接使用
-	schema := tool.InputSchema
-
-	cleanNullValues(schema)
-}
-
 // cleanNullValues 递归清理 map 中的 null 值
 // - 删除值为 null 的字段
 // - 把 null 数组规范为空数组
