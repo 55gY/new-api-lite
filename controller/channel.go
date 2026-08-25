@@ -275,8 +275,7 @@ func SearchChannels(c *gin.Context) {
 	statusFilter := parseStatusFilter(statusParam)
 	idSort, _ := strconv.ParseBool(c.Query("id_sort"))
 	sortOptions := model.NewChannelSortOptions(c.Query("sort_by"), c.Query("sort_order"), idSort)
-	channelData := make([]*model.Channel, 0)
-	channels, err := model.SearchChannels(keyword, group, modelKeyword, idSort, sortOptions)
+	channelData, err := model.SearchChannels(keyword, group, modelKeyword, idSort, sortOptions)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -284,7 +283,6 @@ func SearchChannels(c *gin.Context) {
 		})
 		return
 	}
-	channelData = channels
 
 	if statusFilter == common.ChannelStatusEnabled || statusFilter == 0 {
 		filtered := make([]*model.Channel, 0, len(channelData))
@@ -632,7 +630,7 @@ func AddChannel(c *gin.Context) {
 	}
 
 	addChannelRequest.Channel.CreatedTime = common.GetTimestamp()
-	keys := make([]string, 0)
+	var keys []string
 	switch addChannelRequest.Mode {
 	case "multi_to_single":
 		addChannelRequest.Channel.ChannelInfo.IsMultiKey = true

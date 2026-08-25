@@ -235,8 +235,7 @@ func ListModels(c *gin.Context, modelType int) {
 		}
 	}
 
-	ownerByModel := map[string]string{}
-	ownerByModel = getPreferredModelOwners(userModelNames, ownerGroups)
+	ownerByModel := getPreferredModelOwners(userModelNames, ownerGroups)
 	userOpenAiModels := make([]dto.OpenAIModels, 0, len(userModelNames))
 	for _, modelName := range userModelNames {
 		userOpenAiModels = append(userOpenAiModels, buildOpenAIModel(modelName, ownerByModel))

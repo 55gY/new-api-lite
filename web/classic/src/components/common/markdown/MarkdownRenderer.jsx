@@ -86,6 +86,8 @@ export function Mermaid(props) {
     const blob = new Blob([text], { type: 'image/svg+xml' });
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank');
+    // Give the new window time to load the blob before releasing its URL.
+    window.setTimeout(() => URL.revokeObjectURL(url), 60 * 1000);
   }
 
   if (hasError) {

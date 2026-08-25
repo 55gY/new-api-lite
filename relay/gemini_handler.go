@@ -215,8 +215,6 @@ func GeminiEmbeddingHandler(c *gin.Context, info *relaycommon.RelayInfo) (newAPI
 
 	var req dto.Request
 	var err error
-	var inputTexts []string
-
 	if isBatch {
 		batchRequest := &dto.GeminiBatchEmbeddingRequest{}
 		err = common.UnmarshalBodyReusable(c, batchRequest)
@@ -224,13 +222,6 @@ func GeminiEmbeddingHandler(c *gin.Context, info *relaycommon.RelayInfo) (newAPI
 			return types.NewError(err, types.ErrorCodeInvalidRequest, types.ErrOptionWithSkipRetry())
 		}
 		req = batchRequest
-		for _, r := range batchRequest.Requests {
-			for _, part := range r.Content.Parts {
-				if part.Text != "" {
-					inputTexts = append(inputTexts, part.Text)
-				}
-			}
-		}
 	} else {
 		singleRequest := &dto.GeminiEmbeddingRequest{}
 		err = common.UnmarshalBodyReusable(c, singleRequest)
@@ -238,11 +229,6 @@ func GeminiEmbeddingHandler(c *gin.Context, info *relaycommon.RelayInfo) (newAPI
 			return types.NewError(err, types.ErrorCodeInvalidRequest, types.ErrOptionWithSkipRetry())
 		}
 		req = singleRequest
-		for _, part := range singleRequest.Content.Parts {
-			if part.Text != "" {
-				inputTexts = append(inputTexts, part.Text)
-			}
-		}
 	}
 
 	err = helper.ModelMappedHelper(c, info, req)

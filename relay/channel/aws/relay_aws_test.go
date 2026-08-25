@@ -56,8 +56,6 @@ func TestNewAwsInvokeErrorSkipsRetryAfterClientCancellation(t *testing.T) {
 }
 
 func TestDoAwsClientRequest_AppliesRuntimeHeaderOverrideToAnthropicBeta(t *testing.T) {
-	t.Parallel()
-
 	gin.SetMode(gin.TestMode)
 	recorder := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(recorder)

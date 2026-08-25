@@ -3,7 +3,7 @@ Copyright (C) 2025 QuantumNous
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation; either version 3 of the
+published by the Free Software Foundation, either version 3 of the
 License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
@@ -88,7 +88,10 @@ const ModelTagInput = ({
   const handleInputConfirm = useCallback(() => {
     const raw = inputValue.trim();
     if (!raw) return;
-    const models = raw.split(',').map((m) => m.trim()).filter(Boolean);
+    const models = raw
+      .split(',')
+      .map((m) => m.trim())
+      .filter(Boolean);
     addModels(models);
     setInputValue('');
     setShowDropdown(false);
@@ -99,7 +102,10 @@ const ModelTagInput = ({
     (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
-        if (highlightIndex >= 0 && highlightIndex < filteredSuggestions.length) {
+        if (
+          highlightIndex >= 0 &&
+          highlightIndex < filteredSuggestions.length
+        ) {
           addModels([filteredSuggestions[highlightIndex].value]);
           setInputValue('');
           setShowDropdown(false);
@@ -234,7 +240,9 @@ const ModelTagInput = ({
               onKeyDown={handleKeyDown}
               onBlur={handleInputBlur}
               onFocus={handleInputFocus}
-              placeholder={placeholder || t('输入模型名称，多个用逗号分隔，回车确认')}
+              placeholder={
+                placeholder || t('输入模型名称，多个用逗号分隔，回车确认')
+              }
               style={{ width: '100%' }}
               showClear
               onClear={() => {
@@ -264,9 +272,7 @@ const ModelTagInput = ({
                 {filteredSuggestions.map((opt, index) => (
                   <div
                     key={opt.value}
-                    onMouseDown={(e) =>
-                      handleSuggestionMouseDown(opt.value, e)
-                    }
+                    onMouseDown={(e) => handleSuggestionMouseDown(opt.value, e)}
                     style={{
                       padding: '6px 12px',
                       cursor: 'pointer',
@@ -289,11 +295,7 @@ const ModelTagInput = ({
           </div>
 
           {/* 操作按钮区域 */}
-          {actionButtons && (
-            <Space>
-              {actionButtons}
-            </Space>
-          )}
+          {actionButtons && <Space>{actionButtons}</Space>}
         </div>
 
         {/* 底部提示 */}

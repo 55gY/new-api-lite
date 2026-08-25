@@ -214,11 +214,15 @@ export const usePlaygroundState = () => {
     }
   }, []);
 
-  // 清理定时器
+  // 清理延迟保存和进行中的流连接
   useEffect(() => {
     return () => {
       if (saveConfigTimeoutRef.current) {
         clearTimeout(saveConfigTimeoutRef.current);
+      }
+      if (sseSourceRef.current) {
+        sseSourceRef.current.close();
+        sseSourceRef.current = null;
       }
     };
   }, []);
