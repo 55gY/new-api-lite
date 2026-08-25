@@ -26,16 +26,19 @@ import {
 import axios from 'axios';
 import { MESSAGE_ROLES } from '../constants/playground.constants';
 
-export let API = axios.create({
-  baseURL: import.meta.env.VITE_REACT_APP_SERVER_URL
-    ? import.meta.env.VITE_REACT_APP_SERVER_URL
-    : '',
-  headers: {
-    'New-API-User': getUserIdFromLocalStorage(),
-    'Cache-Control': 'no-store',
-  },
-});
+function createAPIInstance() {
+  return axios.create({
+    baseURL: import.meta.env.VITE_REACT_APP_SERVER_URL
+      ? import.meta.env.VITE_REACT_APP_SERVER_URL
+      : '',
+    headers: {
+      'New-API-User': getUserIdFromLocalStorage(),
+      'Cache-Control': 'no-store',
+    },
+  });
+}
 
+export let API = createAPIInstance();
 
 function patchAPIInstance(instance) {
   const originalGet = instance.get.bind(instance);
@@ -65,33 +68,31 @@ function patchAPIInstance(instance) {
   };
 }
 
-patchAPIInstance(API);
-
-export function updateAPI() {
-  API = axios.create({
-    baseURL: import.meta.env.VITE_REACT_APP_SERVER_URL
-      ? import.meta.env.VITE_REACT_APP_SERVER_URL
-      : '',
-    headers: {
-      'New-API-User': getUserIdFromLocalStorage(),
-      'Cache-Control': 'no-store',
+function attachResponseInterceptor(instance) {
+  instance.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      // 如果请求配置中显式要求跳过全局错误处理，则不弹出默认错误提示
+      if (error.config?.skipErrorHandler) {
+        return Promise.reject(error);
+      }
+      showError(error);
+      return Promise.reject(error);
     },
-  });
-
-  patchAPIInstance(API);
+  );
 }
 
-API.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    // 如果请求配置中显式要求跳过全局错误处理，则不弹出默认错误提示
-    if (error.config && error.config.skipErrorHandler) {
-      return Promise.reject(error);
-    }
-    showError(error);
-    return Promise.reject(error);
-  },
-);
+function configureAPIInstance(instance) {
+  patchAPIInstance(instance);
+  attachResponseInterceptor(instance);
+  return instance;
+}
+
+configureAPIInstance(API);
+
+export function updateAPI() {
+  API = configureAPIInstance(createAPIInstance());
+}
 
 // playground
 
@@ -218,9 +219,18 @@ export function getChannelModels(type) {
   if (!models) {
     return [];
   }
-  channelModels = JSON.parse(models);
-  if (type in channelModels) {
-    return channelModels[type];
+  try {
+    const parsed = JSON.parse(models);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw new Error('invalid cached channel models');
+    }
+    channelModels = parsed;
+    if (type in channelModels) {
+      return channelModels[type] || [];
+    }
+  } catch (error) {
+    console.warn('Ignoring invalid cached channel models', error);
+    localStorage.removeItem('channel_models');
   }
   return [];
 }

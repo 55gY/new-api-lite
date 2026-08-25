@@ -32,18 +32,30 @@ const HTMLToastContent = ({ htmlContent }) => {
   return <div dangerouslySetInnerHTML={{ __html: htmlContent }} />;
 };
 export default HTMLToastContent;
+export function getStoredUser() {
+  const raw = localStorage.getItem('user');
+  if (!raw) return null;
+  try {
+    const user = JSON.parse(raw);
+    if (!user || typeof user !== 'object' || Array.isArray(user)) {
+      throw new Error('invalid stored user');
+    }
+    return user;
+  } catch (error) {
+    console.warn('Ignoring invalid stored user session', error);
+    localStorage.removeItem('user');
+    return null;
+  }
+}
+
 export function isAdmin() {
-  let user = localStorage.getItem('user');
-  if (!user) return false;
-  user = JSON.parse(user);
-  return user.role >= 10;
+  const user = getStoredUser();
+  return typeof user?.role === 'number' && user.role >= 10;
 }
 
 export function isRoot() {
-  let user = localStorage.getItem('user');
-  if (!user) return false;
-  user = JSON.parse(user);
-  return user.role >= 100;
+  const user = getStoredUser();
+  return typeof user?.role === 'number' && user.role >= 100;
 }
 
 export function getSystemName() {
@@ -59,10 +71,8 @@ export function getLogo() {
 }
 
 export function getUserIdFromLocalStorage() {
-  let user = localStorage.getItem('user');
-  if (!user) return -1;
-  user = JSON.parse(user);
-  return user.id;
+  const user = getStoredUser();
+  return user?.id ?? -1;
 }
 
 export function getFooterHTML() {
@@ -121,32 +131,35 @@ if (isMobileScreen) {
 
 export function showError(error) {
   console.error(error);
-  if (error.message) {
-    if (error.name === 'AxiosError') {
-      switch (error.response.status) {
-        case 401:
-          // 清除用户状态
-          localStorage.removeItem('user');
-          // toast.error('错误：未登录或登录已过期，请重新登录！', showErrorOptions);
-          window.location.href = '/login?expired=true';
-          break;
-        case 429:
-          Toast.error('错误：请求次数过多，请稍后再试！');
-          break;
-        case 500:
-          Toast.error('错误：服务器内部错误，请联系管理员！');
-          break;
-        case 405:
-          Toast.info('本站仅作演示之用，无服务端！');
-          break;
-        default:
-          Toast.error('错误：' + error.message);
-      }
-      return;
-    }
-    Toast.error('错误：' + error.message);
-  } else {
-    Toast.error('错误：' + error);
+  if (error?.code === 'ERR_CANCELED' || error?.name === 'CanceledError') {
+    return;
+  }
+
+  const message = error?.message || String(error || '未知错误');
+  const isAxiosError = error?.isAxiosError || error?.name === 'AxiosError';
+  if (!isAxiosError) {
+    Toast.error('错误：' + message);
+    return;
+  }
+
+  switch (error?.response?.status) {
+    case 401:
+      // 清除用户状态
+      localStorage.removeItem('user');
+      // toast.error('错误：未登录或登录已过期，请重新登录！', showErrorOptions);
+      window.location.href = '/login?expired=true';
+      break;
+    case 429:
+      Toast.error('错误：请求次数过多，请稍后再试！');
+      break;
+    case 500:
+      Toast.error('错误：服务器内部错误，请联系管理员！');
+      break;
+    case 405:
+      Toast.info('本站仅作演示之用，无服务端！');
+      break;
+    default:
+      Toast.error('错误：' + message);
   }
 }
 
@@ -654,4 +667,3 @@ export const createCardProPagination = ({
     </>
   );
 };
-

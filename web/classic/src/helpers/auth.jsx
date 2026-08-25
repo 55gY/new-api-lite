@@ -20,47 +20,37 @@ For commercial licensing, please contact support@quantumnous.com
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { history } from './history';
+import { getStoredUser } from './utils';
 
 export function authHeader() {
-  // return authorization header with jwt token
-  let user = JSON.parse(localStorage.getItem('user'));
-
-  if (user && user.token) {
+  const user = getStoredUser();
+  if (user?.token) {
     return { Authorization: 'Bearer ' + user.token };
-  } else {
-    return {};
   }
+  return {};
 }
 
 export const AuthRedirect = ({ children }) => {
-  const user = localStorage.getItem('user');
-
-  if (user) {
+  if (getStoredUser()) {
     return <Navigate to='/console' replace />;
   }
-
   return children;
 };
 
 function PrivateRoute({ children }) {
-  if (!localStorage.getItem('user')) {
+  if (!getStoredUser()) {
     return <Navigate to='/login' state={{ from: history.location }} />;
   }
   return children;
 }
 
 export function AdminRoute({ children }) {
-  const raw = localStorage.getItem('user');
-  if (!raw) {
+  const user = getStoredUser();
+  if (!user) {
     return <Navigate to='/login' state={{ from: history.location }} />;
   }
-  try {
-    const user = JSON.parse(raw);
-    if (user && typeof user.role === 'number' && user.role >= 10) {
-      return children;
-    }
-  } catch (e) {
-    // ignore
+  if (typeof user.role === 'number' && user.role >= 10) {
+    return children;
   }
   return <Navigate to='/forbidden' replace />;
 }

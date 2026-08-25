@@ -26,16 +26,17 @@ import 'react-toastify/dist/ReactToastify.css';
 import { StatusProvider } from './context/Status';
 import { ThemeProvider } from './context/Theme';
 import PageLayout from './components/layout/PageLayout';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import './i18n/i18n';
 import './index.css';
 import { LocaleProvider } from '@douyinfe/semi-ui';
 import zh_CN from '@douyinfe/semi-ui/lib/es/locale/source/zh_CN';
 
-// 欢迎信息（二次开发者未经允许不准将此移除）
+// æ¬¢è¿Žä¿¡æ�¯ï¼ˆäºŒæ¬¡å¼€å�‘è€…æœªç»�å…�è®¸ä¸�å‡†å°†æ­¤ç§»é™¤ï¼‰
 // Welcome message (Do not remove this without permission from the original developer)
 if (typeof window !== 'undefined') {
   console.log(
-    '%cWE �?NEWAPI%c Github: https://github.com/55gY/new-api-lite',
+    '%cWE â�?NEWAPI%c Github: https://github.com/55gY/new-api-lite',
     'color: #10b981; font-weight: bold; font-size: 24px;',
     'color: inherit; font-size: 14px;',
   );
@@ -60,7 +61,9 @@ root.render(
         >
           <ThemeProvider>
             <SemiLocaleWrapper>
-              <PageLayout />
+              <ErrorBoundary>
+                <PageLayout />
+              </ErrorBoundary>
             </SemiLocaleWrapper>
           </ThemeProvider>
         </BrowserRouter>
