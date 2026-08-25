@@ -2,16 +2,58 @@ package aws
 
 import (
 	"bytes"
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/55gY/new-api-lite/common"
 	relaycommon "github.com/55gY/new-api-lite/relay/common"
+	"github.com/55gY/new-api-lite/types"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
+
+func TestNewAwsInvokeContextPropagatesParentCancellation(t *testing.T) {
+	originalTimeout := common.RelayTimeout
+	t.Cleanup(func() { common.RelayTimeout = originalTimeout })
+	common.RelayTimeout = 0
+
+	parent, cancelParent := context.WithCancel(context.Background())
+	ctx, cancel := newAwsInvokeContext(parent)
+	defer cancel()
+	cancelParent()
+
+	select {
+	case <-ctx.Done():
+		require.ErrorIs(t, ctx.Err(), context.Canceled)
+	default:
+		t.Fatal("AWS invocation context did not inherit parent cancellation")
+	}
+}
+
+func TestNewAwsInvokeContextKeepsRelayTimeout(t *testing.T) {
+	originalTimeout := common.RelayTimeout
+	t.Cleanup(func() { common.RelayTimeout = originalTimeout })
+	common.RelayTimeout = 1
+
+	ctx, cancel := newAwsInvokeContext(context.Background())
+	defer cancel()
+	_, hasDeadline := ctx.Deadline()
+	require.True(t, hasDeadline)
+}
+
+func TestNewAwsInvokeErrorSkipsRetryAfterClientCancellation(t *testing.T) {
+	canceled, cancel := context.WithCancel(context.Background())
+	cancel()
+	err := newAwsInvokeError(canceled, context.Canceled, "InvokeModel")
+	require.True(t, types.IsSkipRetryError(err))
+
+	active := context.Background()
+	err = newAwsInvokeError(active, context.DeadlineExceeded, "InvokeModel")
+	require.False(t, types.IsSkipRetryError(err))
+}
 
 func TestDoAwsClientRequest_AppliesRuntimeHeaderOverrideToAnthropicBeta(t *testing.T) {
 	t.Parallel()

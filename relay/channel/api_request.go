@@ -29,10 +29,8 @@ import (
 // body is wrapped in a BodyStorage (see relay/common/outbound_body.go).
 //
 // net/http.NewRequest only auto-detects ContentLength for *bytes.Reader,
-// *bytes.Buffer and *strings.Reader. When the body is a type-erased io.Reader
-// (which is the case for ReaderOnly(BodyStorage)), the Content-Length header
-// would otherwise be omitted, forcing chunked transfer encoding and breaking
-// some upstreams that require an explicit Content-Length.
+// *bytes.Buffer and *strings.Reader. When the body is type-erased, the header
+// would otherwise be omitted and some upstreams would receive chunked bodies.
 func applyUpstreamContentLength(req *http.Request, info *common.RelayInfo) {
 	if info == nil {
 		return
@@ -40,6 +38,23 @@ func applyUpstreamContentLength(req *http.Request, info *common.RelayInfo) {
 	if info.UpstreamRequestBodySize > 0 && req.ContentLength <= 0 {
 		req.ContentLength = info.UpstreamRequestBodySize
 	}
+}
+
+// applyUpstreamGetBody restores the retry reader that net/http cannot infer
+// from a type-erased BodyStorage reader. HTTP/2 uses this factory to retry a
+// request after an upstream stream reset once the original body was written.
+func applyUpstreamGetBody(req *http.Request, info *common.RelayInfo) {
+	if info == nil || info.UpstreamRequestGetBody == nil || req.GetBody != nil {
+		return
+	}
+	req.GetBody = info.UpstreamRequestGetBody
+}
+
+// ApplyUpstreamBodyMetadata restores body metadata that net/http cannot infer
+// when a stored request body is exposed through an interface reader.
+func ApplyUpstreamBodyMetadata(req *http.Request, info *common.RelayInfo) {
+	applyUpstreamContentLength(req, info)
+	applyUpstreamGetBody(req, info)
 }
 
 func SetupApiRequestHeader(info *common.RelayInfo, c *gin.Context, req *http.Header) {
@@ -312,7 +327,7 @@ func DoApiRequest(a Adaptor, c *gin.Context, info *common.RelayInfo, requestBody
 	if err != nil {
 		return nil, fmt.Errorf("new request failed: %w", err)
 	}
-	applyUpstreamContentLength(req, info)
+	ApplyUpstreamBodyMetadata(req, info)
 	headers := req.Header
 	err = a.SetupRequestHeader(c, &headers, info)
 	if err != nil {
@@ -342,7 +357,7 @@ func DoFormRequest(a Adaptor, c *gin.Context, info *common.RelayInfo, requestBod
 	if err != nil {
 		return nil, fmt.Errorf("new request failed: %w", err)
 	}
-	applyUpstreamContentLength(req, info)
+	ApplyUpstreamBodyMetadata(req, info)
 	// set form data
 	req.Header.Set("Content-Type", c.Request.Header.Get("Content-Type"))
 	headers := req.Header

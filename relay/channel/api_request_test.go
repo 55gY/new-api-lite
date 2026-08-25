@@ -1,14 +1,40 @@
 package channel
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	relaycommon "github.com/55gY/new-api-lite/relay/common"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
+
+func TestApplyUpstreamBodyMetadataRestoresReplayData(t *testing.T) {
+	payload := "replay-body"
+	req := httptest.NewRequest(http.MethodPost, "https://example.com/v1/responses", strings.NewReader(payload))
+	req.ContentLength = 0
+	req.GetBody = nil
+	info := &relaycommon.RelayInfo{
+		UpstreamRequestBodySize: int64(len(payload)),
+		UpstreamRequestGetBody: func() (io.ReadCloser, error) {
+			return io.NopCloser(strings.NewReader(payload)), nil
+		},
+	}
+
+	ApplyUpstreamBodyMetadata(req, info)
+	require.Equal(t, int64(len(payload)), req.ContentLength)
+	require.NotNil(t, req.GetBody)
+
+	replay, err := req.GetBody()
+	require.NoError(t, err)
+	defer replay.Close()
+	got, err := io.ReadAll(replay)
+	require.NoError(t, err)
+	require.Equal(t, payload, string(got))
+}
 
 func TestProcessHeaderOverride_ChannelTestSkipsPassthroughRules(t *testing.T) {
 	t.Parallel()

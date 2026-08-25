@@ -3,6 +3,7 @@ package common
 import (
 	"errors"
 	"fmt"
+	"io"
 	"net/url"
 	"strings"
 	"time"
@@ -137,6 +138,9 @@ type RelayInfo struct {
 	// http.Request.ContentLength manually (net/http only auto-detects it for
 	// *bytes.Reader/Buffer/strings.Reader). 0 means "let net/http decide".
 	UpstreamRequestBodySize int64
+	// UpstreamRequestGetBody returns a fresh reader for retryable JSON request
+	// bodies. It is nil for streamed or multipart requests.
+	UpstreamRequestGetBody func() (io.ReadCloser, error)
 
 	PriceData types.PriceData
 
