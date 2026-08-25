@@ -62,7 +62,6 @@ import SingleModelSelectModal from './SingleModelSelectModal';
 import OllamaModelModal from './OllamaModelModal';
 import CodexOAuthModal from './CodexOAuthModal';
 import ParamOverrideEditorModal from './ParamOverrideEditorModal';
-import CheckinTaskEditModal from './CheckinTaskEditModal';
 import JSONEditor from '../../../common/ui/JSONEditor';
 import StatusCodeRiskGuardModal from './StatusCodeRiskGuardModal';
 import { parseChannelConnectionString } from '../../../../helpers/token';
@@ -80,7 +79,6 @@ import {
   IconBolt,
   IconSearch,
   IconChevronDown,
-  IconPlus,
 } from '@douyinfe/semi-icons';
 
 const { Text, Title } = Typography;
@@ -216,7 +214,6 @@ const EditChannelModal = (props) => {
     upstream_model_update_last_detected_models: [],
     upstream_model_update_ignored_models: '',
     disable_auto_test: 0,
-    checkin_task_id: 0,
   };
   const [batch, setBatch] = useState(false);
   const [multiToSingle, setMultiToSingle] = useState(false);
@@ -230,11 +227,6 @@ const EditChannelModal = (props) => {
   const [isModalOpenurl, setIsModalOpenurl] = useState(false);
   const [modelModalVisible, setModelModalVisible] = useState(false);
   const [fetchedModels, setFetchedModels] = useState([]);
-  const [checkinTaskOptions, setCheckinTaskOptions] = useState(() => [
-    { label: t('不关联签到任务'), value: 0 },
-  ]);
-  const [checkinTaskModalVisible, setCheckinTaskModalVisible] =
-    useState(false);
   const [modelMappingValueModalVisible, setModelMappingValueModalVisible] =
     useState(false);
   const [modelMappingValueModalModels, setModelMappingValueModalModels] =
@@ -253,30 +245,6 @@ const EditChannelModal = (props) => {
   const [keyMode, setKeyMode] = useState('append'); // 密钥模式：replace（覆盖）或 append（追加）
   const [isEnterpriseAccount, setIsEnterpriseAccount] = useState(false); // 是否为企业账户
   const [doubaoApiEditUnlocked, setDoubaoApiEditUnlocked] = useState(false); // 豆包渠道自定义 API 地址隐藏入口
-  useEffect(() => {
-    const loadCheckinTaskOptions = async () => {
-      try {
-        const res = await API.get('/api/channel-checkin-task/');
-        if (res.data?.success) {
-          const tasks = res.data.data?.items || [];
-          setCheckinTaskOptions([
-            { label: t('不关联签到任务'), value: 0 },
-            ...tasks.map((task) => ({
-              label:
-                task.status === 1
-                  ? task.name
-                  : `${task.name} (${t('已停用')})`,
-              value: task.id,
-            })),
-          ]);
-        }
-      } catch (error) {
-        console.error('load channel check-in task options failed:', error);
-      }
-    };
-    loadCheckinTaskOptions();
-  }, [t]);
-
   const currentChannelModels = useMemo(
     () =>
       Array.from(
@@ -1745,15 +1713,6 @@ const EditChannelModal = (props) => {
     delete localInputs.upstream_model_update_last_check_time;
     delete localInputs.upstream_model_update_last_detected_models;
     delete localInputs.upstream_model_update_ignored_models;
-    if (!localInputs.checkin_task_id || Number(localInputs.checkin_task_id) <= 0) {
-      delete localInputs.checkin_task_id;
-      // GORM 的 Updates 会跳过 nil 指针；编辑时需使用显式标记解除已有签到任务关联。
-      if (isEdit) {
-        localInputs.clear_checkin_task = true;
-      }
-    } else {
-      delete localInputs.clear_checkin_task;
-    }
     // 新增请求的 multi_key_mode 属于 AddChannelRequest 外层包装字段，不能嵌入 Channel。
     if (!isEdit) {
       delete localInputs.multi_key_mode;
@@ -2535,39 +2494,6 @@ const EditChannelModal = (props) => {
                       showClear
                       onChange={(value) => handleInputChange('name', value)}
                       autoComplete='new-password'
-                    />
-
-                    <Form.Select
-                      field='checkin_task_id'
-                      label={
-                        <span
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 4,
-                          }}
-                        >
-                          {t('签到任务（可选）')}
-                          <Button
-                            size='small'
-                            theme='borderless'
-                            type='primary'
-                            icon={<IconPlus />}
-                            onClick={() => setCheckinTaskModalVisible(true)}
-                          >
-                            {t('快速新增')}
-                          </Button>
-                        </span>
-                      }
-                      placeholder={t('请选择关联的签到任务')}
-                      optionList={checkinTaskOptions}
-                      style={{ width: '100%' }}
-                      onChange={(value) =>
-                        handleInputChange('checkin_task_id', value)
-                      }
-                      extraText={t(
-                        '关联后可在“签到任务”中统一管理该渠道的受限第三方签到请求。',
-                      )}
                     />
 
                     {inputs.type === 33 && (
@@ -3551,28 +3477,6 @@ const EditChannelModal = (props) => {
         onSave={(nextValue) => {
           handleInputChange('param_override', nextValue);
           setParamOverrideEditorVisible(false);
-        }}
-      />
-
-      <CheckinTaskEditModal
-        visible={checkinTaskModalVisible}
-        editingTask={null}
-        onCancel={() => setCheckinTaskModalVisible(false)}
-        onSaved={(task) => {
-          setCheckinTaskModalVisible(false);
-          if (task?.id) {
-            setCheckinTaskOptions((prev) => [
-              ...prev,
-              {
-                label:
-                  task.status === 1
-                    ? task.name
-                    : `${task.name} (${t('已停用')})`,
-                value: task.id,
-              },
-            ]);
-            handleInputChange('checkin_task_id', task.id);
-          }
         }}
       />
 

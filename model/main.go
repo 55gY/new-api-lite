@@ -153,8 +153,6 @@ func migrateDB() error {
 		&TwoFA{},
 		&TwoFABackupCode{},
 		&Checkin{},
-		&ChannelCheckinTask{},
-		&ChannelCheckinTaskLog{},
 		&PerfMetric{},
 	)
 	if err != nil {

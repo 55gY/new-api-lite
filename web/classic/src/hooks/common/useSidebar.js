@@ -43,7 +43,6 @@ export const DEFAULT_ADMIN_CONFIG = {
   admin: {
     enabled: true,
     channel: true,
-    channelCheckinTask: true,
     user: true,
     setting: true,
   },

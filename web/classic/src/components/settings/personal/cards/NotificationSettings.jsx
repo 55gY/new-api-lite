@@ -76,7 +76,6 @@ const NotificationSettings = ({
     admin: {
       enabled: true,
       channel: true,
-      channelCheckinTask: true,
       user: true,
       setting: true,
     },
@@ -156,7 +155,6 @@ const NotificationSettings = ({
       admin: {
         enabled: true,
         channel: true,
-        channelCheckinTask: true,
         user: true,
         setting: true,
       },
@@ -269,11 +267,6 @@ const NotificationSettings = ({
       description: t('系统管理功能'),
       modules: [
         { key: 'channel', title: t('渠道管理'), description: t('API渠道配置') },
-        {
-          key: 'channelCheckinTask',
-          title: t('签到任务'),
-          description: t('第三方渠道签到任务管理'),
-        },
         { key: 'user', title: t('用户管理'), description: t('用户账户管理') },
         {
           key: 'setting',

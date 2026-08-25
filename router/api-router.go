@@ -98,18 +98,6 @@ func SetApiRouter(router *gin.Engine) {
 			performanceRoute.GET("/logs", controller.GetLogFiles)
 			performanceRoute.DELETE("/logs", controller.CleanupLogFiles)
 		}
-		checkinTaskRoute := apiRouter.Group("/channel-checkin-task")
-		checkinTaskRoute.Use(middleware.AdminAuth())
-		{
-			checkinTaskRoute.GET("/", controller.ListChannelCheckinTasks)
-			checkinTaskRoute.POST("/", controller.AddChannelCheckinTask)
-			checkinTaskRoute.PUT("/", controller.UpdateChannelCheckinTask)
-			checkinTaskRoute.GET("/:id", controller.GetChannelCheckinTask)
-			checkinTaskRoute.DELETE("/:id", controller.DeleteChannelCheckinTask)
-			checkinTaskRoute.POST("/:id/run", controller.RunChannelCheckinTask)
-			checkinTaskRoute.GET("/:id/logs", controller.GetChannelCheckinTaskLogs)
-		}
-
 		channelRoute := apiRouter.Group("/channel")
 		channelRoute.Use(middleware.AdminAuth())
 		{

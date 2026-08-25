@@ -31,7 +31,6 @@ import Setting from './pages/Setting';
 import PasswordResetForm from './components/auth/PasswordResetForm';
 import PasswordResetConfirm from './components/auth/PasswordResetConfirm';
 import Channel from './pages/Channel';
-import ChannelCheckinTask from './pages/ChannelCheckinTask';
 import Token from './pages/Token';
 import Log from './pages/Log';
 import Playground from './pages/Playground';
@@ -73,14 +72,6 @@ function App() {
           element={
             <AdminRoute>
               <Channel />
-            </AdminRoute>
-          }
-        />
-        <Route
-          path='/console/channel-checkin-task'
-          element={
-            <AdminRoute>
-              <ChannelCheckinTask />
             </AdminRoute>
           }
         />
