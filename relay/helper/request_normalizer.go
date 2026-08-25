@@ -127,17 +127,18 @@ func cleanNullValues(m map[string]any) {
 			// 递归处理嵌套对象
 			cleanNullValues(v)
 		case []any:
-			// 处理数组,递归清理数组中的对象
-			for i, item := range v {
+			// 原地过滤 null，避免在 range 期间缩短切片而跳过连续元素。
+			filtered := v[:0]
+			for _, item := range v {
 				if item == nil {
-					// 删除数组中的 null 元素
-					v = append(v[:i], v[i+1:]...)
-					i-- // 调整索引
-				} else if nestedMap, ok := item.(map[string]any); ok {
+					continue
+				}
+				if nestedMap, ok := item.(map[string]any); ok {
 					cleanNullValues(nestedMap)
 				}
+				filtered = append(filtered, item)
 			}
-			m[key] = v
+			m[key] = filtered
 		}
 	}
 }

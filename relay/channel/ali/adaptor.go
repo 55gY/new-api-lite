@@ -55,12 +55,6 @@ func aliAnthropicMessagesModelPatterns() []string {
 	})
 }
 
-var syncModels = []string{
-	"z-image",
-	"qwen-image",
-	"wan2.6",
-}
-
 func isSyncImageModel(modelName string) bool {
 	return model_setting.IsSyncImageModel(modelName)
 }

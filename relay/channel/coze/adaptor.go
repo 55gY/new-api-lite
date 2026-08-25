@@ -68,15 +68,15 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *common.RelayInfo, requestBody 
 	if err != nil {
 		return nil, err
 	}
-	// 解析 resp
-	var cozeResponse CozeChatResponse
+	// 解析创建消息响应。该响应体在此路径中已被完全消费，必须关闭。
+	defer resp.Body.Close()
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
-	err = commonpkg.Unmarshal(respBody, &cozeResponse)
-	if cozeResponse.Code != 0 {
-		return nil, errors.New(cozeResponse.Msg)
+	cozeResponse, err := parseCozeChatResponse(respBody)
+	if err != nil {
+		return nil, err
 	}
 	c.Set("coze_conversation_id", cozeResponse.Data.ConversationId)
 	c.Set("coze_chat_id", cozeResponse.Data.Id)
@@ -97,6 +97,17 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *common.RelayInfo, requestBody 
 }
 
 // DoResponse implements channel.Adaptor.
+func parseCozeChatResponse(body []byte) (*CozeChatResponse, error) {
+	var response CozeChatResponse
+	if err := commonpkg.Unmarshal(body, &response); err != nil {
+		return nil, fmt.Errorf("decode Coze chat response: %w", err)
+	}
+	if response.Code != 0 {
+		return nil, errors.New(response.Msg)
+	}
+	return &response, nil
+}
+
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *common.RelayInfo) (usage any, err *types.NewAPIError) {
 	if info.IsStream {
 		usage, err = cozeChatStreamHandler(c, info, resp)
