@@ -373,9 +373,6 @@ const EditChannelModal = (props) => {
   const [paramOverrideEditorVisible, setParamOverrideEditorVisible] =
     useState(false);
 
-  // 专门的2FA验证状态（用于TwoFactorAuthModal）
-  const [show2FAVerifyModal, setShow2FAVerifyModal] = useState(false);
-  const [verifyCode, setVerifyCode] = useState('');
 
   useEffect(() => {
     if (!isEdit) {
@@ -384,7 +381,6 @@ const EditChannelModal = (props) => {
     }
   }, [isEdit]);
 
-  const [verifyLoading, setVerifyLoading] = useState(false);
   const statusCodeRiskConfirmResolverRef = useRef(null);
   const [statusCodeRiskConfirmVisible, setStatusCodeRiskConfirmVisible] =
     useState(false);
@@ -419,13 +415,6 @@ const EditChannelModal = (props) => {
       </span>
     </Tooltip>
   );
-
-  // 重置2FA验证状态
-  const reset2FAVerifyState = () => {
-    setShow2FAVerifyModal(false);
-    setVerifyCode('');
-    setVerifyLoading(false);
-  };
 
   const handleApiConfigSecretClick = () => {
     if (inputs.type !== 45) return;

@@ -192,7 +192,7 @@
 - [x] Step 9.1: 搜索 `.bak` 以外所有被删符号和 route，确认无残留引用。备注：主代码残留仅剩 `.bak` 噪声或保留的后台任务命名。
 - [x] Step 9.2: 使用子代理或独立检索检查所有修改文件的 undefined 变量、未导入组件、孤立文件。备注：子代理确认无核心 route/import/orphan 编译级残留。
 - [x] Step 9.3: 清理未使用 imports、常量、接口、函数。备注：清理 Midjourney option/error/i18n 常量、废弃多媒体价格项、未使用 audio helper、侧边栏 task 死配置、前端 lockfile 直接依赖残留。
-- [x] Step 9.4: 检查 OpenAPI/Swagger/docs 中是否还有已删除接口入口；按需清理明显错误入口。备注：清理 `constant/README.md` 与 `docs/openapi/api.json` 中任务/Midjourney 入口；`docs/openapi/relay.json` 仍含较大的生成型 audio/video 文档残留，后续如需可单独重生成或大块清理。
+- [x] Step 9.4: 检查 OpenAPI/Swagger/docs 中是否还有已删除接口入口；按需清理明显错误入口。备注：清理 `constant/README.md` 与 `docs/openapi/api.json` 中任务/Midjourney 入口；后续的 `.plan/20260825-02.md` 已删除与实际路由不一致的 `docs/openapi/relay.json`。
 - [x] Verify 9: `go test` 或编译前静态检查不再报告引用错误。备注：前端 Vite 构建通过（仅 chunk size warning），后端 `CGO_ENABLED=0 go build -ldflags="-s -w" -trimpath -o new-api.exe .` 通过。
 
 #### Phase 10: 构建与功能验证
@@ -203,7 +203,7 @@
 - [x] Step 10.4: Smoke test：启动服务，验证登录/设置页/渠道列表/API token/模型列表可用。备注：`/`、`/api/status` 200；登录路由存在；模型、渠道、token 管理入口在未登录时返回 401，说明路由存在且受保护。
 - [x] Step 10.5: Smoke test：验证核心 API 聚合路径 `models`、`chat completions`、`responses`、`embeddings` 至少不会因路由缺失或 panic 失败。备注：`/v1/models` 未授权返回 401；`/v1/chat/completions`、`/v1/responses`、`/v1/embeddings` 在无可用渠道/无有效请求环境时返回 503，未出现 404 或 panic。
 - [x] Step 10.6: Smoke test：确认已删除 audio/video/music/task/prefill/quota/rate routes 返回 404 或不存在入口。备注：`/v1/audio/transcriptions`、`/v1/videos`、`/suno/submit/music`、`/api/task/`、`/api/prefill_group/`、`/api/rate/` 返回 404；`/api/user/quota` 返回 401（仍受历史用户路由保护但无公开功能入口）。修复 `router/web-router.go`，避免 `/suno*` 被 SPA fallback 返回 200。
-- [x] Verify 10: 前端构建成功、后端构建成功、核心功能 smoke test 通过、删除功能无入口。备注：子代理复核运行时路由无 `/suno`、`/api/task`、`/api/prefill_group`、`/v1/audio`、`/v1/videos` 注册；`docs/openapi/relay.json` 仍有生成型 audio/video 文档残留，后续可单独重生成或清理。
+- [x] Verify 10: 前端构建成功、后端构建成功、核心功能 smoke test 通过、删除功能无入口。备注：子代理复核运行时路由无 `/suno`、`/api/task`、`/api/prefill_group`、`/v1/audio`、`/v1/videos` 注册；后续的 `.plan/20260825-02.md` 已删除与实际路由不一致的 `docs/openapi/relay.json`。
 
 ### Rollback Plan
 
@@ -258,3 +258,4 @@
 - [.plan/20260815-01.md](.plan/20260815-01.md) — 渠道模型重定向映射修复计划（已完成：静态验证通过；当前环境缺少 Bun，未执行 Bun 生产构建）
 - [.plan/20260815-04.md](.plan/20260815-04.md) — 渠道新增与编辑表单字段一致性审查计划（已完成：修复请求载荷与全量/静态验证；签到关联部分已由后续撤销计划移除）
 - [.plan/20260825-01.md](.plan/20260825-01.md) — 签到任务精确移除计划（已完成：保留模型映射与表单请求载荷优化；前后端构建及后端全量测试通过）
+- [.plan/20260825-02.md](.plan/20260825-02.md) — 高置信废弃模块与路由文档清理计划（已完成：清理 19 个前端孤立模块、`/mj` 代理及过期 OpenAPI；前后端构建与全量测试通过）
