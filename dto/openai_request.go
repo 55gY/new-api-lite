@@ -515,10 +515,7 @@ func (m *Message) SetMediaContent(content []MediaContent) {
 
 func (m *Message) IsStringContent() bool {
 	_, ok := m.Content.(string)
-	if ok {
-		return true
-	}
-	return false
+	return ok
 }
 
 func (m *Message) ParseContent() []MediaContent {

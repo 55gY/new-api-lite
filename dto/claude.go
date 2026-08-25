@@ -52,10 +52,7 @@ func (c *ClaudeMediaMessage) IsStringContent() bool {
 		return false
 	}
 	_, ok := c.Content.(string)
-	if ok {
-		return true
-	}
-	return false
+	return ok
 }
 
 func (c *ClaudeMediaMessage) GetStringContent() string {
