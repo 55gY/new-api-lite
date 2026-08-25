@@ -266,3 +266,4 @@
 - [.plan/20260825-07.md](.plan/20260825-07.md) — staticcheck P0 正确性修复与安全清理计划（已完成：Coze 解码、schema null 过滤、低风险残留清理及完整隔离回归）
 - [.plan/20260825-08.md](.plan/20260825-08.md) — staticcheck 第二批安全修复计划（已完成：Ali 读取错误、multipart 资源释放、私有 dead code 及完整隔离回归）
 - [.plan/20260825-09.md](.plan/20260825-09.md) — staticcheck 第三批语义等价修复计划（已完成：布尔返回化简及完整隔离回归）
+- [.plan/20260825-10.md](.plan/20260825-10.md) — staticcheck 第四批机械修复与兼容性标注计划（已完成：map 清理、显式客户端断连处理、最小化 SA1019 ignore 及完整隔离回归）

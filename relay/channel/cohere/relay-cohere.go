@@ -245,6 +245,7 @@ func cohereRerankHandler(c *gin.Context, resp *http.Response, info *relaycommon.
 	}
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.WriteHeader(resp.StatusCode)
-	_, err = c.Writer.Write(jsonResponse)
+	// 响应头已发送；写失败通常表示客户端断连，无法发送替代 API 响应。
+	_, _ = c.Writer.Write(jsonResponse)
 	return &usage, nil
 }

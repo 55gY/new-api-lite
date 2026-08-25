@@ -1060,7 +1060,7 @@ func ensureContextMap(conditionContext map[string]interface{}) map[string]interf
 }
 
 func marshalContextJSON(context map[string]interface{}) (string, error) {
-	if context == nil || len(context) == 0 {
+	if len(context) == 0 {
 		return "", nil
 	}
 	ctxBytes, err := common.Marshal(context)
