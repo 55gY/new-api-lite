@@ -867,6 +867,10 @@ type OpenAIResponsesRequest struct {
 	ToolChoice       json.RawMessage `json:"tool_choice,omitempty"`
 	Tools            json.RawMessage `json:"tools,omitempty"` // 需要处理的参数很少，MCP 参数太多不确定，所以用 map
 	TopP             *float64        `json:"top_p,omitempty"`
+	// FrequencyPenalty and PresencePenalty are passed through for OpenAI-compatible
+	// upstreams that accept these Chat Completions fields on Responses requests.
+	FrequencyPenalty json.RawMessage `json:"frequency_penalty,omitempty"`
+	PresencePenalty  json.RawMessage `json:"presence_penalty,omitempty"`
 	Truncation       json.RawMessage `json:"truncation,omitempty"`
 	User             json.RawMessage `json:"user,omitempty"`
 	MaxToolCalls     *uint           `json:"max_tool_calls,omitempty"`

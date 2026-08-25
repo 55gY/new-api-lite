@@ -271,6 +271,13 @@ func TokenAuthReadOnly() func(c *gin.Context) {
 	}
 }
 
+func isGeminiAPIKeyPath(path string) bool {
+	return path == "/v1/models" ||
+		strings.HasPrefix(path, "/v1beta/models") ||
+		strings.HasPrefix(path, "/v1beta/openai/models") ||
+		strings.HasPrefix(path, "/v1/models/")
+}
+
 func TokenAuth() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		// 先检测是否为ws
@@ -296,9 +303,7 @@ func TokenAuth() func(c *gin.Context) {
 			}
 		}
 		// gemini api 从query中获取key
-		if strings.HasPrefix(c.Request.URL.Path, "/v1beta/models") ||
-			strings.HasPrefix(c.Request.URL.Path, "/v1beta/openai/models") ||
-			strings.HasPrefix(c.Request.URL.Path, "/v1/models/") {
+		if isGeminiAPIKeyPath(c.Request.URL.Path) {
 			skKey := c.Query("key")
 			if skKey != "" {
 				c.Request.Header.Set("Authorization", "Bearer "+skKey)

@@ -10,11 +10,15 @@ import (
 const EnableSearchModelSuffix = "-internet"
 
 func requestOpenAI2Ali(request dto.GeneralOpenAIRequest) *dto.GeneralOpenAIRequest {
-	topP := lo.FromPtrOr(request.TopP, 0)
-	if topP >= 1 {
-		request.TopP = lo.ToPtr(0.999)
-	} else if topP <= 0 {
-		request.TopP = lo.ToPtr(0.001)
+	// DashScope rejects top_p at the 0 and 1 boundaries. Clamp only an
+	// explicitly supplied value so an omitted field continues to use the
+	// upstream model default.
+	if request.TopP != nil {
+		if *request.TopP >= 1 {
+			request.TopP = lo.ToPtr(0.99)
+		} else if *request.TopP <= 0 {
+			request.TopP = lo.ToPtr(0.01)
+		}
 	}
 	return &request
 }
