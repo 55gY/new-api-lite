@@ -294,39 +294,6 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 	return &simpleResponse.Usage, nil
 }
 
-func streamTTSResponse(c *gin.Context, resp *http.Response) {
-	c.Writer.WriteHeaderNow()
-
-	flusher, ok := c.Writer.(http.Flusher)
-	if !ok {
-		logger.LogWarn(c, "streaming not supported")
-		_, err := io.Copy(c.Writer, resp.Body)
-		if err != nil {
-			logger.LogWarn(c, err.Error())
-		}
-		return
-	}
-
-	buffer := make([]byte, 4096)
-	for {
-		n, err := resp.Body.Read(buffer)
-		//logger.LogInfo(c, fmt.Sprintf("streamTTSResponse read %d bytes", n))
-		if n > 0 {
-			if _, writeErr := c.Writer.Write(buffer[:n]); writeErr != nil {
-				logger.LogError(c, writeErr.Error())
-				break
-			}
-			flusher.Flush()
-		}
-		if err != nil {
-			if err != io.EOF {
-				logger.LogError(c, err.Error())
-			}
-			break
-		}
-	}
-}
-
 func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*types.NewAPIError, *dto.RealtimeUsage) {
 	if info == nil || info.ClientWs == nil || info.TargetWs == nil {
 		return types.NewError(fmt.Errorf("invalid websocket connection"), types.ErrorCodeBadResponse), nil

@@ -18,26 +18,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func responsesStreamIndexKey(itemID string, idx *int) string {
-	if itemID == "" {
-		return ""
-	}
-	if idx == nil {
-		return itemID
-	}
-	return fmt.Sprintf("%s:%d", itemID, *idx)
-}
-
-func stringDeltaFromPrefix(prev string, next string) string {
-	if next == "" {
-		return ""
-	}
-	if prev != "" && strings.HasPrefix(next, prev) {
-		return next[len(prev):]
-	}
-	return next
-}
-
 func OaiResponsesToChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NewAPIError) {
 	if resp == nil || resp.Body == nil {
 		return nil, types.NewOpenAIError(fmt.Errorf("invalid response"), types.ErrorCodeBadResponse, http.StatusInternalServerError)
