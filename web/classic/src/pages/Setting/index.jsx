@@ -28,9 +28,11 @@ import {
   Cog,
   MoreHorizontal,
   Activity,
+  DatabaseBackup,
 } from 'lucide-react';
 
 import SystemSetting from '../../components/settings/SystemSetting';
+import ConfigBackupSetting from '../../components/settings/ConfigBackupSetting';
 import { isRoot } from '../../helpers';
 import OtherSetting from '../../components/settings/OtherSetting';
 import OperationSetting from '../../components/settings/OperationSetting';
@@ -95,6 +97,16 @@ const Setting = () => {
       ),
       content: <SystemSetting />,
       itemKey: 'system',
+    });
+    panes.push({
+      tab: (
+        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <DatabaseBackup size={18} />
+          {t('配置备份')}
+        </span>
+      ),
+      content: <ConfigBackupSetting />,
+      itemKey: 'backup',
     });
     panes.push({
       tab: (

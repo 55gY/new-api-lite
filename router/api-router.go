@@ -83,7 +83,11 @@ func SetApiRouter(router *gin.Engine) {
 		{
 			optionRoute.GET("/", controller.GetOptions)
 			optionRoute.PUT("/", controller.UpdateOption)
+			optionRoute.GET("/config_backup/categories", controller.GetConfigBackupCategories)
+			optionRoute.POST("/config_backup/export", controller.ExportConfigBackup)
+			optionRoute.POST("/config_backup/restore", controller.RestoreConfigBackup)
 			optionRoute.GET("/channel_affinity_cache", controller.GetChannelAffinityCacheStats)
+
 			optionRoute.DELETE("/channel_affinity_cache", controller.ClearChannelAffinityCache)
 			optionRoute.POST("/migrate_console_setting", controller.MigrateConsoleSetting) // 用于迁移检测的旧键，下个版本会删除
 		}

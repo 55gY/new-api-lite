@@ -3819,6 +3819,142 @@
           }
         ]
       }
+    },
+    "/api/option/config_backup/categories": {
+      "get": {
+        "summary": "获取配置备份类别",
+        "deprecated": false,
+        "description": "👑 需要超级管理员权限（Root）。返回当前有效配置可导出/还原的类别、项目数量与敏感性提示。",
+        "tags": [
+          "系统设置"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "headers": {}
+          }
+        },
+        "security": [
+          {
+            "Combination343": []
+          },
+          {
+            "Combination1243": []
+          }
+        ]
+      }
+    },
+    "/api/option/config_backup/export": {
+      "post": {
+        "summary": "导出选择的有效配置",
+        "deprecated": false,
+        "description": "👑 需要超级管理员权限（Root）。返回版本化 JSON 备份；渠道与凭据属于敏感数据，必须显式确认 include_sensitive。账户、API Token、2FA、日志、tokens 使用统计和数据库文件永不包含在备份中。",
+        "tags": [
+          "系统设置"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "categories"
+                ],
+                "properties": {
+                  "categories": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "选择的配置类别"
+                  },
+                  "include_sensitive": {
+                    "type": "boolean",
+                    "description": "确认导出包含凭据或渠道密钥的敏感类别"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "headers": {}
+          }
+        },
+        "security": [
+          {
+            "Combination343": []
+          },
+          {
+            "Combination1243": []
+          }
+        ]
+      }
+    },
+    "/api/option/config_backup/restore": {
+      "post": {
+        "summary": "还原选择的有效配置",
+        "deprecated": false,
+        "description": "👑 需要超级管理员权限（Root）。仅还原 categories 指定的备份类别；还原渠道会原子替换全部渠道和能力配置，凭据与渠道还原均需显式确认。",
+        "tags": [
+          "系统设置"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "backup",
+                  "categories"
+                ],
+                "properties": {
+                  "backup": {
+                    "type": "object",
+                    "description": "由配置导出接口生成的版本化 JSON 备份"
+                  },
+                  "categories": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "本次要还原的类别"
+                  },
+                  "confirm_sensitive": {
+                    "type": "boolean",
+                    "description": "确认覆盖敏感凭据"
+                  },
+                  "confirm_channels": {
+                    "type": "boolean",
+                    "description": "确认替换全部渠道配置"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "headers": {}
+          }
+        },
+        "security": [
+          {
+            "Combination343": []
+          },
+          {
+            "Combination1243": []
+          }
+        ]
+      }
     }
   },
   "components": {
