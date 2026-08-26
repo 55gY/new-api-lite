@@ -20,7 +20,6 @@ var (
 		"light-green": true, "teal": true, "light-blue": true, "indigo": true,
 		"violet": true, "grey": true, "slate": true,
 	}
-	slugRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 )
 
 func parseJSONArray(jsonStr string, typeName string) ([]map[string]interface{}, error) {
