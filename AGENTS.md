@@ -136,9 +136,9 @@ web/             — 前端主题容器
 - **渠道倍率/模型倍率/分组倍率**：倍率计价、价格配置、倍率热更新
 - **扣费/返还**：PreConsumedQuota、PostConsumeQuota、refund、insufficient quota 等
 - **预填组管理**：prefill_group API、模型预填组配置
-- **计费表达式**：billingexpr 包、动态计价、quota 数学运算（本项目 quota 固定为 0）
+- **计费表达式**：billingexpr 包、动态计价及任何相关数学运算。
 
-**允许保留的兼容字段**：数据库中历史 quota/ratio 字段可保留为兼容空值（返回 0 或默认值），但不得恢复其业务逻辑。tokens 消耗统计（prompt/completion/total tokens）和 request count 统计继续保留，仅用于监控和分析，不用于计费。
+**迁移规则**：启动时检测到历史 quota、ratio、价格或货币列、表和 option，将先创建同目录时间戳备份，再执行物理删除或受控重命名；这些旧名称仅允许出现在迁移白名单与迁移 fixture 中，禁止恢复为空值兼容字段。tokens 消耗统计（prompt/completion/total tokens）和 request count 统计继续保留，仅用于监控和分析，不用于计费。
 
 ### 规则 8：禁止引入音频/视频/任务等已移除功能
 

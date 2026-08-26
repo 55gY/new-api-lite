@@ -12,11 +12,9 @@ This document provides standard French translations for key project terminology 
 
 | Chinois | Français | Anglais | Description |
 |---------|----------|---------|-------------|
-| 倍率 | Ratio | Ratio/Multiplier | Multiplicateur utilisé pour le calcul des prix. **Important :** Dans le contexte des calculs de prix, toujours utiliser "Ratio" plutôt que "Multiplicateur" pour assurer la cohérence terminologique |
 | 令牌 | Jeton | Token | Identifiants d'accès API ou unités de texte traitées par les modèles |
 | 渠道 | Canal | Channel | Canal d'accès aux fournisseurs d'API |
 | 分组 | Groupe | Group | Classification des utilisateurs ou des jetons |
-| 额度 | Quota | Quota | Quota de services disponible pour l'utilisateur |
 
 ## Modèles (Model Related)
 
@@ -26,11 +24,6 @@ This document provides standard French translations for key project terminology 
 | 补全 | Complétion | Completion | Contenu de sortie du modèle. **Important :** Ne pas utiliser "Achèvement" ou "Finalisation" - uniquement "Complétion" pour correspondre à la terminologie technique |
 | 输入 | Entrée | Input/Prompt | Contenu envoyé au modèle |
 | 输出 | Sortie | Output/Completion | Contenu retourné par le modèle |
-| 模型倍率 | Ratio du modèle | Model Ratio | Ratio de tarification pour différents modèles |
-| 补全倍率 | Ratio de complétion | Completion Ratio | Ratio de tarification supplémentaire pour la sortie |
-| 固定价格 | Prix fixe | Price per call | Prix par appel |
-| 按量计费 | Paiement à l'utilisation | Pay-as-you-go | Tarification basée sur l'utilisation |
-| 按次计费 | Paiement par appel | Pay-per-view | Prix fixe par appel |
 
 ## Gestion des Utilisateurs (User Management)
 
@@ -39,13 +32,6 @@ This document provides standard French translations for key project terminology 
 | 超级管理员 | Super-administrateur | Root User | Administrateur avec les privilèges les plus élevés |
 | 管理员 | Administrateur | Admin User | Administrateur système |
 | 普通用户 | Utilisateur normal | Normal User | Utilisateur avec privilèges standards |
-
-## Recharge et Échange (Recharge & Redemption)
-
-| Chinois | Français | Anglais | Description |
-|---------|----------|---------|-------------|
-| 充值 | Recharge | Top Up | Ajout de quota au compte |
-| 兑换码 | Code d'échange | Redemption Code | Code qui peut être échangé contre du quota |
 
 ## Gestion des Canaux (Channel Management)
 
@@ -73,7 +59,7 @@ This document provides standard French translations for key project terminology 
 **Invite/Entrée (Prompt/Input)**
 
 - **Invite** : Lors de l'interaction avec les LLM, dans l'interface utilisateur, lors de la description de l'interaction avec le modèle
-- **Entrée** : Dans la tarification, la documentation technique, la description du processus de traitement des données
+- **Entrée** : Dans la documentation technique et la description du processus de traitement des données
 - **Règle** : S'il s'agit de l'expérience utilisateur et de l'interaction avec l'IA → "Invite", s'il s'agit du processus technique ou des calculs → "Entrée"
 
 **Jeton (Token)**
@@ -81,11 +67,6 @@ This document provides standard French translations for key project terminology 
 - Jeton d'accès API (API Token)
 - Unité de texte traitée par le modèle (Text Token)
 - Jeton d'accès système (Access Token)
-
-**Quota (Quota)**
-
-- Quota de services disponible pour l'utilisateur
-- Parfois traduit comme "Crédit"
 
 ### Particularités de la Langue Française
 
@@ -96,8 +77,6 @@ This document provides standard French translations for key project terminology 
 ### Termes Standardisés
 
 - **Complétion (Completion)** : Contenu de sortie du modèle
-- **Ratio (Ratio)** : Multiplicateur pour le calcul des prix
-- **Code d'échange (Redemption Code)** : Utilisé au lieu de "Code d'échange" pour plus de précision
 - **Fournisseur (Provider/Vendor)** : Organisation ou service fournissant des API ou des modèles d'IA
 
 ---
