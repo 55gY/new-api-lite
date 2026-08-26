@@ -4,7 +4,7 @@
 
 ## Docker 快速启动
 
-以下命令会在**当前目录**创建持久化数据目录，并启动 `amd64` 镜像。`--pull=always` 会在启动时拉取标签对应的最新镜像；`--restart=unless-stopped` 会在 Docker 服务重启后自动恢复，但管理员主动停止容器后不会擅自再次启动。
+以下命令会在**当前目录**创建持久化数据目录，并启动 `latest` 多架构镜像；Docker 会自动拉取与当前主机架构匹配的变体。`--pull=always` 会在启动时拉取标签对应的最新镜像；`--restart=unless-stopped` 会在 Docker 服务重启后自动恢复，但管理员主动停止容器后不会擅自再次启动。
 
 ```bash
 mkdir -p ./data
@@ -18,7 +18,7 @@ docker run \
   --publish 3000:3000 \
   --env TZ=Asia/Shanghai \
   --volume "$(pwd)/data:/data" \
-  ghcr.io/55gy/new-api-lite:latest-amd64
+  ghcr.io/55gy/new-api-lite:latest
 ```
 
 启动完成后可访问 `http://localhost:3000`。如服务器通过防火墙或云安全组对外提供服务，还需要自行放通 TCP `3000` 端口。
@@ -32,7 +32,7 @@ chmod +x ./installl.sh
 ./installl.sh
 ```
 
-脚本会显示当前系统发行版与 CPU 架构，并检查 Docker 客户端、守护进程和当前用户访问权限。若在 `install` 或 `update` 时未检测到 Docker，脚本会使用当前系统可用的软件包管理器自动安装并尝试启动 Docker；目前支持 `apt-get`、`dnf`、`yum` 与 `apk`。当当前用户没有 Docker 组权限时，脚本会在本次运行中使用 `sudo`，不会静默修改用户组。交互面板提供安装/启动、拉取镜像并重建容器、状态、日志、停止、重启、卸载及数据删除功能。容器更新和卸载均会明确保留 `data`；删除数据需输入 `DELETE` 二次确认。也可使用非交互命令，适合写入自己的运维脚本：
+项目的 `ghcr.io/55gy/new-api-lite:latest` 为多架构镜像，Docker 会按当前主机架构自动拉取 ARM64 或 AMD64 变体。脚本会显示当前系统发行版与 CPU 架构，并检查 Docker 客户端、守护进程和当前用户访问权限。若在 `install` 或 `update` 时未检测到 Docker，脚本会使用当前系统可用的软件包管理器自动安装并尝试启动 Docker；目前支持 `apt-get`、`dnf`、`yum` 与 `apk`。当当前用户没有 Docker 组权限时，脚本会在本次运行中使用 `sudo`，不会静默修改用户组。交互面板提供安装/启动、拉取镜像并重建容器、状态、日志、停止、重启、卸载及数据删除功能。容器更新和卸载均会明确保留 `data`；删除数据需输入 `DELETE` 二次确认。也可使用非交互命令，适合写入自己的运维脚本：
 
 ```bash
 ./installl.sh install
@@ -74,7 +74,7 @@ NEW_API_LITE_TZ=Asia/Shanghai \
 ```bash
 set -e
 
-image='ghcr.io/55gy/new-api-lite:latest-amd64'
+image='ghcr.io/55gy/new-api-lite:latest'
 data_dir="$(pwd)/data"
 
 docker pull "$image"
@@ -108,7 +108,7 @@ docker rm --force new-api
 如需同时删除本项目已下载的镜像，可额外执行：
 
 ```bash
-docker image rm ghcr.io/55gy/new-api-lite:latest-amd64
+docker image rm ghcr.io/55gy/new-api-lite:latest
 ```
 
 如需彻底删除全部本地数据，请先确认当前目录中的 `./data` 确实是本项目的数据目录，再手动执行下列不可恢复操作：

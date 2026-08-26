@@ -5,7 +5,7 @@
 set -Eeuo pipefail
 
 APP_NAME="new-api"
-IMAGE="${NEW_API_LITE_IMAGE:-ghcr.io/55gy/new-api-lite:latest-amd64}"
+IMAGE="${NEW_API_LITE_IMAGE:-ghcr.io/55gy/new-api-lite:latest}"
 DATA_DIR="${NEW_API_LITE_DATA_DIR:-"$PWD/data"}"
 HOST_PORT="${NEW_API_LITE_PORT:-3000}"
 TIME_ZONE="${NEW_API_LITE_TZ:-Asia/Shanghai}"
@@ -53,7 +53,7 @@ usage() {
 环境变量：
   NEW_API_LITE_DATA_DIR  数据目录，默认当前目录/data
   NEW_API_LITE_PORT      宿主机端口，默认 3000
-  NEW_API_LITE_IMAGE     镜像，默认 ghcr.io/55gy/new-api-lite:latest-amd64
+  NEW_API_LITE_IMAGE     镜像，默认 ghcr.io/55gy/new-api-lite:latest（多架构自动选择）
   NEW_API_LITE_TZ         时区，默认 Asia/Shanghai
   NEW_API_LITE_AUTO_INSTALL_DOCKER  为 0 时禁止自动安装 Docker
 EOF
@@ -147,9 +147,9 @@ require_docker() {
 check_architecture() {
   info "系统：${OS_NAME}；架构：${SYSTEM_ARCH}。"
   case "$SYSTEM_ARCH" in
-    x86_64|amd64) info "默认镜像与当前 amd64 架构兼容。" ;;
-    aarch64|arm64) warn "当前为 ARM64 架构，默认镜像为 amd64；请确认 Docker 已启用 amd64 模拟，或通过 NEW_API_LITE_IMAGE 指定 ARM64 镜像。" ;;
-    *) warn "当前架构为 ${SYSTEM_ARCH}，默认镜像为 amd64；请确认镜像兼容性或通过 NEW_API_LITE_IMAGE 指定可用镜像。" ;;
+    x86_64|amd64) info "将通过多架构 latest 镜像自动拉取当前 amd64 变体。" ;;
+    aarch64|arm64) info "将通过多架构 latest 镜像自动拉取当前 ARM64 变体。" ;;
+    *) warn "当前架构为 ${SYSTEM_ARCH}。Docker 会尝试从多架构 latest 镜像选择匹配变体；如不兼容，可通过 NEW_API_LITE_IMAGE 手动覆盖。" ;;
   esac
 }
 
