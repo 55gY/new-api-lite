@@ -29,9 +29,39 @@ docker run \
 | 实时查看日志 | `docker logs --follow --tail 200 new-api` |
 | 停止服务 | `docker stop new-api` |
 | 再次启动 | `docker start new-api` |
-| 更新至镜像标签的最新版本 | `docker pull ghcr.io/55gy/new-api-lite:latest-amd64 && docker rm -f new-api`，然后重新执行上方启动命令 |
+| 更新至镜像标签的最新版本 | 执行下方「更新镜像」完整命令。 |
 
 > 数据库和运行配置保存在宿主机的 `./data` 中。请在**计划执行命令的目录**运行上述命令；使用 `"$(pwd)/data"` 而不是相对路径，可避免 Docker 解析工作目录差异导致的数据卷挂载错误。
+
+## 更新镜像
+
+每次发布新镜像后，在项目数据目录所在的同一目录执行下列命令。该流程会先拉取镜像，随后仅在 `new-api` 容器存在时停止并删除它，最后使用原有宿主机 `./data` 数据目录创建新容器；**不会删除 SQLite 数据库或程序配置**。
+
+```bash
+set -e
+
+image='ghcr.io/55gy/new-api-lite:latest-amd64'
+data_dir="$(pwd)/data"
+
+docker pull "$image"
+
+if docker container inspect new-api >/dev/null 2>&1; then
+  docker rm --force new-api
+fi
+
+mkdir -p "$data_dir"
+docker run \
+  --name new-api \
+  --detach \
+  --init \
+  --restart=unless-stopped \
+  --publish 3000:3000 \
+  --env TZ=Asia/Shanghai \
+  --volume "$data_dir:/data" \
+  "$image"
+```
+
+更新完成后可用 `docker logs --follow --tail 200 new-api` 检查启动日志。若容器端口、时区或数据目录曾按你的环境做过调整，请同步修改更新命令中的对应参数，避免新容器回到默认值。
 
 ## 卸载
 
