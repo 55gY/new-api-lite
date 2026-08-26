@@ -676,10 +676,6 @@ func DecreaseUserQuota(id int, quota int, db bool) (err error) {
 	return nil
 }
 
-func decreaseUserQuota(id int, quota int) (err error) {
-	return nil
-}
-
 func DeltaUpdateUserQuota(id int, delta int) (err error) {
 	return nil
 }
@@ -706,23 +702,6 @@ func UpdateUserUsedQuotaAndRequestCount(id int, quota int) {
 		return
 	}
 	updateUserRequestCount(id, 1)
-}
-
-func updateUserUsedQuotaAndRequestCount(id int, quota int, count int) {
-	err := DB.Model(&User{}).Where("id = ?", id).Updates(
-		map[string]interface{}{
-			"request_count": gorm.Expr("request_count + ?", count),
-		},
-	).Error
-	if err != nil {
-		common.SysLog("failed to update user used quota and request count: " + err.Error())
-		return
-	}
-
-	//// 更新缓存
-	//if err := invalidateUserCache(id); err != nil {
-	//	common.SysError("failed to invalidate user cache: " + err.Error())
-	//}
 }
 
 func updateUserUsedQuota(id int, quota int) {

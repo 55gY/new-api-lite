@@ -52,10 +52,6 @@ func SetPayloadHash(c *gin.Context, req any) error {
 	c.Set(HexPayloadHashKey, hexPayloadHash)
 	return nil
 }
-func getPayloadHash(c *gin.Context) string {
-	return c.GetString(HexPayloadHashKey)
-}
-
 func Sign(c *gin.Context, req *http.Request, apiKey string) error {
 	header := req.Header
 

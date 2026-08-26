@@ -14,47 +14,17 @@ import (
 
 var commonGroupCol string
 var commonKeyCol string
-var commonTrueVal string
-var commonFalseVal string
-
-var logKeyCol string
 var logGroupCol string
 
 func initCol() {
 	commonGroupCol = "`group`"
 	commonKeyCol = "`key`"
-	commonTrueVal = "1"
-	commonFalseVal = "0"
 	logGroupCol = commonGroupCol
-	logKeyCol = commonKeyCol
 }
 
 var DB *gorm.DB
 
 var LOG_DB *gorm.DB
-
-func createRootAccountIfNeed() error {
-	var user User
-	//if user.Status != common.UserStatusEnabled {
-	if err := DB.First(&user).Error; err != nil {
-		common.SysLog("no user exists, create a root user for you: username is root, password is 123456")
-		hashedPassword, err := common.Password2Hash("123456")
-		if err != nil {
-			return err
-		}
-		rootUser := User{
-			Username:    "root",
-			Password:    hashedPassword,
-			Role:        common.RoleRootUser,
-			Status:      common.UserStatusEnabled,
-			DisplayName: "Root User",
-			AccessToken: nil,
-			Quota:       100000000,
-		}
-		DB.Create(&rootUser)
-	}
-	return nil
-}
 
 func CheckSetup() {
 	setup := GetSetup()
@@ -156,14 +126,6 @@ func migrateDB() error {
 		&PerfMetric{},
 	)
 	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func migrateLOGDB() error {
-	var err error
-	if err = LOG_DB.AutoMigrate(&Log{}); err != nil {
 		return err
 	}
 	return nil

@@ -378,10 +378,6 @@ func DecreaseTokenQuota(id int, key string, quota int) (err error) {
 	return updateTokenAccessedTime(id)
 }
 
-func decreaseTokenQuota(id int, quota int) (err error) {
-	return updateTokenAccessedTime(id)
-}
-
 func updateTokenAccessedTime(id int) error {
 	return DB.Model(&Token{}).Where("id = ?", id).Update("accessed_time", common.GetTimestamp()).Error
 }

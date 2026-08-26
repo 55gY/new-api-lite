@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/55gY/new-api-lite/common"
-	"github.com/55gY/new-api-lite/constant"
 )
 
 func cacheSetToken(token Token) error {
@@ -21,28 +20,6 @@ func cacheSetToken(token Token) error {
 func cacheDeleteToken(key string) error {
 	key = common.GenerateHMAC(key)
 	err := common.RedisDelKey(fmt.Sprintf("token:%s", key))
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func cacheIncrTokenQuota(key string, increment int64) error {
-	key = common.GenerateHMAC(key)
-	err := common.RedisHIncrBy(fmt.Sprintf("token:%s", key), constant.TokenFiledRemainQuota, increment)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func cacheDecrTokenQuota(key string, decrement int64) error {
-	return cacheIncrTokenQuota(key, -decrement)
-}
-
-func cacheSetTokenField(key string, field string, value string) error {
-	key = common.GenerateHMAC(key)
-	err := common.RedisHSetField(fmt.Sprintf("token:%s", key), field, value)
 	if err != nil {
 		return err
 	}
