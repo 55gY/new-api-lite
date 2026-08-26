@@ -32,13 +32,13 @@ error() { printf '%b[错误]%b %s\n' "$COLOR_RED" "$COLOR_RESET" "$*" >&2; }
 usage() {
   cat <<'EOF'
 用法：
-  ./new-api-lite.sh                 打开交互式管理面板
-  ./new-api-lite.sh install         首次安装或启动已有容器
-  ./new-api-lite.sh update          拉取最新镜像并安全重建容器，保留 data
-  ./new-api-lite.sh start|stop|restart
-  ./new-api-lite.sh status|logs
-  ./new-api-lite.sh uninstall       删除容器，保留 data
-  ./new-api-lite.sh remove-data     删除 data（需要输入 DELETE）
+  ./installl.sh                 打开交互式管理面板
+  ./installl.sh install         首次安装或启动已有容器
+  ./installl.sh update          拉取最新镜像并安全重建容器，保留 data
+  ./installl.sh start|stop|restart
+  ./installl.sh status|logs
+  ./installl.sh uninstall       删除容器，保留 data
+  ./installl.sh remove-data     删除 data（需要输入 DELETE）
 
 环境变量：
   NEW_API_LITE_DATA_DIR  数据目录，默认当前目录/data

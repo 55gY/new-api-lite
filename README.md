@@ -25,23 +25,23 @@ docker run \
 
 ## Docker 管理面板
 
-仓库根目录提供 [`new-api-lite.sh`](new-api-lite.sh) 原生 Docker 管理脚本。脚本会在启动时检查 Docker 服务状态，并默认将数据保存到**执行命令所在目录**的 `./data`。首次使用可执行：
+仓库根目录提供 [`installl.sh`](installl.sh) 原生 Docker 管理脚本。脚本会在启动时检查 Docker 服务状态，并默认将数据保存到**执行命令所在目录**的 `./data`。首次使用可执行：
 
 ```bash
-chmod +x ./new-api-lite.sh
-./new-api-lite.sh
+chmod +x ./installl.sh
+./installl.sh
 ```
 
 交互面板提供安装/启动、拉取镜像并重建容器、状态、日志、停止、重启、卸载及数据删除功能。容器更新和卸载均会明确保留 `data`；删除数据需输入 `DELETE` 二次确认。也可使用非交互命令，适合写入自己的运维脚本：
 
 ```bash
-./new-api-lite.sh install
-./new-api-lite.sh update
-./new-api-lite.sh status
-./new-api-lite.sh logs
-./new-api-lite.sh stop
-./new-api-lite.sh restart
-./new-api-lite.sh uninstall
+./installl.sh install
+./installl.sh update
+./installl.sh status
+./installl.sh logs
+./installl.sh stop
+./installl.sh restart
+./installl.sh uninstall
 ```
 
 如需调整数据目录、端口、镜像或时区，可在执行时覆盖默认值。例如：
@@ -50,7 +50,7 @@ chmod +x ./new-api-lite.sh
 NEW_API_LITE_DATA_DIR=/srv/new-api/data \
 NEW_API_LITE_PORT=3000 \
 NEW_API_LITE_TZ=Asia/Shanghai \
-./new-api-lite.sh update
+./installl.sh update
 ```
 
 | 常用操作 | 命令 |
@@ -65,7 +65,7 @@ NEW_API_LITE_TZ=Asia/Shanghai \
 
 ## 更新镜像
 
-推荐使用 `./new-api-lite.sh update` 完成更新。若不使用管理脚本，可在项目数据目录所在的同一目录执行下列原生 Docker 命令。该流程会先拉取镜像，随后仅在 `new-api` 容器存在时停止并删除它，最后使用原有宿主机 `./data` 数据目录创建新容器；**不会删除 SQLite 数据库或程序配置**。
+推荐使用 `./installl.sh update` 完成更新。若不使用管理脚本，可在项目数据目录所在的同一目录执行下列原生 Docker 命令。该流程会先拉取镜像，随后仅在 `new-api` 容器存在时停止并删除它，最后使用原有宿主机 `./data` 数据目录创建新容器；**不会删除 SQLite 数据库或程序配置**。
 
 ```bash
 set -e
