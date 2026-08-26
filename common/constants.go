@@ -22,10 +22,7 @@ func ThemeAwarePath(suffix string) string {
 
 // var ChatLink = ""
 // var ChatLink2 = ""
-var QuotaPerUnit = 1.0
-var DisplayInCurrencyEnabled = false
 var DrawingEnabled = true
-var TaskEnabled = true
 var DataExportEnabled = true
 var DataExportInterval = 5         // unit: minute
 var DataExportDefaultTime = "day"  // unit: day
@@ -85,14 +82,9 @@ var SMTPToken = ""
 var TurnstileSiteKey = ""
 var TurnstileSecretKey = ""
 
-var QuotaForNewUser = 0
-var QuotaForInviter = 0
-var QuotaForInvitee = 0
 var ChannelDisableThreshold = 5.0
 var AutomaticDisableChannelEnabled = false
 var AutomaticEnableChannelEnabled = false
-var QuotaRemindThreshold = 0
-var PreConsumedQuota = 0
 
 var RetryTimes = 0
 

@@ -111,11 +111,9 @@ const (
 
 // Quota related messages
 const (
-	MsgQuotaNegative        = "quota.negative"
-	MsgQuotaExceedMax       = "quota.exceed_max"
-	MsgQuotaInsufficient    = "quota.insufficient"
-	MsgQuotaWarningInvalid  = "quota.warning_invalid"
-	MsgQuotaThresholdGtZero = "quota.threshold_gt_zero"
+	MsgQuotaNegative     = "quota.negative"
+	MsgQuotaExceedMax    = "quota.exceed_max"
+	MsgQuotaInsufficient = "quota.insufficient"
 )
 
 // Subscription related messages
@@ -194,14 +192,6 @@ const (
 	MsgGroupNameTypeEmpty = "group.name_type_empty"
 	MsgGroupNameExists    = "group.name_exists"
 	MsgGroupIdMissing     = "group.id_missing"
-)
-
-// Checkin related messages
-const (
-	MsgCheckinDisabled     = "checkin.disabled"
-	MsgCheckinAlreadyToday = "checkin.already_today"
-	MsgCheckinFailed       = "checkin.failed"
-	MsgCheckinQuotaFailed  = "checkin.quota_failed"
 )
 
 // 2FA related messages

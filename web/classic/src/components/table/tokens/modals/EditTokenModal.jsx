@@ -61,7 +61,6 @@ const EditTokenModal = (props) => {
   const getInitValues = () => ({
     name: '',
     expired_time: -1,
-    unlimited_quota: true,
     model_limits_enabled: false,
     model_limits: [],
     allow_ips: '',
@@ -177,8 +176,6 @@ const EditTokenModal = (props) => {
     setLoading(true);
     if (isEdit) {
       let { tokenCount: _tc, ...localInputs } = values;
-      localInputs.unlimited_quota = true;
-      localInputs.remain_quota = 0;
       if (localInputs.expired_time !== -1) {
         let time = Date.parse(localInputs.expired_time);
         if (isNaN(time)) {

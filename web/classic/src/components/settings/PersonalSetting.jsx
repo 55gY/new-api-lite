@@ -35,7 +35,6 @@ import { useTranslation } from 'react-i18next';
 import UserInfoHeader from './personal/components/UserInfoHeader';
 import AccountManagement from './personal/cards/AccountManagement';
 import NotificationSettings from './personal/cards/NotificationSettings';
-import CheckinCalendar from './personal/cards/CheckinCalendar';
 import AccountDeleteModal from './personal/modals/AccountDeleteModal';
 import ChangePasswordModal from './personal/modals/ChangePasswordModal';
 
@@ -50,7 +49,6 @@ const PersonalSetting = () => {
     set_new_password: '',
     set_new_password_confirmation: '',
   });
-  const [status, setStatus] = useState({});
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [showAccountDeleteModal, setShowAccountDeleteModal] = useState(false);
   const [turnstileEnabled, setTurnstileEnabled] = useState(false);
@@ -74,7 +72,6 @@ const PersonalSetting = () => {
     const saved = localStorage.getItem('status');
     if (saved) {
       const parsed = JSON.parse(saved);
-      setStatus(parsed);
       if (parsed.turnstile_check) {
         setTurnstileEnabled(true);
         setTurnstileSiteKey(parsed.turnstile_site_key);
@@ -85,7 +82,6 @@ const PersonalSetting = () => {
         const res = await API.get('/api/status');
         const { success, data } = res.data;
         if (success && data) {
-          setStatus(data);
           setStatusData(data);
           if (data.turnstile_check) {
             setTurnstileEnabled(true);
@@ -96,7 +92,7 @@ const PersonalSetting = () => {
           }
         }
       } catch (e) {
-        // ignore and keep local status
+        // Ignore status refresh failures and keep the default Turnstile state.
       }
     })();
 
@@ -252,17 +248,6 @@ const PersonalSetting = () => {
       <div className='flex justify-center'>
         <div className='w-full max-w-7xl mx-auto px-2'>
           <UserInfoHeader t={t} userState={userState} />
-
-          {status?.checkin_enabled && (
-            <div className='mt-4 md:mt-6'>
-              <CheckinCalendar
-                t={t}
-                status={status}
-                turnstileEnabled={turnstileEnabled}
-                turnstileSiteKey={turnstileSiteKey}
-              />
-            </div>
-          )}
 
           <div className='grid grid-cols-1 xl:grid-cols-2 items-start gap-4 md:gap-6 mt-4 md:mt-6'>
             <div className='flex flex-col gap-4 md:gap-6'>

@@ -330,14 +330,6 @@ func GenerateAccessToken(c *gin.Context) {
 	})
 }
 
-type TransferAffQuotaRequest struct {
-	Quota int `json:"quota" binding:"required"`
-}
-
-func TransferAffQuota(c *gin.Context) {
-	common.ApiSuccess(c, nil)
-}
-
 func GetAffCode(c *gin.Context) {
 	id := c.GetInt("id")
 	user, err := model.GetUserById(id, true)
@@ -381,24 +373,20 @@ func GetSelf(c *gin.Context) {
 
 	// 构建响应数据，包含用户信息和权限
 	responseData := map[string]interface{}{
-		"id":                user.Id,
-		"username":          user.Username,
-		"display_name":      user.DisplayName,
-		"role":              user.Role,
-		"status":            user.Status,
-		"email":             user.Email,
-		"group":             user.Group,
-		"quota":             0,
-		"used_quota":        0,
-		"request_count":     user.RequestCount,
-		"aff_code":          user.AffCode,
-		"aff_count":         user.AffCount,
-		"aff_quota":         0,
-		"aff_history_quota": 0,
-		"inviter_id":        user.InviterId,
-		"setting":           user.Setting,
-		"sidebar_modules":   userSetting.SidebarModules, // 正确提取sidebar_modules字段
-		"permissions":       permissions,                // 新增权限字段
+		"id":              user.Id,
+		"username":        user.Username,
+		"display_name":    user.DisplayName,
+		"role":            user.Role,
+		"status":          user.Status,
+		"email":           user.Email,
+		"group":           user.Group,
+		"request_count":   user.RequestCount,
+		"aff_code":        user.AffCode,
+		"aff_count":       user.AffCount,
+		"inviter_id":      user.InviterId,
+		"setting":         user.Setting,
+		"sidebar_modules": userSetting.SidebarModules, // 正确提取sidebar_modules字段
+		"permissions":     permissions,                // 新增权限字段
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -807,18 +795,16 @@ func EmailBind(c *gin.Context) {
 }
 
 type UpdateUserSettingRequest struct {
-	QuotaWarningType                 string  `json:"notify_type"`
-	QuotaWarningThreshold            float64 `json:"quota_warning_threshold"`
-	WebhookUrl                       string  `json:"webhook_url,omitempty"`
-	WebhookSecret                    string  `json:"webhook_secret,omitempty"`
-	NotificationEmail                string  `json:"notification_email,omitempty"`
-	BarkUrl                          string  `json:"bark_url,omitempty"`
-	GotifyUrl                        string  `json:"gotify_url,omitempty"`
-	GotifyToken                      string  `json:"gotify_token,omitempty"`
-	GotifyPriority                   int     `json:"gotify_priority,omitempty"`
-	UpstreamModelUpdateNotifyEnabled *bool   `json:"upstream_model_update_notify_enabled,omitempty"`
-	AcceptUnsetModelRatioModel       bool    `json:"accept_unset_model_ratio_model"`
-	RecordIpLog                      bool    `json:"record_ip_log"`
+	QuotaWarningType                 string `json:"notify_type"`
+	WebhookUrl                       string `json:"webhook_url,omitempty"`
+	WebhookSecret                    string `json:"webhook_secret,omitempty"`
+	NotificationEmail                string `json:"notification_email,omitempty"`
+	BarkUrl                          string `json:"bark_url,omitempty"`
+	GotifyUrl                        string `json:"gotify_url,omitempty"`
+	GotifyToken                      string `json:"gotify_token,omitempty"`
+	GotifyPriority                   int    `json:"gotify_priority,omitempty"`
+	UpstreamModelUpdateNotifyEnabled *bool  `json:"upstream_model_update_notify_enabled,omitempty"`
+	RecordIpLog                      bool   `json:"record_ip_log"`
 }
 
 func UpdateUserSetting(c *gin.Context) {
@@ -831,12 +817,6 @@ func UpdateUserSetting(c *gin.Context) {
 	// 验证预警类型
 	if req.QuotaWarningType != dto.NotifyTypeEmail && req.QuotaWarningType != dto.NotifyTypeWebhook && req.QuotaWarningType != dto.NotifyTypeBark && req.QuotaWarningType != dto.NotifyTypeGotify {
 		common.ApiErrorI18n(c, i18n.MsgSettingInvalidType)
-		return
-	}
-
-	// 验证预警阈值
-	if req.QuotaWarningThreshold <= 0 {
-		common.ApiErrorI18n(c, i18n.MsgQuotaThresholdGtZero)
 		return
 	}
 
@@ -917,9 +897,7 @@ func UpdateUserSetting(c *gin.Context) {
 	// 构建设置
 	settings := dto.UserSetting{
 		NotifyType:                       req.QuotaWarningType,
-		QuotaWarningThreshold:            req.QuotaWarningThreshold,
 		UpstreamModelUpdateNotifyEnabled: upstreamModelUpdateNotifyEnabled,
-		AcceptUnsetRatioModel:            req.AcceptUnsetModelRatioModel,
 		RecordIpLog:                      req.RecordIpLog,
 	}
 

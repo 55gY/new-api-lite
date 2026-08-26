@@ -26,7 +26,7 @@ import {
   Typography,
 } from '@douyinfe/semi-ui';
 import { isRoot, isAdmin, stringToColor } from '../../../../helpers';
-import { Activity, BarChart2, Users } from 'lucide-react';
+import { BarChart2, Users } from 'lucide-react';
 
 const UserInfoHeader = ({ t, userState }) => {
   const getUsername = () => {
@@ -120,16 +120,6 @@ const UserInfoHeader = ({ t, userState }) => {
           >
             <div className='flex items-center gap-4'>
               <div className='flex items-center gap-2'>
-                <Activity size={16} />
-                <Typography.Text size='small' type='tertiary'>
-                  {t('Token 使用')}
-                </Typography.Text>
-                <Typography.Text size='small' type='tertiary' strong>
-                  {userState?.user?.used_quota || 0}
-                </Typography.Text>
-              </div>
-              <Divider layout='vertical' />
-              <div className='flex items-center gap-2'>
                 <BarChart2 size={16} />
                 <Typography.Text size='small' type='tertiary'>
                   {t('请求次数')}
@@ -161,18 +151,6 @@ const UserInfoHeader = ({ t, userState }) => {
           bodyStyle={{ padding: '12px 16px' }}
         >
           <div className='space-y-3'>
-            <div className='flex items-center justify-between'>
-              <div className='flex items-center gap-2'>
-                <Activity size={16} />
-                <Typography.Text size='small' type='tertiary'>
-                  {t('Token 使用')}
-                </Typography.Text>
-              </div>
-              <Typography.Text size='small' type='tertiary' strong>
-                {userState?.user?.used_quota || 0}
-              </Typography.Text>
-            </div>
-            <Divider margin='8px' />
             <div className='flex items-center justify-between'>
               <div className='flex items-center gap-2'>
                 <BarChart2 size={16} />

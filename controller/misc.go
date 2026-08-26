@@ -12,7 +12,6 @@ import (
 	"github.com/55gY/new-api-lite/model"
 	"github.com/55gY/new-api-lite/setting"
 	"github.com/55gY/new-api-lite/setting/console_setting"
-	"github.com/55gY/new-api-lite/setting/operation_setting"
 	"github.com/55gY/new-api-lite/setting/system_setting"
 
 	"github.com/gin-gonic/gin"
@@ -45,34 +44,24 @@ func GetStatus(c *gin.Context) {
 	legalSetting := system_setting.GetLegalSettings()
 
 	data := gin.H{
-		"version":            common.Version,
-		"start_time":         common.StartTime,
-		"email_verification": common.EmailVerificationEnabled,
-		"theme":              system_setting.GetThemeSettings().Frontend,
-		"system_name":        common.SystemName,
-		"logo":               common.Logo,
-		"footer_html":        common.Footer,
-		"server_address":     system_setting.ServerAddress,
-		"turnstile_check":    common.TurnstileCheckEnabled,
-		"turnstile_site_key": common.TurnstileSiteKey,
-		"quota_per_unit":     common.QuotaPerUnit,
-		// 兼容旧前端：保留 display_in_currency，同时提供新的 quota_display_type
-		"display_in_currency":           operation_setting.IsCurrencyDisplay(),
-		"quota_display_type":            operation_setting.GetQuotaDisplayType(),
-		"custom_currency_symbol":        operation_setting.GetGeneralSetting().CustomCurrencySymbol,
-		"custom_currency_exchange_rate": operation_setting.GetGeneralSetting().CustomCurrencyExchangeRate,
-		"enable_batch_update":           common.BatchUpdateEnabled,
-		"enable_task":                   common.TaskEnabled,
-		"enable_data_export":            common.DataExportEnabled,
-		"data_export_default_time":      common.DataExportDefaultTime,
-		"default_collapse_sidebar":      common.DefaultCollapseSidebar,
-		"register_enabled":              common.RegisterEnabled,
-		"password_login_enabled":        common.PasswordLoginEnabled,
-		"password_register_enabled":     common.PasswordRegisterEnabled,
-		"default_use_auto_group":        setting.DefaultUseAutoGroup,
-
-		"usd_exchange_rate": operation_setting.USDExchangeRate,
-		"price":             operation_setting.Price,
+		"version":                   common.Version,
+		"start_time":                common.StartTime,
+		"email_verification":        common.EmailVerificationEnabled,
+		"theme":                     system_setting.GetThemeSettings().Frontend,
+		"system_name":               common.SystemName,
+		"logo":                      common.Logo,
+		"footer_html":               common.Footer,
+		"server_address":            system_setting.ServerAddress,
+		"turnstile_check":           common.TurnstileCheckEnabled,
+		"turnstile_site_key":        common.TurnstileSiteKey,
+		"enable_batch_update":       common.BatchUpdateEnabled,
+		"enable_data_export":        common.DataExportEnabled,
+		"data_export_default_time":  common.DataExportDefaultTime,
+		"default_collapse_sidebar":  common.DefaultCollapseSidebar,
+		"register_enabled":          common.RegisterEnabled,
+		"password_login_enabled":    common.PasswordLoginEnabled,
+		"password_register_enabled": common.PasswordRegisterEnabled,
+		"default_use_auto_group":    setting.DefaultUseAutoGroup,
 
 		"api_info_enabled": cs.ApiInfoEnabled,
 
@@ -83,7 +72,6 @@ func GetStatus(c *gin.Context) {
 		"setup":                  constant.Setup,
 		"user_agreement_enabled": legalSetting.UserAgreement != "",
 		"privacy_policy_enabled": legalSetting.PrivacyPolicy != "",
-		"checkin_enabled":        operation_setting.GetCheckinSetting().Enabled,
 	}
 
 	// 根据启用状态注入可选内容

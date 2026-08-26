@@ -22,11 +22,6 @@ export function setStatusData(data) {
   localStorage.setItem('system_name', data.system_name);
   localStorage.setItem('logo', data.logo);
   localStorage.setItem('footer_html', data.footer_html);
-  localStorage.setItem('quota_per_unit', data.quota_per_unit);
-  // 兼容：保留旧字段，同时写入新的额度展示类型
-  localStorage.setItem('display_in_currency', data.display_in_currency);
-  // lite 版已去价格化：额度展示默认使用 TOKENS（原始额度/token），不再默认货币(USD)
-  localStorage.setItem('quota_display_type', data.quota_display_type || 'TOKENS');
   localStorage.setItem('enable_data_export', data.enable_data_export);
   if (!localStorage.getItem('data_export_default_time')) {
     localStorage.setItem(
@@ -38,6 +33,17 @@ export function setStatusData(data) {
     'default_collapse_sidebar',
     data.default_collapse_sidebar,
   );
+  [
+    'enable_task',
+    'checkin_enabled',
+    'quota_per_unit',
+    'display_in_currency',
+    'quota_display_type',
+    'custom_currency_symbol',
+    'custom_currency_exchange_rate',
+    'usd_exchange_rate',
+    'price',
+  ].forEach((key) => localStorage.removeItem(key));
   localStorage.removeItem('enable_drawing');
   localStorage.removeItem('chats');
   localStorage.removeItem('mj_notify_enabled');

@@ -101,8 +101,6 @@ user.quota_change_zero: "額度變更量不能為0"
 quota.negative: "額度不能為負數！"
 quota.exceed_max: "額度值超出有效範圍"
 quota.insufficient: "額度不足"
-quota.warning_invalid: "無效的預警類型"
-quota.threshold_gt_zero: "預警閾值必須大於0"
 
 # Subscription messages
 subscription.not_enabled: "訂閱方案未啟用"
@@ -167,12 +165,6 @@ vendor.id_missing: "缺少供應商 ID"
 group.name_type_empty: "組名稱和類型不能為空"
 group.name_exists: "組名稱已存在"
 group.id_missing: "缺少組 ID"
-
-# Checkin messages
-checkin.disabled: "簽到功能未啟用"
-checkin.already_today: "今日已簽到"
-checkin.failed: "簽到失敗，請稍後重試"
-checkin.quota_failed: "簽到失敗：更新額度出錯"
 
 # 2FA messages
 twofa.not_enabled: "使用者未啟用2FA"
