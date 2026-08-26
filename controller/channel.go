@@ -520,17 +520,17 @@ func validateChannel(channel *model.Channel, isAdd bool) error {
 		trimmedKey := strings.TrimSpace(channel.Key)
 		if isAdd || trimmedKey != "" {
 			if !strings.HasPrefix(trimmedKey, "{") {
-				return fmt.Errorf("Codex key must be a valid JSON object")
+				return fmt.Errorf("codex key must be a valid JSON object")
 			}
 			var keyMap map[string]any
 			if err := common.Unmarshal([]byte(trimmedKey), &keyMap); err != nil {
-				return fmt.Errorf("Codex key must be a valid JSON object")
+				return fmt.Errorf("codex key must be a valid JSON object")
 			}
 			if v, ok := keyMap["access_token"]; !ok || v == nil || strings.TrimSpace(fmt.Sprintf("%v", v)) == "" {
-				return fmt.Errorf("Codex key JSON must include access_token")
+				return fmt.Errorf("codex key JSON must include access_token")
 			}
 			if v, ok := keyMap["account_id"]; !ok || v == nil || strings.TrimSpace(fmt.Sprintf("%v", v)) == "" {
-				return fmt.Errorf("Codex key JSON must include account_id")
+				return fmt.Errorf("codex key JSON must include account_id")
 			}
 		}
 	}
@@ -595,7 +595,7 @@ func getVertexArrayKeys(keys string) ([]string, error) {
 		default:
 			bytes, err := common.Marshal(v)
 			if err != nil {
-				return nil, fmt.Errorf("Vertex AI key JSON 编码失败: %w", err)
+				return nil, fmt.Errorf("vertex AI key JSON 编码失败: %w", err)
 			}
 			keyStr = string(bytes)
 		}
