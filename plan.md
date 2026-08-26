@@ -277,3 +277,4 @@
 - [.plan/20260826-07.md](.plan/20260826-07.md) — 历史 Lite 契约残留彻底清理（已完成：移除 task/quota/货币/价格/签到公开契约，保留 Token 认证与 tokens 使用统计）
 - [.plan/20260826-08.md](.plan/20260826-08.md) — quota、货币与价格完全移除及 SQLite 迁移（已完成：带时间戳备份的物理 schema/data 迁移、全量源码与公开契约清理、隔离构建/race/staticcheck 及 setup/login/API Token HTTP smoke 通过）
 - [.plan/20260826-09.md](.plan/20260826-09.md) — 可选择配置备份与还原（已完成：版本化有效配置 JSON、Root-only 导出/受控还原、敏感凭据与渠道确认、事务性渠道替换、前端类别选择及全量回归）
+- [.plan/20260826-10.md](.plan/20260826-10.md) — 原生 Docker 管理面板与一键更新（已完成：交互菜单、非交互子命令、数据删除强确认、README 用法与模拟 Docker 回归）
