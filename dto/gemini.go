@@ -472,7 +472,7 @@ type GeminiUsageMetadata struct {
 	PromptTokensDetails        []GeminiPromptTokensDetails `json:"promptTokensDetails"`
 	ToolUsePromptTokensDetails []GeminiPromptTokensDetails `json:"toolUsePromptTokensDetails"`
 	CandidatesTokensDetails    []GeminiPromptTokensDetails `json:"candidatesTokensDetails"`
-	BillingUsage               *BillingUsage               `json:"billing_usage,omitempty"`
+	ProviderUsage              *ProviderUsage              `json:"provider_usage,omitempty"`
 }
 
 type GeminiPromptTokensDetails struct {

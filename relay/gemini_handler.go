@@ -20,17 +20,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func isNoThinkingRequest(req *dto.GeminiChatRequest) bool {
-	if req.GenerationConfig.ThinkingConfig != nil && req.GenerationConfig.ThinkingConfig.ThinkingBudget != nil {
-		configBudget := req.GenerationConfig.ThinkingConfig.ThinkingBudget
-		if configBudget != nil && *configBudget == 0 {
-			// 如果思考预算为 0，则认为是非思考请求
-			return true
-		}
-	}
-	return false
-}
-
 func GeminiHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types.NewAPIError) {
 	info.InitChannelMeta(c)
 
@@ -53,18 +42,6 @@ func GeminiHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *typ
 	helper.NormalizeRequestForModelMapping(info, request)
 
 	if model_setting.GetGeminiSettings().ThinkingAdapterEnabled {
-		if isNoThinkingRequest(request) {
-			// check is thinking
-			if !strings.Contains(info.OriginModelName, "-nothinking") {
-				// try to get no thinking model price
-				noThinkingModelName := info.OriginModelName + "-nothinking"
-				containPrice := helper.HasModelBillingConfig(noThinkingModelName)
-				if containPrice {
-					info.OriginModelName = noThinkingModelName
-					info.UpstreamModelName = noThinkingModelName
-				}
-			}
-		}
 		if request.GenerationConfig.ThinkingConfig == nil {
 			gemini.ThinkingAdaptor(request, info)
 		}
@@ -183,7 +160,7 @@ func GeminiHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *typ
 		return openaiErr
 	}
 
-	service.PostTextConsumeQuota(c, info, usage.(*dto.Usage), nil)
+	service.PostTextUsage(c, info, usage.(*dto.Usage), nil)
 	return nil
 }
 
@@ -271,6 +248,6 @@ func GeminiEmbeddingHandler(c *gin.Context, info *relaycommon.RelayInfo) (newAPI
 		return openaiErr
 	}
 
-	service.PostTextConsumeQuota(c, info, usage.(*dto.Usage), nil)
+	service.PostTextUsage(c, info, usage.(*dto.Usage), nil)
 	return nil
 }

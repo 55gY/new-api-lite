@@ -33,17 +33,6 @@ export function setStatusData(data) {
     'default_collapse_sidebar',
     data.default_collapse_sidebar,
   );
-  [
-    'enable_task',
-    'checkin_enabled',
-    'quota_per_unit',
-    'display_in_currency',
-    'quota_display_type',
-    'custom_currency_symbol',
-    'custom_currency_exchange_rate',
-    'usd_exchange_rate',
-    'price',
-  ].forEach((key) => localStorage.removeItem(key));
   localStorage.removeItem('enable_drawing');
   localStorage.removeItem('chats');
   localStorage.removeItem('mj_notify_enabled');

@@ -9,7 +9,6 @@ import (
 	"github.com/55gY/new-api-lite/dto"
 	"github.com/55gY/new-api-lite/relay/common"
 	relayconstant "github.com/55gY/new-api-lite/relay/constant"
-	"github.com/55gY/new-api-lite/setting/ratio_setting"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,9 +20,6 @@ func ModelMappedHelper(c *gin.Context, info *common.RelayInfo, request dto.Reque
 	isResponsesCompact := info.RelayMode == relayconstant.RelayModeResponsesCompact
 	originModelName := info.OriginModelName
 	mappingModelName := originModelName
-	if isResponsesCompact && strings.HasSuffix(originModelName, ratio_setting.CompactModelSuffix) {
-		mappingModelName = strings.TrimSuffix(originModelName, ratio_setting.CompactModelSuffix)
-	}
 
 	// map model name
 	modelMapping := c.GetString("model_mapping")
@@ -84,7 +80,7 @@ func ModelMappedHelper(c *gin.Context, info *common.RelayInfo, request dto.Reque
 			finalUpstreamModelName = info.UpstreamModelName
 		}
 		info.UpstreamModelName = finalUpstreamModelName
-		info.OriginModelName = ratio_setting.WithCompactModelSuffix(finalUpstreamModelName)
+		info.OriginModelName = finalUpstreamModelName
 	}
 	if request != nil {
 		request.SetModelName(info.UpstreamModelName)

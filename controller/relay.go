@@ -123,7 +123,7 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 	if needSensitiveCheck || needCountToken {
 		meta = request.GetTokenCountMeta()
 	} else {
-		meta = fastTokenCountMetaForPricing(request)
+		meta = fastTokenCountMeta(request)
 	}
 
 	if needSensitiveCheck && meta != nil {
@@ -142,13 +142,6 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 	}
 
 	relayInfo.SetEstimatePromptTokens(tokens)
-
-	relayInfo.PriceData = types.PriceData{
-		FreeModel: true,
-		GroupRatioInfo: types.GroupRatioInfo{
-			GroupRatio: 1,
-		},
-	}
 
 	// common.SetContextKey(c, constant.ContextKeyTokenCountMeta, meta)
 
@@ -269,7 +262,7 @@ func addUsedChannel(c *gin.Context, channelId int) {
 	c.Set("use_channel", useChannel)
 }
 
-func fastTokenCountMetaForPricing(request dto.Request) *types.TokenCountMeta {
+func fastTokenCountMeta(request dto.Request) *types.TokenCountMeta {
 	if request == nil {
 		return &types.TokenCountMeta{}
 	}
@@ -290,7 +283,6 @@ func fastTokenCountMetaForPricing(request dto.Request) *types.TokenCountMeta {
 	case *dto.ClaudeRequest:
 		meta.MaxTokens = int(lo.FromPtr(r.MaxTokens))
 	case *dto.ImageRequest:
-		// Pricing for image requests depends on ImagePriceRatio; safe to compute even when CountToken is disabled.
 		return r.GetTokenCountMeta()
 	default:
 		// Best-effort: leave CombineText empty to avoid large allocations.
@@ -313,8 +305,6 @@ func getChannel(c *gin.Context, info *relaycommon.RelayInfo, retryParam *service
 		}, nil
 	}
 	channel, selectGroup, err := service.CacheGetRandomSatisfiedChannel(retryParam)
-
-	info.PriceData.GroupRatioInfo = types.GroupRatioInfo{GroupRatio: 1}
 
 	if err != nil {
 		return nil, types.NewError(fmt.Errorf("获取分组 %s 下模型 %s 的可用渠道失败（retry）: %s", selectGroup, info.OriginModelName, err.Error()), types.ErrorCodeGetChannelFailed, types.ErrOptionWithSkipRetry())

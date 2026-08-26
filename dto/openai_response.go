@@ -221,13 +221,13 @@ type CompletionsStreamResponse struct {
 }
 
 type Usage struct {
-	PromptTokens         int           `json:"prompt_tokens"`
-	CompletionTokens     int           `json:"completion_tokens"`
-	TotalTokens          int           `json:"total_tokens"`
-	PromptCacheHitTokens int           `json:"prompt_cache_hit_tokens,omitempty"`
-	UsageSemantic        string        `json:"usage_semantic,omitempty"`
-	UsageSource          string        `json:"usage_source,omitempty"`
-	BillingUsage         *BillingUsage `json:"billing_usage,omitempty"`
+	PromptTokens         int            `json:"prompt_tokens"`
+	CompletionTokens     int            `json:"completion_tokens"`
+	TotalTokens          int            `json:"total_tokens"`
+	PromptCacheHitTokens int            `json:"prompt_cache_hit_tokens,omitempty"`
+	UsageSemantic        string         `json:"usage_semantic,omitempty"`
+	UsageSource          string         `json:"usage_source,omitempty"`
+	ProviderUsage        *ProviderUsage `json:"provider_usage,omitempty"`
 
 	PromptTokensDetails    InputTokenDetails  `json:"prompt_tokens_details"`
 	CompletionTokenDetails OutputTokenDetails `json:"completion_tokens_details"`
@@ -238,9 +238,6 @@ type Usage struct {
 	// claude cache 1h
 	ClaudeCacheCreation5mTokens int `json:"claude_cache_creation_5_m_tokens"`
 	ClaudeCacheCreation1hTokens int `json:"claude_cache_creation_1_h_tokens"`
-
-	// OpenRouter Params
-	Cost any `json:"cost,omitempty"`
 }
 
 type InputTokenDetails struct {
@@ -248,8 +245,7 @@ type InputTokenDetails struct {
 	CachedCreationTokens int `json:"cached_creation_tokens,omitempty"`
 	// CacheWriteTokens is OpenAI's native cache-write count, reported as
 	// prompt_tokens_details.cache_write_tokens (Chat Completions) or
-	// input_tokens_details.cache_write_tokens (Responses). It is billed at the
-	// cache-creation price.
+	// input_tokens_details.cache_write_tokens (Responses).
 	CacheWriteTokens int `json:"cache_write_tokens,omitempty"`
 	TextTokens       int `json:"text_tokens"`
 	AudioTokens      int `json:"audio_tokens"`
@@ -258,10 +254,9 @@ type InputTokenDetails struct {
 
 // CacheCreationTokensTotal returns the cache-write token count regardless of
 // which field the upstream reported it in: Claude-derived conversions populate
-// CachedCreationTokens while OpenAI reports cache_write_tokens natively. Both
-// are billed at the cache-creation price; when both are present the larger
-// value wins so the same tokens are never double-counted. Negative upstream
-// values are clamped to zero so they can never lower a charge.
+// CachedCreationTokens while OpenAI reports cache_write_tokens natively. When
+// both are present the larger value wins so the same tokens are never
+// double-counted. Negative upstream values are clamped to zero.
 func (d InputTokenDetails) CacheCreationTokensTotal() int {
 	total := d.CachedCreationTokens
 	if d.CacheWriteTokens > total {

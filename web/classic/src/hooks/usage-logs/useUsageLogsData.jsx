@@ -81,7 +81,6 @@ export const useLogsData = () => {
 
   // Statistics state
   const [stat, setStat] = useState({
-    quota: 0,
     token: 0,
   });
 

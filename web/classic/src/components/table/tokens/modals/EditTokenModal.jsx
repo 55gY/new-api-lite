@@ -211,9 +211,6 @@ const EditTokenModal = (props) => {
         } else {
           localInputs.name = baseName;
         }
-        localInputs.unlimited_quota = true;
-        localInputs.remain_quota = 0;
-
         if (localInputs.expired_time !== -1) {
           let time = Date.parse(localInputs.expired_time);
           if (isNaN(time)) {

@@ -91,8 +91,6 @@ const EditUserModal = (props) => {
   const submit = async (values) => {
     setLoading(true);
     let payload = { ...values };
-    delete payload.quota;
-    delete payload.quota_amount;
     payload.group = 'default';
     if (userId) {
       payload.id = parseInt(userId);

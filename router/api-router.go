@@ -176,9 +176,9 @@ func SetApiRouter(router *gin.Engine) {
 		logRoute.GET("/self/search", middleware.UserAuth(), middleware.SearchRateLimit(), controller.SearchUserLogs)
 
 		dataRoute := apiRouter.Group("/data")
-		dataRoute.GET("/", middleware.AdminAuth(), controller.GetAllQuotaDates)
-		dataRoute.GET("/users", middleware.AdminAuth(), controller.GetQuotaDatesByUser)
-		dataRoute.GET("/self", middleware.UserAuth(), controller.GetUserQuotaDates)
+		dataRoute.GET("/", middleware.AdminAuth(), controller.GetAllUsageDates)
+		dataRoute.GET("/users", middleware.AdminAuth(), controller.GetUsageDatesByUser)
+		dataRoute.GET("/self", middleware.UserAuth(), controller.GetUserUsageDates)
 
 		logRoute.Use(middleware.CORS(), middleware.CriticalRateLimit())
 		{

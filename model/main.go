@@ -108,6 +108,9 @@ func migrateDB() error {
 	if err := migrateTokenModelLimitsToText(); err != nil {
 		return err
 	}
+	if err := migrateLegacyLiteSchema(); err != nil {
+		return err
+	}
 
 	err := DB.AutoMigrate(
 		&Channel{},
@@ -116,7 +119,7 @@ func migrateDB() error {
 		&Option{},
 		&Ability{},
 		&Log{},
-		&QuotaData{},
+		&UsageData{},
 		&Model{},
 		&Vendor{},
 		&Setup{},

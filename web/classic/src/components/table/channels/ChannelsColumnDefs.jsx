@@ -475,7 +475,7 @@ export const getChannelsColumns = ({
     {
       key: COLUMN_KEYS.USED_TOKENS,
       title: t('已使用 tokens'),
-      dataIndex: 'used_quota',
+      dataIndex: 'used_tokens',
       render: (text) => {
         if (text === null || text === undefined || text === '') return '';
         return Number(text).toLocaleString();

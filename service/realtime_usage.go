@@ -17,11 +17,11 @@ type TokenDetails struct {
 	AudioTokens int
 }
 
-func PreWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.RealtimeUsage) error {
+func PreWssUsage(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.RealtimeUsage) error {
 	return nil
 }
 
-func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, modelName string,
+func PostWssUsage(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, modelName string,
 	usage *dto.RealtimeUsage, extraContent string) {
 
 	useTimeSeconds := time.Now().Unix() - relayInfo.StartTime.Unix()
@@ -34,8 +34,8 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 		logContent = "可能是上游超时"
 		logger.LogError(ctx, fmt.Sprintf("total tokens is 0, userId %d, channelId %d, tokenId %d, model %s", relayInfo.UserId, relayInfo.ChannelId, relayInfo.TokenId, modelName))
 	} else {
-		model.UpdateUserUsedQuotaAndRequestCount(relayInfo.UserId, 0)
-		model.RecordChannelUsedQuota(relayInfo.ChannelId, totalTokens)
+		model.UpdateUserRequestCount(relayInfo.UserId)
+		model.RecordChannelUsedTokens(relayInfo.ChannelId, totalTokens)
 	}
 
 	logModel := modelName

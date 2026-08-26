@@ -396,18 +396,6 @@ const ModelTestModal = ({
                 >
                   {testResult.message}
                 </Typography.Text>
-                {testResult.errorCode === 'model_price_error' && (
-                  <Button
-                    size='small'
-                    theme='light'
-                    type='warning'
-                    icon={<Settings size={12} />}
-                    onClick={() => window.open('/console/setting?tab=ratio', '_blank')}
-                    style={{ width: 'fit-content' }}
-                  >
-                    {t('前往设置')}
-                  </Button>
-                )}
               </div>
             )}
           </div>

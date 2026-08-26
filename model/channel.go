@@ -22,24 +22,22 @@ import (
 )
 
 type Channel struct {
-	Id                 int     `json:"id"`
-	Type               int     `json:"type" gorm:"default:0"`
-	Key                string  `json:"key" gorm:"not null"`
-	TestModel          *string `json:"test_model"`
-	Status             int     `json:"status" gorm:"default:1"`
-	Name               string  `json:"name" gorm:"index"`
-	Weight             *uint   `json:"weight" gorm:"default:0"`
-	CreatedTime        int64   `json:"created_time" gorm:"bigint"`
-	TestTime           int64   `json:"test_time" gorm:"bigint"`
-	ResponseTime       int     `json:"response_time"` // in milliseconds
-	BaseURL            *string `json:"base_url" gorm:"column:base_url;default:''"`
-	Other              string  `json:"other"`
-	Balance            float64 `json:"balance"` // in USD
-	BalanceUpdatedTime int64   `json:"balance_updated_time" gorm:"bigint"`
-	Models             string  `json:"models"`
-	Group              string  `json:"group" gorm:"type:varchar(64);default:'default'"`
-	UsedQuota          int64   `json:"used_quota" gorm:"bigint;default:0"`
-	ModelMapping       *string `json:"model_mapping" gorm:"type:text"`
+	Id           int     `json:"id"`
+	Type         int     `json:"type" gorm:"default:0"`
+	Key          string  `json:"key" gorm:"not null"`
+	TestModel    *string `json:"test_model"`
+	Status       int     `json:"status" gorm:"default:1"`
+	Name         string  `json:"name" gorm:"index"`
+	Weight       *uint   `json:"weight" gorm:"default:0"`
+	CreatedTime  int64   `json:"created_time" gorm:"bigint"`
+	TestTime     int64   `json:"test_time" gorm:"bigint"`
+	ResponseTime int     `json:"response_time"` // in milliseconds
+	BaseURL      *string `json:"base_url" gorm:"column:base_url;default:''"`
+	Other        string  `json:"other"`
+	Models       string  `json:"models"`
+	Group        string  `json:"group" gorm:"type:varchar(64);default:'default'"`
+	UsedTokens   int64   `json:"used_tokens" gorm:"bigint;default:0"`
+	ModelMapping *string `json:"model_mapping" gorm:"type:text"`
 	//MaxInputTokens     *int    `json:"max_input_tokens" gorm:"default:0"`
 	StatusCodeMapping *string `json:"status_code_mapping" gorm:"type:varchar(1024);default:''"`
 	Priority          *int64  `json:"priority" gorm:"bigint;default:0"`
@@ -79,7 +77,6 @@ var channelSortColumns = map[string]string{
 	"id":            "id",
 	"name":          "name",
 	"priority":      "priority",
-	"balance":       "balance",
 	"response_time": "response_time",
 	"test_time":     "test_time",
 }
@@ -679,16 +676,6 @@ func (channel *Channel) UpdateResponseTime(responseTime int64) {
 	}
 }
 
-func (channel *Channel) UpdateBalance(balance float64) {
-	err := DB.Model(channel).Select("balance_updated_time", "balance").Updates(Channel{
-		BalanceUpdatedTime: common.GetTimestamp(),
-		Balance:            balance,
-	}).Error
-	if err != nil {
-		common.SysLog(fmt.Sprintf("failed to update balance: channel_id=%d, error=%v", channel.Id, err))
-	}
-}
-
 func (channel *Channel) Delete() error {
 	var err error
 	err = DB.Delete(channel).Error
@@ -875,25 +862,25 @@ func UpdateChannelStatus(channelId int, usingKey string, status int, reason stri
 	return true
 }
 
-func updateChannelUsedQuota(id int, quota int) {
-	if id <= 0 || quota <= 0 {
+func updateChannelUsedTokens(id int, tokens int) {
+	if id <= 0 || tokens <= 0 {
 		return
 	}
-	err := DB.Model(&Channel{}).Where("id = ?", id).Update("used_quota", gorm.Expr("used_quota + ?", quota)).Error
+	err := DB.Model(&Channel{}).Where("id = ?", id).Update("used_tokens", gorm.Expr("used_tokens + ?", tokens)).Error
 	if err != nil {
-		common.SysLog("failed to update channel used quota: " + err.Error())
+		common.SysLog("failed to update channel used tokens: " + err.Error())
 	}
 }
 
-func RecordChannelUsedQuota(id int, quota int) {
-	if id <= 0 || quota <= 0 {
+func RecordChannelUsedTokens(id int, tokens int) {
+	if id <= 0 || tokens <= 0 {
 		return
 	}
 	if common.BatchUpdateEnabled {
-		addNewRecord(BatchUpdateTypeChannelUsedQuota, id, quota)
+		addNewRecord(BatchUpdateTypeChannelUsedTokens, id, tokens)
 		return
 	}
-	updateChannelUsedQuota(id, quota)
+	updateChannelUsedTokens(id, tokens)
 }
 
 func DeleteChannelByStatus(status int64) (int64, error) {

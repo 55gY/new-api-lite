@@ -29,14 +29,10 @@ type User struct {
 	Email            string         `json:"email" gorm:"index" validate:"max=50"`
 	VerificationCode string         `json:"verification_code" gorm:"-:all"`                         // this field is only for Email verification, don't save it to database!
 	AccessToken      *string        `json:"-" gorm:"type:char(32);column:access_token;uniqueIndex"` // this token is for system management
-	Quota            int            `json:"-" gorm:"type:int;default:0"`
-	UsedQuota        int            `json:"-" gorm:"type:int;default:0;column:used_quota"` // historical SQLite compatibility
-	RequestCount     int            `json:"request_count" gorm:"type:int;default:0;"`      // request number
+	RequestCount     int            `json:"request_count" gorm:"type:int;default:0;"`               // request number
 	Group            string         `json:"group" gorm:"type:varchar(64);default:'default'"`
 	AffCode          string         `json:"aff_code" gorm:"type:varchar(32);column:aff_code;uniqueIndex"`
 	AffCount         int            `json:"aff_count" gorm:"type:int;default:0;column:aff_count"`
-	AffQuota         int            `json:"-" gorm:"type:int;default:0;column:aff_quota"`   // historical SQLite compatibility
-	AffHistoryQuota  int            `json:"-" gorm:"type:int;default:0;column:aff_history"` // historical SQLite compatibility
 	InviterId        int            `json:"inviter_id" gorm:"type:int;column:inviter_id;index"`
 	DeletedAt        gorm.DeletedAt `gorm:"index"`
 	Setting          string         `json:"setting" gorm:"type:text;column:setting"`
@@ -49,7 +45,6 @@ func (user *User) ToBaseUser() *UserBase {
 	cache := &UserBase{
 		Id:       user.Id,
 		Group:    user.Group,
-		Quota:    user.Quota,
 		Status:   user.Status,
 		Username: user.Username,
 		Setting:  user.Setting,
@@ -322,10 +317,6 @@ func inviteUser(inviterId int) (err error) {
 	return DB.Save(user).Error
 }
 
-func (user *User) TransferAffQuotaToQuota(quota int) error {
-	return nil
-}
-
 func (user *User) Insert(inviterId int) error {
 	var err error
 	if user.Password != "" {
@@ -334,7 +325,6 @@ func (user *User) Insert(inviterId int) error {
 			return err
 		}
 	}
-	user.Quota = 0
 	//user.SetAccessToken(common.GetUUID())
 	user.AffCode = common.GetRandomString(4)
 
@@ -554,39 +544,6 @@ func ValidateAccessToken(token string) (*User, error) {
 	return user, nil
 }
 
-// GetUserQuota gets quota from Redis first, falls back to DB if needed
-func GetUserQuota(id int, fromDB bool) (quota int, err error) {
-	defer func() {
-		// Update Redis cache asynchronously on successful DB read
-		if shouldUpdateRedis(fromDB, err) {
-			gopool.Go(func() {
-				if err := updateUserQuotaCache(id, quota); err != nil {
-					common.SysLog("failed to update user quota cache: " + err.Error())
-				}
-			})
-		}
-	}()
-	if !fromDB && common.RedisEnabled {
-		quota, err := getUserQuotaCache(id)
-		if err == nil {
-			return quota, nil
-		}
-		// Don't return error - fall through to DB
-	}
-	fromDB = true
-	err = DB.Model(&User{}).Where("id = ?", id).Select("quota").Find(&quota).Error
-	if err != nil {
-		return 0, err
-	}
-
-	return quota, nil
-}
-
-func GetUserUsedQuota(id int) (quota int, err error) {
-	err = DB.Model(&User{}).Where("id = ?", id).Select("used_quota").Find(&quota).Error
-	return quota, err
-}
-
 func GetUserEmail(id int) (email string, err error) {
 	err = DB.Model(&User{}).Where("id = ?", id).Select("email").Find(&email).Error
 	return email, err
@@ -658,28 +615,6 @@ func GetUserSetting(id int, fromDB bool) (settingMap dto.UserSetting, err error)
 	return userBase.GetSetting(), nil
 }
 
-func IncreaseUserQuota(id int, quota int, db bool) (err error) {
-	if quota < 0 {
-		return errors.New("quota 不能为负数！")
-	}
-	return nil
-}
-
-func increaseUserQuota(id int, quota int) (err error) {
-	return nil
-}
-
-func DecreaseUserQuota(id int, quota int, db bool) (err error) {
-	if quota < 0 {
-		return errors.New("quota 不能为负数！")
-	}
-	return nil
-}
-
-func DeltaUpdateUserQuota(id int, delta int) (err error) {
-	return nil
-}
-
 //func GetRootUserEmail() (email string) {
 //	DB.Model(&User{}).Where("role = ?", common.RoleRootUser).Select("email").Find(&email)
 //	return email
@@ -696,15 +631,12 @@ func UpdateUserLastLoginAt(id int) {
 	}
 }
 
-func UpdateUserUsedQuotaAndRequestCount(id int, quota int) {
+func UpdateUserRequestCount(id int) {
 	if common.BatchUpdateEnabled {
 		addNewRecord(BatchUpdateTypeRequestCount, id, 1)
 		return
 	}
 	updateUserRequestCount(id, 1)
-}
-
-func updateUserUsedQuota(id int, quota int) {
 }
 
 func updateUserRequestCount(id int, count int) {

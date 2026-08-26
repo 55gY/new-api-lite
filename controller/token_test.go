@@ -52,12 +52,9 @@ type legacyToken struct {
 	CreatedTime        int64  `gorm:"bigint"`
 	AccessedTime       int64  `gorm:"bigint"`
 	ExpiredTime        int64  `gorm:"bigint;default:-1"`
-	RemainQuota        int    `gorm:"default:0"`
-	UnlimitedQuota     bool
 	ModelLimitsEnabled bool
 	ModelLimits        string  `gorm:"type:text"`
 	AllowIps           *string `gorm:"default:''"`
-	UsedQuota          int     `gorm:"default:0"`
 	Group              string  `gorm:"column:group;default:''"`
 	CrossGroupRetry    bool
 	DeletedAt          gorm.DeletedAt `gorm:"index"`
@@ -112,16 +109,14 @@ func seedToken(t *testing.T, db *gorm.DB, userID int, name string, rawKey string
 	t.Helper()
 
 	token := &model.Token{
-		UserId:         userID,
-		Name:           name,
-		Key:            rawKey,
-		Status:         common.TokenStatusEnabled,
-		CreatedTime:    1,
-		AccessedTime:   1,
-		ExpiredTime:    -1,
-		RemainQuota:    100,
-		UnlimitedQuota: true,
-		Group:          "default",
+		UserId:       userID,
+		Name:         name,
+		Key:          rawKey,
+		Status:       common.TokenStatusEnabled,
+		CreatedTime:  1,
+		AccessedTime: 1,
+		ExpiredTime:  -1,
+		Group:        "default",
 	}
 	if err := db.Create(token).Error; err != nil {
 		t.Fatalf("failed to create token: %v", err)
@@ -210,12 +205,9 @@ func runTokenMigrationCompatibilityTest(t *testing.T, db *gorm.DB, dialect strin
 		CreatedTime:        1,
 		AccessedTime:       1,
 		ExpiredTime:        -1,
-		RemainQuota:        100,
-		UnlimitedQuota:     true,
 		ModelLimitsEnabled: false,
 		ModelLimits:        "",
 		AllowIps:           common.GetPointer(""),
-		UsedQuota:          0,
 		Group:              "default",
 		CrossGroupRetry:    false,
 	}).Error; err != nil {
@@ -251,12 +243,9 @@ func runTokenMigrationCompatibilityTest(t *testing.T, db *gorm.DB, dialect strin
 		CreatedTime:        1,
 		AccessedTime:       1,
 		ExpiredTime:        -1,
-		RemainQuota:        200,
-		UnlimitedQuota:     true,
 		ModelLimitsEnabled: false,
 		ModelLimits:        "",
 		AllowIps:           common.GetPointer(""),
-		UsedQuota:          0,
 		Group:              "default",
 		CrossGroupRetry:    false,
 	}
@@ -374,8 +363,6 @@ func TestUpdateTokenMasksKeyInResponse(t *testing.T) {
 		"id":                   token.Id,
 		"name":                 "updated-token",
 		"expired_time":         -1,
-		"remain_quota":         100,
-		"unlimited_quota":      true,
 		"model_limits_enabled": false,
 		"model_limits":         "",
 		"group":                "default",

@@ -3,7 +3,6 @@ package dto
 import (
 	"encoding/json"
 	"reflect"
-	"strings"
 
 	"github.com/55gY/new-api-lite/common"
 	"github.com/55gY/new-api-lite/types"
@@ -11,8 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// MaxImageN caps the image generation count. Without this bound a huge or
-// wrapped-negative n overflows quota calculation into a negative charge.
+// MaxImageN caps image generation count to protect request handling from oversized input.
 const MaxImageN = 128
 
 type ImageRequest struct {
@@ -132,37 +130,9 @@ func indexComma(s string) int {
 }
 
 func (i *ImageRequest) GetTokenCountMeta() *types.TokenCountMeta {
-	var sizeRatio = 1.0
-	var qualityRatio = 1.0
-
-	if strings.HasPrefix(i.Model, "dall-e") {
-		// Size
-		if i.Size == "256x256" {
-			sizeRatio = 0.4
-		} else if i.Size == "512x512" {
-			sizeRatio = 0.45
-		} else if i.Size == "1024x1024" {
-			sizeRatio = 1
-		} else if i.Size == "1024x1792" || i.Size == "1792x1024" {
-			sizeRatio = 2
-		}
-
-		if i.Model == "dall-e-3" && i.Quality == "hd" {
-			qualityRatio = 2.0
-			if i.Size == "1024x1792" || i.Size == "1792x1024" {
-				qualityRatio = 1.5
-			}
-		}
-	}
-
-	// n is NOT included here; it is handled via OtherRatio("n") in
-	// image_handler.go (default) or channel adaptors (actual count).
-	// Including n here caused double-counting for channels that also
-	// set OtherRatio("n") (e.g. Ali/Bailian).
 	return &types.TokenCountMeta{
-		CombineText:     i.Prompt,
-		MaxTokens:       1584,
-		ImagePriceRatio: sizeRatio * qualityRatio,
+		CombineText: i.Prompt,
+		MaxTokens:   1584,
 	}
 }
 

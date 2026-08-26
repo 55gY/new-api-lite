@@ -1,9 +1,6 @@
 package model
 
-import (
-	"github.com/55gY/new-api-lite/common"
-	"github.com/55gY/new-api-lite/setting/ratio_setting"
-)
+import "github.com/55gY/new-api-lite/common"
 
 func IsChannelEnabledForGroupModel(group string, modelName string, channelID int) bool {
 	if modelName == "" || channelID <= 0 {
@@ -25,11 +22,6 @@ func IsChannelEnabledForGroupModel(group string, modelName string, channelID int
 	}
 	if group2mappedModel2channels != nil && isChannelIDInList(group2mappedModel2channels[group][modelName], channelID) {
 		return true
-	}
-	normalized := ratio_setting.FormatMatchingModelName(modelName)
-	if normalized != "" && normalized != modelName {
-		return isChannelIDInList(group2model2channels[group][normalized], channelID) ||
-			(group2mappedModel2channels != nil && isChannelIDInList(group2mappedModel2channels[group][normalized], channelID))
 	}
 	return false
 }
@@ -60,18 +52,7 @@ func isChannelEnabledForGroupModelDB(group string, modelName string, channelID i
 	if isChannelMappedForGroupModelDB(group, modelName, channelID) {
 		return true
 	}
-	normalized := ratio_setting.FormatMatchingModelName(modelName)
-	if normalized == "" || normalized == modelName {
-		return false
-	}
-	count = 0
-	query = DB.Model(&Ability{}).
-		Where("model = ? and channel_id = ? and enabled = ?", normalized, channelID, true)
-	if group != "" {
-		query = query.Where(commonGroupCol+" = ?", group)
-	}
-	err = query.Count(&count).Error
-	return (err == nil && count > 0) || isChannelMappedForGroupModelDB(group, normalized, channelID)
+	return false
 }
 
 func isChannelMappedForGroupModelDB(group string, requestModel string, channelID int) bool {

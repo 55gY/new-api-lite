@@ -13,20 +13,20 @@ type testConfigWithMap struct {
 func TestUpdateConfigFromMap_MapReplacement(t *testing.T) {
 	cfg := &testConfigWithMap{
 		Modes: map[string]string{
-			"model-a": "tiered_expr",
-			"model-b": "tiered_expr",
+			"model-a": "strict",
+			"model-b": "fallback",
 		},
 		Exprs: map[string]string{
-			"model-a": "p * 5 + c * 25",
-			"model-b": "p * 10 + c * 50",
+			"model-a": "region == primary",
+			"model-b": "region == secondary",
 		},
-		Name: "billing",
+		Name: "routing",
 	}
 
 	// Simulate removing model-a: new value only has model-b
 	err := UpdateConfigFromMap(cfg, map[string]string{
-		"modes": `{"model-b": "tiered_expr"}`,
-		"exprs": `{"model-b": "p * 10 + c * 50"}`,
+		"modes": `{"model-b": "fallback"}`,
+		"exprs": `{"model-b": "region == secondary"}`,
 	})
 	if err != nil {
 		t.Fatalf("UpdateConfigFromMap failed: %v", err)
@@ -39,21 +39,21 @@ func TestUpdateConfigFromMap_MapReplacement(t *testing.T) {
 		t.Errorf("Exprs still contains model-a after it was removed from the update; got %v", cfg.Exprs)
 	}
 
-	if cfg.Modes["model-b"] != "tiered_expr" {
-		t.Errorf("Modes[model-b] = %q, want %q", cfg.Modes["model-b"], "tiered_expr")
+	if cfg.Modes["model-b"] != "fallback" {
+		t.Errorf("Modes[model-b] = %q, want %q", cfg.Modes["model-b"], "fallback")
 	}
-	if cfg.Exprs["model-b"] != "p * 10 + c * 50" {
-		t.Errorf("Exprs[model-b] = %q, want %q", cfg.Exprs["model-b"], "p * 10 + c * 50")
+	if cfg.Exprs["model-b"] != "region == secondary" {
+		t.Errorf("Exprs[model-b] = %q, want %q", cfg.Exprs["model-b"], "region == secondary")
 	}
 }
 
 func TestUpdateConfigFromMap_EmptyMapClearsAll(t *testing.T) {
 	cfg := &testConfigWithMap{
 		Modes: map[string]string{
-			"model-a": "tiered_expr",
+			"model-a": "strict",
 		},
 		Exprs: map[string]string{
-			"model-a": "p * 5 + c * 25",
+			"model-a": "region == primary",
 		},
 	}
 

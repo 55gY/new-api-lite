@@ -107,11 +107,11 @@ func GetTokenStatus(c *gin.Context) {
 		expiredAt = 0
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"object":          "credit_summary",
-		"total_granted":   0,
-		"total_used":      0, // not supported currently
-		"total_available": 0,
-		"expires_at":      expiredAt * 1000,
+		"object":               "token_status",
+		"name":                 token.Name,
+		"model_limits":         token.GetModelLimitsMap(),
+		"model_limits_enabled": token.ModelLimitsEnabled,
+		"expires_at":           expiredAt * 1000,
 	})
 }
 
@@ -151,12 +151,8 @@ func GetTokenUsage(c *gin.Context) {
 		"code":    true,
 		"message": "ok",
 		"data": gin.H{
-			"object":               "token_usage",
+			"object":               "token_status",
 			"name":                 token.Name,
-			"total_granted":        0,
-			"total_used":           0,
-			"total_available":      0,
-			"unlimited_quota":      true,
 			"model_limits":         token.GetModelLimitsMap(),
 			"model_limits_enabled": token.ModelLimitsEnabled,
 			"expires_at":           expiredAt,
@@ -202,8 +198,6 @@ func AddToken(c *gin.Context) {
 		CreatedTime:        common.GetTimestamp(),
 		AccessedTime:       common.GetTimestamp(),
 		ExpiredTime:        token.ExpiredTime,
-		RemainQuota:        0,
-		UnlimitedQuota:     true,
 		ModelLimitsEnabled: token.ModelLimitsEnabled,
 		ModelLimits:        token.ModelLimits,
 		AllowIps:           token.AllowIps,
@@ -265,8 +259,6 @@ func UpdateToken(c *gin.Context) {
 		// If you add more fields, please also update token.Update()
 		cleanToken.Name = token.Name
 		cleanToken.ExpiredTime = token.ExpiredTime
-		cleanToken.RemainQuota = 0
-		cleanToken.UnlimitedQuota = true
 		cleanToken.ModelLimitsEnabled = token.ModelLimitsEnabled
 		cleanToken.ModelLimits = token.ModelLimits
 		cleanToken.AllowIps = token.AllowIps

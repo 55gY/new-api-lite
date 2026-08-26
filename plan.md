@@ -275,3 +275,4 @@
 - [.plan/20260826-05.md](.plan/20260826-05.md) — 依赖一致性与剩余计划收尾（已完成：规范化 Go 模块直接/间接依赖声明；历史 P2/P3/Phase G 可选功能不在本批实施）
 - [.plan/20260826-06.md](.plan/20260826-06.md) — staticcheck 清理后功能完整性体检（已完成：全新隔离构建、全量测试/竞态/静态检查、SQLite 初始化、后台认证与 API token 冒烟验证）
 - [.plan/20260826-07.md](.plan/20260826-07.md) — 历史 Lite 契约残留彻底清理（已完成：移除 task/quota/货币/价格/签到公开契约，保留 Token 认证与 tokens 使用统计）
+- [.plan/20260826-08.md](.plan/20260826-08.md) — quota、货币与价格完全移除及 SQLite 迁移（已完成：带时间戳备份的物理 schema/data 迁移、全量源码与公开契约清理、隔离构建/race/staticcheck 及 setup/login/API Token HTTP smoke 通过）

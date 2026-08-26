@@ -43,7 +43,6 @@ const USER_COLORS = [
 export const useDashboardCharts = (
   dataExportDefaultTime,
   setTrendData,
-  setConsumeQuota,
   setTimes,
   setConsumeTokens,
   setPieData,
@@ -143,7 +142,7 @@ export const useDashboardCharts = (
         content: [
           {
             key: (datum) => datum['Model'],
-            value: (datum) => renderNumber(datum['rawQuota'] || 0),
+            value: (datum) => renderNumber(datum['rawTokenUsage'] || 0),
           },
         ],
       },
@@ -151,7 +150,7 @@ export const useDashboardCharts = (
         content: [
           {
             key: (datum) => datum['Model'],
-            value: (datum) => datum['rawQuota'] || 0,
+            value: (datum) => datum['rawTokenUsage'] || 0,
           },
         ],
         updateContent: (array) => {
@@ -288,7 +287,7 @@ export const useDashboardCharts = (
   const [spec_user_rank, setSpecUserRank] = useState({
     type: 'bar',
     data: [{ id: 'userRankData', values: [] }],
-    xField: 'rawQuota',
+    xField: 'rawTokenUsage',
     yField: 'User',
     seriesField: 'User',
     direction: 'horizontal',
@@ -304,7 +303,7 @@ export const useDashboardCharts = (
     label: {
       visible: true,
       position: 'outside',
-      formatMethod: (value, datum) => renderNumber(datum['rawQuota'] || 0),
+      formatMethod: (value, datum) => renderNumber(datum['rawTokenUsage'] || 0),
     },
     axes: [{
       orient: 'left',
@@ -319,7 +318,7 @@ export const useDashboardCharts = (
       mark: {
         content: [{
           key: (datum) => datum['User'],
-          value: (datum) => renderNumber(datum['rawQuota'] || 0),
+          value: (datum) => renderNumber(datum['rawTokenUsage'] || 0),
         }],
       },
     },
@@ -331,7 +330,7 @@ export const useDashboardCharts = (
     type: 'area',
     data: [{ id: 'userTrendData', values: [] }],
     xField: 'Time',
-    yField: 'rawQuota',
+    yField: 'rawTokenUsage',
     seriesField: 'User',
     stack: false,
     legends: { visible: true, selectMode: 'single' },
@@ -353,13 +352,13 @@ export const useDashboardCharts = (
       mark: {
         content: [{
           key: (datum) => datum['User'],
-          value: (datum) => renderNumber(datum['rawQuota'] || 0),
+          value: (datum) => renderNumber(datum['rawTokenUsage'] || 0),
         }],
       },
       dimension: {
         content: [{
           key: (datum) => datum['User'],
-          value: (datum) => datum['rawQuota'] || 0,
+          value: (datum) => datum['rawTokenUsage'] || 0,
         }],
         updateContent: (array) => {
           array.sort((a, b) => b.value - a.value);
@@ -403,19 +402,16 @@ export const useDashboardCharts = (
       );
 
       const {
-        totalQuota,
         totalTimes,
         totalTokens,
         uniqueModels,
         timePoints,
-        timeQuotaMap,
         timeTokensMap,
         timeCountMap,
       } = processedData;
 
       const trendDataResult = calculateTrendData(
         timePoints,
-        timeQuotaMap,
         timeTokensMap,
         timeCountMap,
         dataExportDefaultTime,
@@ -457,13 +453,13 @@ export const useDashboardCharts = (
           return {
             Time: time,
             Model: model,
-            rawQuota: aggregated?.quota || 0,
-            Usage: aggregated?.quota || 0,
+            rawTokenUsage: aggregated?.tokenUsage || 0,
+            Usage: aggregated?.tokenUsage || 0,
           };
         });
 
-        const timeSum = timeData.reduce((sum, item) => sum + item.rawQuota, 0);
-        timeData.sort((a, b) => b.rawQuota - a.rawQuota);
+        const timeSum = timeData.reduce((sum, item) => sum + item.rawTokenUsage, 0);
+        timeData.sort((a, b) => b.rawTokenUsage - a.rawTokenUsage);
         timeData = timeData.map((item) => ({ ...item, TimeSum: timeSum }));
         newLineData.push(...timeData);
       });
@@ -481,7 +477,7 @@ export const useDashboardCharts = (
       updateChartSpec(
         setSpecLine,
         newLineData,
-        `${t('总计')}：${renderNumber(totalQuota)}`,
+        `${t('总计')}：${renderNumber(totalTokens)}`,
         newModelColors,
         'barData',
       );
@@ -540,7 +536,6 @@ export const useDashboardCharts = (
 
       setPieData(newPieData);
       setLineData(newLineData);
-      setConsumeQuota(totalQuota);
       setTimes(totalTimes);
       setConsumeTokens(totalTokens);
     },
@@ -551,7 +546,6 @@ export const useDashboardCharts = (
       setModelColors,
       setPieData,
       setLineData,
-      setConsumeQuota,
       setTimes,
       setConsumeTokens,
       t,
@@ -569,26 +563,26 @@ export const useDashboardCharts = (
 
       const userRankValues = rankingData.map((item) => ({
         User: item.User,
-        rawQuota: item.Quota,
-        Quota: item.Quota,
-      })).sort((a, b) => b.rawQuota - a.rawQuota);
+        rawTokenUsage: item.TokenUsage,
+        TokenUsage: item.TokenUsage,
+      })).sort((a, b) => b.rawTokenUsage - a.rawTokenUsage);
 
-      const totalUserQuota = rankingData.reduce((s, i) => s + i.Quota, 0);
+      const totalUserTokens = rankingData.reduce((sum, item) => sum + item.TokenUsage, 0);
 
       setSpecUserRank((prev) => ({
         ...prev,
         data: [{ id: 'userRankData', values: userRankValues }],
         title: {
           ...prev.title,
-          subtext: `${t('总计')}：${renderNumber(totalUserQuota)}`,
+          subtext: `${t('总计')}：${renderNumber(totalUserTokens)}`,
         },
       }));
 
       const userTrendValues = userTrend.map((item) => ({
         Time: item.Time,
         User: item.User,
-        rawQuota: item.Quota,
-        Usage: item.Quota || 0,
+        rawTokenUsage: item.TokenUsage,
+        Usage: item.TokenUsage || 0,
       }));
 
       setSpecUserTrend((prev) => ({
@@ -596,7 +590,7 @@ export const useDashboardCharts = (
         data: [{ id: 'userTrendData', values: userTrendValues }],
         title: {
           ...prev.title,
-          subtext: `${t('总计')}：${renderNumber(totalUserQuota)}`,
+          subtext: `${t('总计')}：${renderNumber(totalUserTokens)}`,
         },
       }));
     },

@@ -84,7 +84,7 @@ func main() {
 	go model.SyncOptions(common.SyncFrequency)
 
 	// 数据看板
-	go model.UpdateQuotaData()
+	go model.UpdateUsageData()
 
 	go controller.AutomaticallyTestChannels()
 

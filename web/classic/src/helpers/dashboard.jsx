@@ -160,12 +160,10 @@ export const processRawData = (
   updateMapValue,
 ) => {
   const result = {
-    totalQuota: 0,
     totalTimes: 0,
     totalTokens: 0,
     uniqueModels: new Set(),
     timePoints: [],
-    timeQuotaMap: new Map(),
     timeTokensMap: new Map(),
     timeCountMap: new Map(),
   };
@@ -176,7 +174,6 @@ export const processRawData = (
   data.forEach((item) => {
     result.uniqueModels.add(item.model_name);
     result.totalTokens += item.token_used;
-    result.totalQuota += item.token_used;
     result.totalTimes += item.count;
 
     const timeKey = timestamp2string1(
@@ -188,13 +185,7 @@ export const processRawData = (
       result.timePoints.push(timeKey);
     }
 
-    initializeMaps(
-      timeKey,
-      result.timeQuotaMap,
-      result.timeTokensMap,
-      result.timeCountMap,
-    );
-    updateMapValue(result.timeQuotaMap, timeKey, item.token_used);
+    initializeMaps(timeKey, result.timeTokensMap, result.timeCountMap);
     updateMapValue(result.timeTokensMap, timeKey, item.token_used);
     updateMapValue(result.timeCountMap, timeKey, item.count);
   });
@@ -205,12 +196,10 @@ export const processRawData = (
 
 export const calculateTrendData = (
   timePoints,
-  timeQuotaMap,
   timeTokensMap,
   timeCountMap,
   dataExportDefaultTime,
 ) => {
-  const quotaTrend = timePoints.map((time) => timeQuotaMap.get(time) || 0);
   const tokensTrend = timePoints.map((time) => timeTokensMap.get(time) || 0);
   const countTrend = timePoints.map((time) => timeCountMap.get(time) || 0);
 
@@ -227,11 +216,7 @@ export const calculateTrendData = (
   }
 
   return {
-    balance: [],
-    usedQuota: [],
-    requestCount: [],
     times: countTrend,
-    consumeQuota: quotaTrend,
     tokens: tokensTrend,
     rpm: rpmTrend,
     tpm: tpmTrend,
@@ -257,13 +242,13 @@ export const aggregateDataByTimeAndModel = (data, dataExportDefaultTime) => {
       aggregatedData.set(key, {
         time: timeKey,
         model: modelKey,
-        quota: 0,
+        tokenUsage: 0,
         count: 0,
       });
     }
 
     const existing = aggregatedData.get(key);
-    existing.quota += item.token_used;
+    existing.tokenUsage += item.token_used;
     existing.count += item.count;
   });
 
@@ -300,21 +285,21 @@ export const generateChartTimePoints = (
 
 // ========== 用户维度数据处理 ==========
 export const processUserData = (data, dataExportDefaultTime, limit = 10) => {
-  const userQuotaTotal = new Map();
+  const userTokenUsageTotal = new Map();
   data.forEach((item) => {
-    const prev = userQuotaTotal.get(item.username) || 0;
-    userQuotaTotal.set(item.username, prev + item.token_used);
+    const prev = userTokenUsageTotal.get(item.username) || 0;
+    userTokenUsageTotal.set(item.username, prev + item.token_used);
   });
 
-  const sorted = Array.from(userQuotaTotal.entries()).sort(
+  const sorted = Array.from(userTokenUsageTotal.entries()).sort(
     (a, b) => b[1] - a[1],
   );
   const topUsers = sorted.slice(0, limit).map(([u]) => u);
   const topUserSet = new Set(topUsers);
 
-  const rankingData = sorted.slice(0, limit).map(([username, quota]) => ({
+  const rankingData = sorted.slice(0, limit).map(([username, tokenUsage]) => ({
     User: username,
-    Quota: quota,
+    TokenUsage: tokenUsage,
   }));
 
   const showYear = isDataCrossYear(data.map((item) => item.created_at));
@@ -332,8 +317,8 @@ export const processUserData = (data, dataExportDefaultTime, limit = 10) => {
     const user = topUserSet.has(item.username) ? item.username : null;
     if (!user) return;
     const key = `${timeKey}-${user}`;
-    const prev = timeUserMap.get(key) || { quota: 0 };
-    timeUserMap.set(key, { quota: prev.quota + item.token_used });
+    const prev = timeUserMap.get(key) || { tokenUsage: 0 };
+    timeUserMap.set(key, { tokenUsage: prev.tokenUsage + item.token_used });
   });
 
   const sortedTimePoints = Array.from(allTimePoints).sort();
@@ -345,7 +330,7 @@ export const processUserData = (data, dataExportDefaultTime, limit = 10) => {
       trendData.push({
         Time: time,
         User: user,
-        Quota: val?.quota || 0,
+        TokenUsage: val?.tokenUsage || 0,
       });
     });
   });

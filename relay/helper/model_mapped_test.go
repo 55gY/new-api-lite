@@ -5,7 +5,6 @@ import (
 
 	"github.com/55gY/new-api-lite/relay/common"
 	relayconstant "github.com/55gY/new-api-lite/relay/constant"
-	"github.com/55gY/new-api-lite/setting/ratio_setting"
 	"github.com/55gY/new-api-lite/types"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
@@ -117,16 +116,16 @@ func TestModelMappedHelperReverseMappingResponsesCompact(t *testing.T) {
 	c := newModelMappedTestContext(`{"a":"b"}`)
 	info := &common.RelayInfo{
 		RelayMode:       relayconstant.RelayModeResponsesCompact,
-		OriginModelName: ratio_setting.WithCompactModelSuffix("b"),
-		ChannelMeta:     &common.ChannelMeta{UpstreamModelName: ratio_setting.WithCompactModelSuffix("b")},
+		OriginModelName: "b",
+		ChannelMeta:     &common.ChannelMeta{UpstreamModelName: "b"},
 	}
-	request := &modelMappedTestRequest{model: ratio_setting.WithCompactModelSuffix("b")}
+	request := &modelMappedTestRequest{model: "b"}
 
 	err := ModelMappedHelper(c, info, request)
 
 	require.NoError(t, err)
 	require.True(t, info.IsModelMapped)
 	require.Equal(t, "a", info.UpstreamModelName)
-	require.Equal(t, ratio_setting.WithCompactModelSuffix("a"), info.OriginModelName)
+	require.Equal(t, "a", info.OriginModelName)
 	require.Equal(t, "a", request.model)
 }

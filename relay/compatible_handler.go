@@ -82,7 +82,7 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 			return newApiErr
 		}
 
-		service.PostTextConsumeQuota(c, info, usage, nil)
+		service.PostTextUsage(c, info, usage, nil)
 		return nil
 	}
 
@@ -206,6 +206,6 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 		return newApiErr
 	}
 
-	service.PostTextConsumeQuota(c, info, usage.(*dto.Usage), nil)
+	service.PostTextUsage(c, info, usage.(*dto.Usage), nil)
 	return nil
 }

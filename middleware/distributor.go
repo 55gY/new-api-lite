@@ -17,7 +17,6 @@ import (
 	"github.com/55gY/new-api-lite/model"
 	relayconstant "github.com/55gY/new-api-lite/relay/constant"
 	"github.com/55gY/new-api-lite/service"
-	"github.com/55gY/new-api-lite/setting/ratio_setting"
 	"github.com/55gY/new-api-lite/types"
 
 	"github.com/gin-gonic/gin"
@@ -69,8 +68,8 @@ func Distribute() func(c *gin.Context) {
 				if !ok {
 					tokenModelLimit = map[string]bool{}
 				}
-				matchName := ratio_setting.FormatMatchingModelName(modelRequest.Model) // match gpts & thinking-*
-				if _, ok := tokenModelLimit[matchName]; !ok {
+				if _, ok := tokenModelLimit[modelRequest.Model]; !ok {
+
 					abortWithOpenAiMessage(c, http.StatusForbidden, i18n.T(c, i18n.MsgDistributorTokenModelForbidden, map[string]any{"Model": modelRequest.Model}))
 					return
 				}
@@ -261,10 +260,6 @@ func getModelRequest(c *gin.Context) (*ModelRequest, bool, error) {
 		modelRequest.Model = req.Model
 		modelRequest.Group = req.Group
 		common.SetContextKey(c, constant.ContextKeyTokenGroup, modelRequest.Group)
-	}
-
-	if strings.HasPrefix(c.Request.URL.Path, "/v1/responses/compact") && modelRequest.Model != "" {
-		modelRequest.Model = ratio_setting.WithCompactModelSuffix(modelRequest.Model)
 	}
 	return &modelRequest, shouldSelectChannel, nil
 }

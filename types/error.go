@@ -43,7 +43,6 @@ const (
 
 	// new api error
 	ErrorCodeCountTokenFailed   ErrorCode = "count_token_failed"
-	ErrorCodeModelPriceError    ErrorCode = "model_price_error"
 	ErrorCodeInvalidApiType     ErrorCode = "invalid_api_type"
 	ErrorCodeJsonMarshalFailed  ErrorCode = "json_marshal_failed"
 	ErrorCodeDoRequestFailed    ErrorCode = "do_request_failed"
@@ -80,10 +79,6 @@ const (
 	// sql error
 	ErrorCodeQueryDataError  ErrorCode = "query_data_error"
 	ErrorCodeUpdateDataError ErrorCode = "update_data_error"
-
-	// quota error
-	ErrorCodeInsufficientUserQuota      ErrorCode = "insufficient_user_quota"
-	ErrorCodePreConsumeTokenQuotaFailed ErrorCode = "pre_consume_token_quota_failed"
 )
 
 type NewAPIError struct {

@@ -18,7 +18,6 @@ type UserBase struct {
 	Id       int    `json:"id"`
 	Group    string `json:"group"`
 	Email    string `json:"email"`
-	Quota    int    `json:"quota"`
 	Status   int    `json:"status"`
 	Username string `json:"username"`
 	Setting  string `json:"setting"`
@@ -26,7 +25,6 @@ type UserBase struct {
 
 func (user *UserBase) WriteContext(c *gin.Context) {
 	common.SetContextKey(c, constant.ContextKeyUserGroup, user.Group)
-	common.SetContextKey(c, constant.ContextKeyUserQuota, user.Quota)
 	common.SetContextKey(c, constant.ContextKeyUserStatus, user.Status)
 	common.SetContextKey(c, constant.ContextKeyUserEmail, user.Email)
 	common.SetContextKey(c, constant.ContextKeyUserName, user.Username)
@@ -108,7 +106,6 @@ func GetUserCache(userId int) (userCache *UserBase, err error) {
 	userCache = &UserBase{
 		Id:       user.Id,
 		Group:    user.Group,
-		Quota:    user.Quota,
 		Status:   user.Status,
 		Username: user.Username,
 		Setting:  user.Setting,
@@ -131,22 +128,13 @@ func cacheGetUserBase(userId int) (*UserBase, error) {
 	return &userCache, nil
 }
 
-// Add atomic quota operations using hash fields
-// Helper functions to get individual fields if needed
+// Helper functions to read individual cached user fields when needed.
 func getUserGroupCache(userId int) (string, error) {
 	cache, err := GetUserCache(userId)
 	if err != nil {
 		return "", err
 	}
 	return cache.Group, nil
-}
-
-func getUserQuotaCache(userId int) (int, error) {
-	cache, err := GetUserCache(userId)
-	if err != nil {
-		return 0, err
-	}
-	return cache.Quota, nil
 }
 
 func getUserNameCache(userId int) (string, error) {
@@ -166,13 +154,6 @@ func getUserSettingCache(userId int) (dto.UserSetting, error) {
 }
 
 // New functions for individual field updates
-func updateUserQuotaCache(userId int, quota int) error {
-	if !common.RedisEnabled {
-		return nil
-	}
-	return common.RedisHSetField(getUserCacheKey(userId), "Quota", fmt.Sprintf("%d", quota))
-}
-
 func updateUserGroupCache(userId int, group string) error {
 	if !common.RedisEnabled {
 		return nil

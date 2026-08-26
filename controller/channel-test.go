@@ -26,7 +26,6 @@ import (
 	"github.com/55gY/new-api-lite/relay/helper"
 	"github.com/55gY/new-api-lite/service"
 	"github.com/55gY/new-api-lite/setting/operation_setting"
-	"github.com/55gY/new-api-lite/setting/ratio_setting"
 	"github.com/55gY/new-api-lite/types"
 
 	"github.com/bytedance/gopkg/util/gopool"
@@ -35,6 +34,15 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+const channelTestCompactModelSuffix = "-openai-compact"
+
+func withChannelTestCompactModelSuffix(model string) string {
+	if strings.HasSuffix(model, channelTestCompactModelSuffix) {
+		return model
+	}
+	return model + channelTestCompactModelSuffix
+}
 
 type testResult struct {
 	context      *gin.Context
@@ -49,7 +57,7 @@ func normalizeChannelTestEndpoint(channel *model.Channel, modelName, endpointTyp
 	if normalized != "" {
 		return normalized
 	}
-	if strings.HasSuffix(modelName, ratio_setting.CompactModelSuffix) {
+	if strings.HasSuffix(modelName, channelTestCompactModelSuffix) {
 		return string(constant.EndpointTypeOpenAIResponseCompact)
 	}
 	if channel != nil && channel.Type == constant.ChannelTypeCodex {
@@ -153,12 +161,12 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 		}
 
 		// responses compaction models (must use /v1/responses/compact)
-		if strings.HasSuffix(testModel, ratio_setting.CompactModelSuffix) {
+		if strings.HasSuffix(testModel, channelTestCompactModelSuffix) {
 			requestPath = "/v1/responses/compact"
 		}
 	}
 	if strings.HasPrefix(requestPath, "/v1/responses/compact") {
-		testModel = ratio_setting.WithCompactModelSuffix(testModel)
+		testModel = withChannelTestCompactModelSuffix(testModel)
 	}
 
 	c.Request = &http.Request{
@@ -300,15 +308,6 @@ func testChannel(channel *model.Channel, testUserID int, testModel string, endpo
 	//logInfo := info
 	//logInfo.ApiKey = ""
 	common.SysLog(fmt.Sprintf("testing channel %d with model %s , info %+v ", channel.Id, testModel, info.ToString()))
-
-	_, err = helper.ModelPriceHelper(c, info, 0, request.GetTokenCountMeta())
-	if err != nil {
-		return testResult{
-			context:     c,
-			localErr:    err,
-			newAPIError: types.NewError(err, types.ErrorCodeModelPriceError, types.ErrOptionWithStatusCode(http.StatusBadRequest)),
-		}
-	}
 
 	adaptor.Init(info)
 
@@ -797,7 +796,7 @@ func buildTestRequest(model string, endpointType string, channel *model.Channel,
 	}
 
 	// Responses compaction models (must use /v1/responses/compact)
-	if strings.HasSuffix(model, ratio_setting.CompactModelSuffix) {
+	if strings.HasSuffix(model, channelTestCompactModelSuffix) {
 		return &dto.OpenAIResponsesCompactionRequest{
 			Model: model,
 			Input: testResponsesInput,

@@ -228,7 +228,7 @@ type ClaudeRequest struct {
 	// Speed specifies the Claude inference speed mode.
 	// This field is filtered by default and can be enabled via channel setting allow_speed.
 	Speed json.RawMessage `json:"speed,omitempty"`
-	// ServiceTier specifies upstream service level and may affect billing.
+	// ServiceTier specifies upstream service level and may affect capacity or priority.
 	// This field is filtered by default and can be enabled via channel setting allow_service_tier.
 	ServiceTier string `json:"service_tier,omitempty"`
 }
@@ -557,7 +557,7 @@ type ClaudeUsage struct {
 	ClaudeCacheCreation5mTokens int                  `json:"claude_cache_creation_5_m_tokens"`
 	ClaudeCacheCreation1hTokens int                  `json:"claude_cache_creation_1_h_tokens"`
 	ServerToolUse               *ClaudeServerToolUse `json:"server_tool_use,omitempty"`
-	BillingUsage                *BillingUsage        `json:"billing_usage,omitempty"`
+	ProviderUsage               *ProviderUsage       `json:"provider_usage,omitempty"`
 }
 
 type ClaudeCacheCreationUsage struct {

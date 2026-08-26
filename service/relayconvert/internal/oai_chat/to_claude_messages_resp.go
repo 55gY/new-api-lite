@@ -21,17 +21,17 @@ func buildClaudeUsageFromOpenAIUsage(oaiUsage *dto.Usage) *dto.ClaudeUsage {
 	if oaiUsage == nil {
 		return nil
 	}
-	if billingUsage := dto.CloneBillingUsage(oaiUsage.BillingUsage); billingUsage != nil && billingUsage.ClaudeUsage != nil {
-		if billingUsage.Source == dto.BillingUsageSourceClaudeMessages || billingUsage.Semantic == dto.BillingUsageSemanticAnthropic {
-			return billingUsage.ClaudeUsage
+	if providerUsage := dto.CloneProviderUsage(oaiUsage.ProviderUsage); providerUsage != nil && providerUsage.ClaudeUsage != nil {
+		if providerUsage.Source == dto.ProviderUsageSourceClaudeMessages || providerUsage.Semantic == dto.ProviderUsageSemanticAnthropic {
+			return providerUsage.ClaudeUsage
 		}
 	}
-	billingUsage := dto.NewOpenAIChatBillingUsage(oaiUsage)
-	if existingBillingUsage := dto.CloneBillingUsage(oaiUsage.BillingUsage); existingBillingUsage != nil && existingBillingUsage.OpenAIUsage != nil {
-		if existingBillingUsage.Source == dto.BillingUsageSourceOAIChat ||
-			existingBillingUsage.Source == dto.BillingUsageSourceOAIResponses ||
-			existingBillingUsage.Semantic == dto.BillingUsageSemanticOpenAI {
-			billingUsage = existingBillingUsage
+	providerUsage := dto.NewOpenAIChatProviderUsage(oaiUsage)
+	if existingProviderUsage := dto.CloneProviderUsage(oaiUsage.ProviderUsage); existingProviderUsage != nil && existingProviderUsage.OpenAIUsage != nil {
+		if existingProviderUsage.Source == dto.ProviderUsageSourceOAIChat ||
+			existingProviderUsage.Source == dto.ProviderUsageSourceOAIResponses ||
+			existingProviderUsage.Semantic == dto.ProviderUsageSemanticOpenAI {
+			providerUsage = existingProviderUsage
 		}
 	}
 	cacheCreation5m, cacheCreation1h := NormalizeCacheCreationSplit(
@@ -56,7 +56,7 @@ func buildClaudeUsageFromOpenAIUsage(oaiUsage *dto.Usage) *dto.ClaudeUsage {
 		OutputTokens:             oaiUsage.CompletionTokens,
 		CacheCreationInputTokens: cacheCreationTokens,
 		CacheReadInputTokens:     oaiUsage.PromptTokensDetails.CachedTokens,
-		BillingUsage:             billingUsage,
+		ProviderUsage:            providerUsage,
 	}
 	if cacheCreation5m > 0 || cacheCreation1h > 0 {
 		usage.CacheCreation = &dto.ClaudeCacheCreationUsage{

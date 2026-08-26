@@ -13,7 +13,6 @@ import (
 	"github.com/55gY/new-api-lite/common"
 	"github.com/55gY/new-api-lite/constant"
 	"github.com/55gY/new-api-lite/logger"
-	"github.com/55gY/new-api-lite/setting/ratio_setting"
 )
 
 var group2model2channels map[string]map[string][]int // enabled channel
@@ -241,11 +240,7 @@ func getChannelsForModel(groupModelChannels map[string]map[string][]int, group s
 	if len(channels) != 0 {
 		return channels
 	}
-	normalizedModel := ratio_setting.FormatMatchingModelName(model)
-	if normalizedModel == "" || normalizedModel == model {
-		return nil
-	}
-	return groupModelChannels[group][normalizedModel]
+	return nil
 }
 
 func countChannelPriorities(channels []int) (int, error) {

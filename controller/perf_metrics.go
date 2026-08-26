@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	perfmetrics "github.com/55gY/new-api-lite/pkg/perf_metrics"
-	"github.com/55gY/new-api-lite/setting/ratio_setting"
+	"github.com/55gY/new-api-lite/setting"
 
 	"github.com/gin-gonic/gin"
 	"github.com/samber/lo"
@@ -19,7 +19,7 @@ func GetPerfMetricsSummary(c *gin.Context) {
 		}
 	}
 
-	activeGroups := append(lo.Keys(ratio_setting.GetGroupRatioCopy()), "auto")
+	activeGroups := append(lo.Keys(setting.GetUserUsableGroupsCopy()), "auto")
 	result, err := perfmetrics.QuerySummaryAll(hours, activeGroups)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -74,9 +74,9 @@ func GetPerfMetrics(c *gin.Context) {
 }
 
 func filterActiveGroups(groups []perfmetrics.GroupResult) []perfmetrics.GroupResult {
-	activeRatios := ratio_setting.GetGroupRatioCopy()
+	activeGroups := setting.GetUserUsableGroupsCopy()
 	return lo.Filter(groups, func(g perfmetrics.GroupResult, _ int) bool {
-		_, ok := activeRatios[g.Group]
+		_, ok := activeGroups[g.Group]
 		return ok || g.Group == "auto"
 	})
 }

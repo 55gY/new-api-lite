@@ -90,7 +90,6 @@ type RelayInfo struct {
 	UserId            int
 	UsingGroup        string // 使用的分组，当auto跨分组重试时，会变动
 	UserGroup         string // 用户所在分组
-	TokenUnlimited    bool
 	StartTime         time.Time
 	FirstResponseTime time.Time
 	isFirstResponse   bool
@@ -98,7 +97,6 @@ type RelayInfo struct {
 	IsStream               bool
 	IsGeminiBatchEmbedding bool
 	IsPlayground           bool
-	UsePrice               bool
 	RelayMode              int
 	OriginModelName        string
 	RequestURLPath         string
@@ -115,14 +113,10 @@ type RelayInfo struct {
 	ReasoningEffort        string
 	UserSetting            dto.UserSetting
 	UserEmail              string
-	UserQuota              int
 	RelayFormat            types.RelayFormat
 	SendResponseCount      int
 	ReceivedResponseCount  int
-	FinalPreConsumedQuota  int // 最终预消耗的配额
-	// ForcePreConsume marks async tasks that used to require full pre-consumption.
-	ForcePreConsume bool
-	// RequestId is used for idempotent pre-consume/refund
+	// RequestId identifies this relay request for logging and tracing.
 	RequestId                 string
 	IsClaudeBetaQuery         bool // /v1/messages?beta=true
 	IsChannelTest             bool // channel test request
@@ -141,8 +135,6 @@ type RelayInfo struct {
 	// UpstreamRequestGetBody returns a fresh reader for retryable JSON request
 	// bodies. It is nil for streamed or multipart requests.
 	UpstreamRequestGetBody func() (io.ReadCloser, error)
-
-	PriceData types.PriceData
 
 	Request dto.Request
 
@@ -322,12 +314,10 @@ func (info *RelayInfo) ToString() string {
 	fmt.Fprintf(b, "ShouldIncludeUsage: %t, ", info.ShouldIncludeUsage)
 	fmt.Fprintf(b, "DisablePing: %t, ", info.DisablePing)
 	fmt.Fprintf(b, "SendResponseCount: %d, ", info.SendResponseCount)
-	fmt.Fprintf(b, "FinalPreConsumedQuota: %d, ", info.FinalPreConsumedQuota)
-
 	// User & token info (mask secrets)
-	fmt.Fprintf(b, "User{ Id: %d, Email: %q, Group: %q, UsingGroup: %q, Quota: %d }, ",
-		info.UserId, common.MaskEmail(info.UserEmail), info.UserGroup, info.UsingGroup, info.UserQuota)
-	fmt.Fprintf(b, "Token{ Id: %d, Unlimited: %t, Key: ***masked*** }, ", info.TokenId, info.TokenUnlimited)
+	fmt.Fprintf(b, "User{ Id: %d, Email: %q, Group: %q, UsingGroup: %q }, ",
+		info.UserId, common.MaskEmail(info.UserEmail), info.UserGroup, info.UsingGroup)
+	fmt.Fprintf(b, "Token{ Id: %d, Key: ***masked*** }, ", info.TokenId)
 
 	// Time info
 	latencyMs := info.FirstResponseTime.Sub(info.StartTime).Milliseconds()
@@ -343,11 +333,6 @@ func (info *RelayInfo) ToString() string {
 	// Reasoning
 	if info.ReasoningEffort != "" {
 		fmt.Fprintf(b, "ReasoningEffort: %q, ", info.ReasoningEffort)
-	}
-
-	// Price data (non-sensitive)
-	if info.PriceData.UsePrice {
-		fmt.Fprintf(b, "PriceData{ %s }, ", info.PriceData.ToSetting())
 	}
 
 	// Channel metadata (mask ApiKey)
@@ -524,15 +509,13 @@ func genBaseRelayInfo(c *gin.Context, request dto.Request) *RelayInfo {
 		UserId:     common.GetContextKeyInt(c, constant.ContextKeyUserId),
 		UsingGroup: common.GetContextKeyString(c, constant.ContextKeyUsingGroup),
 		UserGroup:  common.GetContextKeyString(c, constant.ContextKeyUserGroup),
-		UserQuota:  common.GetContextKeyInt(c, constant.ContextKeyUserQuota),
 		UserEmail:  common.GetContextKeyString(c, constant.ContextKeyUserEmail),
 
 		OriginModelName: common.GetContextKeyString(c, constant.ContextKeyOriginalModel),
 
-		TokenId:        common.GetContextKeyInt(c, constant.ContextKeyTokenId),
-		TokenKey:       common.GetContextKeyString(c, constant.ContextKeyTokenKey),
-		TokenUnlimited: common.GetContextKeyBool(c, constant.ContextKeyTokenUnlimited),
-		TokenGroup:     tokenGroup,
+		TokenId:    common.GetContextKeyInt(c, constant.ContextKeyTokenId),
+		TokenKey:   common.GetContextKeyString(c, constant.ContextKeyTokenKey),
+		TokenGroup: tokenGroup,
 
 		isFirstResponse: true,
 		RelayMode:       relayconstant.Path2RelayMode(c.Request.URL.Path),

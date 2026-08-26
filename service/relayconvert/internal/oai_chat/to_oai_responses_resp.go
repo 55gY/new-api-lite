@@ -115,11 +115,10 @@ func UsageFromChatUsage(src *dto.Usage) *dto.Usage {
 	}
 	usage.UsageSemantic = src.UsageSemantic
 	usage.UsageSource = src.UsageSource
-	usage.BillingUsage = dto.CloneBillingUsage(src.BillingUsage)
-	if usage.BillingUsage == nil {
-		usage.BillingUsage = dto.NewOpenAIChatBillingUsage(src)
+	usage.ProviderUsage = dto.CloneProviderUsage(src.ProviderUsage)
+	if usage.ProviderUsage == nil {
+		usage.ProviderUsage = dto.NewOpenAIChatProviderUsage(src)
 	}
-	usage.Cost = src.Cost
 	if src.PromptTokens != 0 {
 		usage.PromptTokens = src.PromptTokens
 		usage.InputTokens = src.PromptTokens

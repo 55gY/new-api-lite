@@ -20,12 +20,9 @@ type Token struct {
 	CreatedTime        int64          `json:"created_time" gorm:"bigint"`
 	AccessedTime       int64          `json:"accessed_time" gorm:"bigint"`
 	ExpiredTime        int64          `json:"expired_time" gorm:"bigint;default:-1"` // -1 means never expired
-	RemainQuota        int            `json:"-" gorm:"default:0"`
-	UnlimitedQuota     bool           `json:"-"`
 	ModelLimitsEnabled bool           `json:"model_limits_enabled"`
 	ModelLimits        string         `json:"model_limits" gorm:"type:text"`
 	AllowIps           *string        `json:"allow_ips" gorm:"default:''"`
-	UsedQuota          int            `json:"-" gorm:"default:0"` // historical SQLite compatibility
 	Group              string         `json:"group" gorm:"default:''"`
 	CrossGroupRetry    bool           `json:"cross_group_retry"` // 跨分组重试，仅auto分组有效
 	DeletedAt          gorm.DeletedAt `gorm:"index"`
@@ -282,7 +279,7 @@ func (token *Token) Update() (err error) {
 			})
 		}
 	}()
-	err = DB.Model(token).Select("name", "status", "expired_time", "remain_quota", "unlimited_quota",
+	err = DB.Model(token).Select("name", "status", "expired_time",
 		"model_limits_enabled", "model_limits", "allow_ips", "group", "cross_group_retry").Updates(token).Error
 	return err
 }
@@ -358,28 +355,6 @@ func DeleteTokenById(id int, userId int) (err error) {
 		return err
 	}
 	return token.Delete()
-}
-
-func IncreaseTokenQuota(tokenId int, key string, quota int) (err error) {
-	if quota < 0 {
-		return errors.New("quota 不能为负数！")
-	}
-	return updateTokenAccessedTime(tokenId)
-}
-
-func increaseTokenQuota(id int, quota int) (err error) {
-	return updateTokenAccessedTime(id)
-}
-
-func DecreaseTokenQuota(id int, key string, quota int) (err error) {
-	if quota < 0 {
-		return errors.New("quota 不能为负数！")
-	}
-	return updateTokenAccessedTime(id)
-}
-
-func updateTokenAccessedTime(id int) error {
-	return DB.Model(&Token{}).Where("id = ?", id).Update("accessed_time", common.GetTimestamp()).Error
 }
 
 // CountUserTokens returns total number of tokens for the given user, used for pagination

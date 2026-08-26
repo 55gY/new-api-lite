@@ -53,8 +53,7 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     useState(getDefaultTime());
 
   // ========== 数据状态 ==========
-  const [quotaData, setQuotaData] = useState([]);
-  const [consumeQuota, setConsumeQuota] = useState(0);
+  const [usageData, setUsageData] = useState([]);
   const [consumeTokens, setConsumeTokens] = useState(0);
   const [times, setTimes] = useState(0);
   const [pieData, setPieData] = useState([{ type: 'null', value: '0' }]);
@@ -66,11 +65,7 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
 
   // ========== 趋势数据 ==========
   const [trendData, setTrendData] = useState({
-    balance: [],
-    usedQuota: [],
-    requestCount: [],
     times: [],
-    consumeQuota: [],
     tokens: [],
     rpm: [],
     tpm: [],
@@ -146,7 +141,7 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
   }, []);
 
   // ========== API 调用函数 ==========
-  const loadQuotaData = useCallback(async () => {
+  const loadUsageData = useCallback(async () => {
     setLoading(true);
     try {
       let url = '';
@@ -163,12 +158,12 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
       const res = await API.get(url);
       const { success, message, data } = res.data;
       if (success) {
-        setQuotaData(data);
+        setUsageData(data);
         if (data.length === 0) {
           data.push({
             count: 0,
             model_name: '无数据',
-            quota: 0,
+            token_used: 0,
             created_at: now.getTime() / 1000,
           });
         }
@@ -183,7 +178,7 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     }
   }, [inputs, dataExportDefaultTime, isAdminUser, now]);
 
-  const loadUserQuotaData = useCallback(async () => {
+  const loadUserUsageData = useCallback(async () => {
     if (!isAdminUser) return [];
     try {
       const { start_timestamp, end_timestamp } = inputs;
@@ -215,9 +210,9 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
   }, [userDispatch]);
 
   const refresh = useCallback(async () => {
-    const data = await loadQuotaData();
+    const data = await loadUsageData();
     return data;
-  }, [loadQuotaData]);
+  }, [loadUsageData]);
 
   const handleSearchConfirm = useCallback(
     async (updateChartDataCallback) => {
@@ -256,9 +251,7 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     dataExportDefaultTime,
 
     // 数据状态
-    quotaData,
-    consumeQuota,
-    setConsumeQuota,
+    usageData,
     consumeTokens,
     setConsumeTokens,
     times,
@@ -290,8 +283,8 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     handleInputChange,
     showSearchModal,
     handleCloseModal,
-    loadQuotaData,
-    loadUserQuotaData,
+    loadUsageData,
+    loadUserUsageData,
     getUserData,
     refresh,
     handleSearchConfirm,

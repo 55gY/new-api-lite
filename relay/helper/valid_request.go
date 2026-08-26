@@ -53,9 +53,7 @@ func GetAndValidateRequest(c *gin.Context, format types.RelayFormat) (request dt
 	return request, err
 }
 
-// maxTokensLimit bounds user-supplied max token fields. These values feed
-// pre-consume quota math (preConsumedTokens * ratio); an unbounded value can
-// overflow the conversion and corrupt billing.
+// maxTokensLimit bounds user-supplied max token fields and prevents unsafe integer conversions.
 const maxTokensLimit = math.MaxInt32 / 2
 
 func exceedsMaxTokensLimit(values ...*uint) bool {

@@ -30,7 +30,6 @@ type textUsageStats struct {
 	WebSearchCallCount       int
 	ClaudeWebSearchCallCount int
 	FileSearchCallCount      int
-	Quota                    int
 }
 
 func calculateTextUsageStats(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage) textUsageStats {
@@ -39,7 +38,6 @@ func calculateTextUsageStats(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 		TokenName:      ctx.GetString("token_name"),
 		UseTimeSeconds: time.Now().Unix() - relayInfo.StartTime.Unix(),
 		UsageSemantic:  usageSemanticFromUsage(relayInfo, usage),
-		Quota:          0,
 	}
 	stats.IsClaudeUsageSemantic = stats.UsageSemantic == "anthropic"
 

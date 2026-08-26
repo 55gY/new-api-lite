@@ -43,8 +43,6 @@ const (
 // Token related messages
 const (
 	MsgTokenNameTooLong          = "token.name_too_long"
-	MsgTokenQuotaNegative        = "token.quota_negative"
-	MsgTokenQuotaExceedMax       = "token.quota_exceed_max"
 	MsgTokenGenerateFailed       = "token.generate_failed"
 	MsgTokenGetInfoFailed        = "token.get_info_failed"
 	MsgTokenExpiredCannotEnable  = "token.expired_cannot_enable"
@@ -97,8 +95,6 @@ const (
 	MsgUserAlreadyCommon             = "user.already_common"
 	MsgUserAdminCannotPromote        = "user.admin_cannot_promote"
 	MsgUserOriginalPasswordError     = "user.original_password_error"
-	MsgUserInviteQuotaInsufficient   = "user.invite_quota_insufficient"
-	MsgUserTransferQuotaMinimum      = "user.transfer_quota_minimum"
 	MsgUserTransferSuccess           = "user.transfer_success"
 	MsgUserTransferFailed            = "user.transfer_failed"
 	MsgUserTopUpProcessing           = "user.topup_processing"
@@ -106,24 +102,13 @@ const (
 	MsgUserDefaultTokenFailed        = "user.default_token_failed"
 	MsgUserAffCodeEmpty              = "user.aff_code_empty"
 	MsgUserEmailEmpty                = "user.email_empty"
-	MsgUserQuotaChangeZero           = "user.quota_change_zero"
-)
-
-// Quota related messages
-const (
-	MsgQuotaNegative     = "quota.negative"
-	MsgQuotaExceedMax    = "quota.exceed_max"
-	MsgQuotaInsufficient = "quota.insufficient"
 )
 
 // Subscription related messages
 const (
 	MsgSubscriptionNotEnabled       = "subscription.not_enabled"
 	MsgSubscriptionTitleEmpty       = "subscription.title_empty"
-	MsgSubscriptionPriceNegative    = "subscription.price_negative"
-	MsgSubscriptionPriceMax         = "subscription.price_max"
 	MsgSubscriptionPurchaseLimitNeg = "subscription.purchase_limit_negative"
-	MsgSubscriptionQuotaNegative    = "subscription.quota_negative"
 	MsgSubscriptionGroupNotExists   = "subscription.group_not_exists"
 	MsgSubscriptionResetCycleGtZero = "subscription.reset_cycle_gt_zero"
 	MsgSubscriptionPurchaseMax      = "subscription.purchase_max"
@@ -141,7 +126,6 @@ const (
 	MsgPaymentAmountTooLow       = "payment.amount_too_low"
 	MsgPaymentStripeNotConfig    = "payment.stripe_not_configured"
 	MsgPaymentWebhookNotConfig   = "payment.webhook_not_configured"
-	MsgPaymentPriceIdNotConfig   = "payment.price_id_not_configured"
 	MsgPaymentCreemNotConfig     = "payment.creem_not_configured"
 	MsgPaymentComplianceRequired = "payment.compliance_required"
 )
@@ -152,7 +136,6 @@ const (
 	MsgTopupOrderNotExists = "topup.order_not_exists"
 	MsgTopupOrderStatus    = "topup.order_status"
 	MsgTopupFailed         = "topup.failed"
-	MsgTopupInvalidQuota   = "topup.invalid_quota"
 )
 
 // Channel related messages

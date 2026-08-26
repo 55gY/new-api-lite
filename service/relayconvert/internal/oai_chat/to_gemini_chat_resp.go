@@ -18,10 +18,10 @@ func ResponseOpenAI2Gemini(openAIResponse *dto.OpenAITextResponse) *dto.GeminiCh
 			PromptTokenCount:     openAIResponse.PromptTokens,
 			CandidatesTokenCount: openAIResponse.CompletionTokens,
 			TotalTokenCount:      totalTokens,
-			BillingUsage:         openAIBillingUsageFromUsage(&openAIResponse.Usage),
+			ProviderUsage:        openAIProviderUsageFromUsage(&openAIResponse.Usage),
 		},
 	}
-	if metadata, ok := geminiBillingMetadataFromOpenAIUsage(&openAIResponse.Usage); ok {
+	if metadata, ok := geminiUsageMetadataFromOpenAIUsage(&openAIResponse.Usage); ok {
 		geminiResponse.UsageMetadata = metadata
 	}
 
@@ -122,8 +122,8 @@ func StreamResponseOpenAI2Gemini(openAIResponse *dto.ChatCompletionsStreamRespon
 		geminiResponse.UsageMetadata.PromptTokenCount = openAIResponse.Usage.PromptTokens
 		geminiResponse.UsageMetadata.CandidatesTokenCount = openAIResponse.Usage.CompletionTokens
 		geminiResponse.UsageMetadata.TotalTokenCount = openAIResponse.Usage.TotalTokens
-		geminiResponse.UsageMetadata.BillingUsage = openAIBillingUsageFromUsage(openAIResponse.Usage)
-		if metadata, ok := geminiBillingMetadataFromOpenAIUsage(openAIResponse.Usage); ok {
+		geminiResponse.UsageMetadata.ProviderUsage = openAIProviderUsageFromUsage(openAIResponse.Usage)
+		if metadata, ok := geminiUsageMetadataFromOpenAIUsage(openAIResponse.Usage); ok {
 			geminiResponse.UsageMetadata = metadata
 		}
 	}
@@ -196,30 +196,30 @@ func StreamResponseOpenAI2Gemini(openAIResponse *dto.ChatCompletionsStreamRespon
 	return geminiResponse
 }
 
-func geminiBillingMetadataFromOpenAIUsage(usage *dto.Usage) (dto.GeminiUsageMetadata, bool) {
-	if usage == nil || usage.BillingUsage == nil || usage.BillingUsage.GeminiUsageMetadata == nil {
+func geminiUsageMetadataFromOpenAIUsage(usage *dto.Usage) (dto.GeminiUsageMetadata, bool) {
+	if usage == nil || usage.ProviderUsage == nil || usage.ProviderUsage.GeminiUsageMetadata == nil {
 		return dto.GeminiUsageMetadata{}, false
 	}
-	if usage.BillingUsage.Source != dto.BillingUsageSourceGeminiChat && usage.BillingUsage.Semantic != dto.BillingUsageSemanticGemini {
+	if usage.ProviderUsage.Source != dto.ProviderUsageSourceGeminiChat && usage.ProviderUsage.Semantic != dto.ProviderUsageSemanticGemini {
 		return dto.GeminiUsageMetadata{}, false
 	}
-	billingUsage := dto.CloneBillingUsage(usage.BillingUsage)
-	if billingUsage == nil || billingUsage.GeminiUsageMetadata == nil {
+	providerUsage := dto.CloneProviderUsage(usage.ProviderUsage)
+	if providerUsage == nil || providerUsage.GeminiUsageMetadata == nil {
 		return dto.GeminiUsageMetadata{}, false
 	}
-	return *billingUsage.GeminiUsageMetadata, true
+	return *providerUsage.GeminiUsageMetadata, true
 }
 
-func openAIBillingUsageFromUsage(usage *dto.Usage) *dto.BillingUsage {
+func openAIProviderUsageFromUsage(usage *dto.Usage) *dto.ProviderUsage {
 	if usage == nil {
 		return nil
 	}
-	if existingBillingUsage := dto.CloneBillingUsage(usage.BillingUsage); existingBillingUsage != nil && existingBillingUsage.OpenAIUsage != nil {
-		if existingBillingUsage.Source == dto.BillingUsageSourceOAIChat ||
-			existingBillingUsage.Source == dto.BillingUsageSourceOAIResponses ||
-			existingBillingUsage.Semantic == dto.BillingUsageSemanticOpenAI {
-			return existingBillingUsage
+	if existingProviderUsage := dto.CloneProviderUsage(usage.ProviderUsage); existingProviderUsage != nil && existingProviderUsage.OpenAIUsage != nil {
+		if existingProviderUsage.Source == dto.ProviderUsageSourceOAIChat ||
+			existingProviderUsage.Source == dto.ProviderUsageSourceOAIResponses ||
+			existingProviderUsage.Semantic == dto.ProviderUsageSemanticOpenAI {
+			return existingProviderUsage
 		}
 	}
-	return dto.NewOpenAIChatBillingUsage(usage)
+	return dto.NewOpenAIChatProviderUsage(usage)
 }

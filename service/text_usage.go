@@ -25,7 +25,7 @@ func usageSemanticFromUsage(relayInfo *relaycommon.RelayInfo, usage *dto.Usage) 
 	return "openai"
 }
 
-func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage, extraContent []string) {
+func PostTextUsage(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage, extraContent []string) {
 	originUsage := usage
 	if usage == nil {
 		extraContent = append(extraContent, "上游没有返回 token 用量")
@@ -53,8 +53,8 @@ func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, us
 		extraContent = append(extraContent, "上游没有返回 token 用量（可能是上游超时）")
 		logger.LogError(ctx, fmt.Sprintf("total tokens is 0, userId %d, channelId %d, tokenId %d, model %s", relayInfo.UserId, relayInfo.ChannelId, relayInfo.TokenId, stats.ModelName))
 	} else {
-		model.UpdateUserUsedQuotaAndRequestCount(relayInfo.UserId, 0)
-		model.RecordChannelUsedQuota(relayInfo.ChannelId, stats.TotalTokens)
+		model.UpdateUserRequestCount(relayInfo.UserId)
+		model.RecordChannelUsedTokens(relayInfo.ChannelId, stats.TotalTokens)
 	}
 
 	logModel := stats.ModelName

@@ -865,45 +865,6 @@
         ]
       }
     },
-    "/api/user/aff_transfer": {
-      "post": {
-        "summary": "转换邀请额度",
-        "deprecated": false,
-        "description": "🔐 需要登录（User权限）",
-        "tags": [
-          "用户管理"
-        ],
-        "parameters": [],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "quota": {
-                    "type": "integer"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "成功",
-            "headers": {}
-          }
-        },
-        "security": [
-          {
-            "Combination343": []
-          },
-          {
-            "Combination1243": []
-          }
-        ]
-      }
-    },
     "/api/user/setting": {
       "put": {
         "summary": "更新用户设置",
@@ -2202,67 +2163,6 @@
         ]
       }
     },
-    "/api/channel/update_balance": {
-      "get": {
-        "summary": "更新所有渠道余额",
-        "deprecated": false,
-        "description": "👨‍💼 需要管理员权限（Admin）",
-        "tags": [
-          "渠道管理"
-        ],
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "成功",
-            "headers": {}
-          }
-        },
-        "security": [
-          {
-            "Combination343": []
-          },
-          {
-            "Combination1243": []
-          }
-        ]
-      }
-    },
-    "/api/channel/update_balance/{id}": {
-      "get": {
-        "summary": "更新指定渠道余额",
-        "deprecated": false,
-        "description": "👨‍💼 需要管理员权限（Admin）",
-        "tags": [
-          "渠道管理"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "",
-            "required": true,
-            "example": 0,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "成功",
-            "headers": {}
-          }
-        },
-        "security": [
-          {
-            "Combination343": []
-          },
-          {
-            "Combination1243": []
-          }
-        ]
-      }
-    },
     "/api/channel/disabled": {
       "delete": {
         "summary": "删除已禁用渠道",
@@ -2465,7 +2365,7 @@
             }
           },
           {
-            "name": "reset_balance",
+            "name": "reset_usage",
             "in": "query",
             "description": "",
             "required": false,
@@ -3997,12 +3897,6 @@
           "group": {
             "type": "string"
           },
-          "quota": {
-            "type": "integer"
-          },
-          "used_quota": {
-            "type": "integer"
-          },
           "request_count": {
             "type": "integer"
           }
@@ -4040,6 +3934,9 @@
           },
           "tag": {
             "type": "string"
+          },
+          "used_tokens": {
+            "type": "integer"
           }
         }
       },
@@ -4063,12 +3960,6 @@
           },
           "expired_time": {
             "type": "integer"
-          },
-          "remain_quota": {
-            "type": "integer"
-          },
-          "unlimited_quota": {
-            "type": "boolean"
           }
         }
       },
@@ -4085,9 +3976,6 @@
             "type": "string"
           },
           "status": {
-            "type": "integer"
-          },
-          "quota": {
             "type": "integer"
           },
           "created_time": {

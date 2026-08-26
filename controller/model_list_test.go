@@ -109,10 +109,10 @@ func TestListModelsIncludesEnabledModels(t *testing.T) {
 		Status:   common.UserStatusEnabled,
 	}).Error)
 	require.NoError(t, db.Create(&[]model.Ability{
-		{Group: "default", Model: "zz-tiered-visible-model", ChannelId: 1, Enabled: true},
-		{Group: "default", Model: "zz-tiered-empty-expr-model", ChannelId: 1, Enabled: true},
-		{Group: "default", Model: "zz-tiered-missing-expr-model", ChannelId: 1, Enabled: true},
-		{Group: "default", Model: "zz-unpriced-model", ChannelId: 1, Enabled: true},
+		{Group: "default", Model: "zz-routing-visible-model", ChannelId: 1, Enabled: true},
+		{Group: "default", Model: "zz-routing-empty-rule-model", ChannelId: 1, Enabled: true},
+		{Group: "default", Model: "zz-routing-missing-rule-model", ChannelId: 1, Enabled: true},
+		{Group: "default", Model: "zz-secondary-model", ChannelId: 1, Enabled: true},
 	}).Error)
 
 	recorder := httptest.NewRecorder()
@@ -123,10 +123,10 @@ func TestListModelsIncludesEnabledModels(t *testing.T) {
 	ListModels(ctx, constant.ChannelTypeOpenAI)
 
 	ids := decodeListModelsResponse(t, recorder)
-	require.Contains(t, ids, "zz-tiered-visible-model")
-	require.Contains(t, ids, "zz-tiered-empty-expr-model")
-	require.Contains(t, ids, "zz-tiered-missing-expr-model")
-	require.Contains(t, ids, "zz-unpriced-model")
+	require.Contains(t, ids, "zz-routing-visible-model")
+	require.Contains(t, ids, "zz-routing-empty-rule-model")
+	require.Contains(t, ids, "zz-routing-missing-rule-model")
+	require.Contains(t, ids, "zz-secondary-model")
 }
 
 func TestListModelsTokenLimitIncludesEnabledModels(t *testing.T) {
@@ -135,17 +135,17 @@ func TestListModelsTokenLimitIncludesEnabledModels(t *testing.T) {
 	ctx.Request = httptest.NewRequest(http.MethodGet, "/v1/models", nil)
 	common.SetContextKey(ctx, constant.ContextKeyTokenModelLimitEnabled, true)
 	common.SetContextKey(ctx, constant.ContextKeyTokenModelLimit, map[string]bool{
-		"zz-token-tiered-visible-model":      true,
-		"zz-token-tiered-empty-expr-model":   true,
-		"zz-token-tiered-missing-expr-model": true,
-		"zz-token-unpriced-model":            true,
+		"zz-token-routing-visible-model":      true,
+		"zz-token-routing-empty-rule-model":   true,
+		"zz-token-routing-missing-rule-model": true,
+		"zz-token-secondary-model":            true,
 	})
 
 	ListModels(ctx, constant.ChannelTypeOpenAI)
 
 	ids := decodeListModelsResponse(t, recorder)
-	require.Contains(t, ids, "zz-token-tiered-visible-model")
-	require.Contains(t, ids, "zz-token-tiered-empty-expr-model")
-	require.Contains(t, ids, "zz-token-tiered-missing-expr-model")
-	require.Contains(t, ids, "zz-token-unpriced-model")
+	require.Contains(t, ids, "zz-token-routing-visible-model")
+	require.Contains(t, ids, "zz-token-routing-empty-rule-model")
+	require.Contains(t, ids, "zz-token-routing-missing-rule-model")
+	require.Contains(t, ids, "zz-token-secondary-model")
 }

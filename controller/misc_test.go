@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGetStatusOmitsLegacyLiteContractFields(t *testing.T) {
+func TestGetStatusExposesCoreLiteContractFields(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(recorder)
 
@@ -25,16 +25,12 @@ func TestGetStatusOmitsLegacyLiteContractFields(t *testing.T) {
 	require.True(t, response.Success)
 
 	for _, key := range []string{
-		"enable_task",
-		"checkin_enabled",
-		"quota_per_unit",
-		"display_in_currency",
-		"quota_display_type",
-		"custom_currency_symbol",
-		"custom_currency_exchange_rate",
-		"usd_exchange_rate",
-		"price",
+		"version",
+		"system_name",
+		"register_enabled",
+		"password_login_enabled",
+		"enable_data_export",
 	} {
-		require.NotContainsf(t, response.Data, key, "legacy Lite field %q must not be public", key)
+		require.Containsf(t, response.Data, key, "core Lite field %q must be public", key)
 	}
 }

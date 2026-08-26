@@ -1,7 +1,8 @@
 package codex
 
 import (
-	"github.com/55gY/new-api-lite/setting/ratio_setting"
+	"strings"
+
 	"github.com/samber/lo"
 )
 
@@ -14,13 +15,19 @@ var baseModelList = []string{
 
 var ModelList = withCompactModelSuffix(baseModelList)
 
-const ChannelName = "codex"
+const (
+	ChannelName        = "codex"
+	compactModelSuffix = "-openai-compact"
+)
 
 func withCompactModelSuffix(models []string) []string {
 	out := make([]string, 0, len(models)*2)
 	out = append(out, models...)
 	out = append(out, lo.Map(models, func(model string, _ int) string {
-		return ratio_setting.WithCompactModelSuffix(model)
+		if strings.HasSuffix(model, compactModelSuffix) {
+			return model
+		}
+		return model + compactModelSuffix
 	})...)
 	return lo.Uniq(out)
 }

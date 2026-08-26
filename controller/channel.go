@@ -1306,7 +1306,7 @@ func FetchModels(c *gin.Context) {
 // Optional query params:
 //
 //	suffix         - string appended to the original name (default "_复制")
-//	reset_balance  - bool, when true will reset balance & used_quota to 0 (default true)
+//	reset_usage  - bool, when true will reset used_tokens to 0 (default true)
 func CopyChannel(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -1315,10 +1315,10 @@ func CopyChannel(c *gin.Context) {
 	}
 
 	suffix := c.DefaultQuery("suffix", "_复制")
-	resetBalance := true
-	if rbStr := c.DefaultQuery("reset_balance", "true"); rbStr != "" {
-		if v, err := strconv.ParseBool(rbStr); err == nil {
-			resetBalance = v
+	resetUsage := true
+	if resetUsageValue := c.DefaultQuery("reset_usage", "true"); resetUsageValue != "" {
+		if v, err := strconv.ParseBool(resetUsageValue); err == nil {
+			resetUsage = v
 		}
 	}
 
@@ -1337,9 +1337,8 @@ func CopyChannel(c *gin.Context) {
 	clone.Name = origin.Name + suffix
 	clone.TestTime = 0
 	clone.ResponseTime = 0
-	if resetBalance {
-		clone.Balance = 0
-		clone.UsedQuota = 0
+	if resetUsage {
+		clone.UsedTokens = 0
 	}
 
 	// insert

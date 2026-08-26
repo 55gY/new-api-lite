@@ -40,7 +40,6 @@ type Log struct {
 	Username          string `json:"username" gorm:"index;index:index_username_model_name,priority:2;default:''"`
 	TokenName         string `json:"token_name" gorm:"index;default:''"`
 	ModelName         string `json:"model_name" gorm:"index;index:index_username_model_name,priority:1;default:''"`
-	Quota             int    `json:"-" gorm:"default:0"`
 	PromptTokens      int    `json:"prompt_tokens" gorm:"default:0"`
 	CompletionTokens  int    `json:"completion_tokens" gorm:"default:0"`
 	UseTime           int    `json:"use_time" gorm:"default:0"`
@@ -157,7 +156,6 @@ func RecordErrorLog(c *gin.Context, userId int, channelId int, modelName string,
 		CompletionTokens: 0,
 		TokenName:        tokenName,
 		ModelName:        modelName,
-		Quota:            0,
 		ChannelId:        channelId,
 		TokenId:          tokenId,
 		UseTime:          useTimeSeconds,
@@ -219,7 +217,6 @@ func RecordUsageLog(c *gin.Context, userId int, params RecordUsageLogParams) {
 		CompletionTokens: params.CompletionTokens,
 		TokenName:        params.TokenName,
 		ModelName:        params.ModelName,
-		Quota:            0,
 		ChannelId:        params.ChannelId,
 		TokenId:          params.TokenId,
 		UseTime:          params.UseTimeSeconds,

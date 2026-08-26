@@ -51,7 +51,6 @@ const Dashboard = () => {
   const dashboardCharts = useDashboardCharts(
     dashboardData.dataExportDefaultTime,
     dashboardData.setTrendData,
-    dashboardData.setConsumeQuota,
     dashboardData.setTimes,
     dashboardData.setConsumeTokens,
     dashboardData.setPieData,
@@ -74,7 +73,7 @@ const Dashboard = () => {
   // ========== 数据处理 ==========
   const loadUserData = async () => {
     if (dashboardData.isAdminUser) {
-      const userData = await dashboardData.loadUserQuotaData();
+      const userData = await dashboardData.loadUserUsageData();
       if (userData && userData.length > 0) {
         dashboardCharts.updateUserChartData(userData);
       }
@@ -82,7 +81,7 @@ const Dashboard = () => {
   };
 
   const initChart = async () => {
-    await dashboardData.loadQuotaData().then((data) => {
+    await dashboardData.loadUsageData().then((data) => {
       if (data && data.length > 0) {
         dashboardCharts.updateChartData(data);
       }

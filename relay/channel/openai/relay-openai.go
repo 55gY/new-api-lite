@@ -515,7 +515,7 @@ func preConsumeUsage(ctx *gin.Context, info *relaycommon.RelayInfo, usage *dto.R
 	totalUsage.OutputTokenDetails.TextTokens += usage.OutputTokenDetails.TextTokens
 	totalUsage.OutputTokenDetails.AudioTokens += usage.OutputTokenDetails.AudioTokens
 	// clear usage
-	err := service.PreWssConsumeQuota(ctx, info, usage)
+	err := service.PreWssUsage(ctx, info, usage)
 	return err
 }
 
@@ -538,7 +538,7 @@ func OpenaiHandlerWithUsage(c *gin.Context, info *relaycommon.RelayInfo, resp *h
 
 	// Once we've written to the client, we should not return errors anymore
 	// because the upstream has already consumed resources and returned content
-	// We should still perform billing even if parsing fails
+	// Continue normalizing upstream token usage when parsing succeeds.
 	// format
 	if usageResp.InputTokens > 0 {
 		usageResp.PromptTokens += usageResp.InputTokens

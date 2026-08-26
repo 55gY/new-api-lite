@@ -596,27 +596,6 @@ func GetAvailableReplicas(c *gin.Context) {
 	common.ApiSuccess(c, replicas)
 }
 
-func GetPriceEstimation(c *gin.Context) {
-	client, ok := getIoEnterpriseClient(c)
-	if !ok {
-		return
-	}
-
-	var req ionet.PriceEstimationRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		common.ApiError(c, err)
-		return
-	}
-
-	priceResp, err := client.GetPriceEstimation(&req)
-	if err != nil {
-		common.ApiError(c, err)
-		return
-	}
-
-	common.ApiSuccess(c, priceResp)
-}
-
 func CheckClusterNameAvailability(c *gin.Context) {
 	client, ok := getIoEnterpriseClient(c)
 	if !ok {

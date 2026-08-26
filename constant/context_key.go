@@ -11,7 +11,7 @@ const (
 	ContextKeyRequestStartTime ContextKey = "request_start_time"
 
 	/* token related keys */
-	ContextKeyTokenUnlimited         ContextKey = "token_unlimited_quota"
+
 	ContextKeyTokenKey               ContextKey = "token_key"
 	ContextKeyTokenId                ContextKey = "token_id"
 	ContextKeyTokenGroup             ContextKey = "token_group"
@@ -44,12 +44,12 @@ const (
 	/* user related keys */
 	ContextKeyUserId      ContextKey = "id"
 	ContextKeyUserSetting ContextKey = "user_setting"
-	ContextKeyUserQuota   ContextKey = "user_quota"
-	ContextKeyUserStatus  ContextKey = "user_status"
-	ContextKeyUserEmail   ContextKey = "user_email"
-	ContextKeyUserGroup   ContextKey = "user_group"
-	ContextKeyUsingGroup  ContextKey = "group"
-	ContextKeyUserName    ContextKey = "username"
+
+	ContextKeyUserStatus ContextKey = "user_status"
+	ContextKeyUserEmail  ContextKey = "user_email"
+	ContextKeyUserGroup  ContextKey = "user_group"
+	ContextKeyUsingGroup ContextKey = "group"
+	ContextKeyUserName   ContextKey = "username"
 
 	ContextKeyLocalCountTokens ContextKey = "local_count_tokens"
 
