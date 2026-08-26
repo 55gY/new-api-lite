@@ -9,6 +9,16 @@ IMAGE="${NEW_API_LITE_IMAGE:-ghcr.io/55gy/new-api-lite:latest-amd64}"
 DATA_DIR="${NEW_API_LITE_DATA_DIR:-"$PWD/data"}"
 HOST_PORT="${NEW_API_LITE_PORT:-3000}"
 TIME_ZONE="${NEW_API_LITE_TZ:-Asia/Shanghai}"
+AUTO_INSTALL_DOCKER="${NEW_API_LITE_AUTO_INSTALL_DOCKER:-1}"
+SYSTEM_ARCH="$(uname -m)"
+OS_ID="unknown"
+OS_NAME="unknown"
+DOCKER_PREFIX=()
+
+if [[ -r /etc/os-release ]]; then
+  OS_ID="$(awk -F= '$1 == "ID" {gsub(/"/, "", $2); print $2; exit}' /etc/os-release)"
+  OS_NAME="$(awk -F= '$1 == "PRETTY_NAME" {gsub(/"/, "", $2); print $2; exit}' /etc/os-release)"
+fi
 
 if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then
   COLOR_RESET=$'\033[0m'
@@ -36,7 +46,7 @@ usage() {
   ./installl.sh install         首次安装或启动已有容器
   ./installl.sh update          拉取最新镜像并安全重建容器，保留 data
   ./installl.sh start|stop|restart
-  ./installl.sh status|logs
+  ./installl.sh status|logs|check
   ./installl.sh uninstall       删除容器，保留 data
   ./installl.sh remove-data     删除 data（需要输入 DELETE）
 
@@ -45,33 +55,124 @@ usage() {
   NEW_API_LITE_PORT      宿主机端口，默认 3000
   NEW_API_LITE_IMAGE     镜像，默认 ghcr.io/55gy/new-api-lite:latest-amd64
   NEW_API_LITE_TZ         时区，默认 Asia/Shanghai
+  NEW_API_LITE_AUTO_INSTALL_DOCKER  为 0 时禁止自动安装 Docker
 EOF
+}
+
+docker_cli() {
+  "${DOCKER_PREFIX[@]}" docker "$@"
+}
+
+run_as_root() {
+  if (( EUID == 0 )); then
+    "$@"
+    return
+  fi
+  if ! command -v sudo >/dev/null 2>&1; then
+    error "当前用户不是 root，且未安装 sudo，无法安装或启动 Docker。"
+    return 1
+  fi
+  sudo "$@"
+}
+
+configure_docker_access() {
+  if docker info >/dev/null 2>&1; then
+    DOCKER_PREFIX=()
+    return 0
+  fi
+  if (( EUID != 0 )) && command -v sudo >/dev/null 2>&1 && sudo docker info >/dev/null 2>&1; then
+    DOCKER_PREFIX=(sudo)
+    warn "当前用户尚未获得 docker 组权限，脚本将在本次运行中通过 sudo 管理 Docker。"
+    return 0
+  fi
+  return 1
+}
+
+start_docker_daemon() {
+  if command -v systemctl >/dev/null 2>&1; then
+    run_as_root systemctl enable --now docker || true
+  fi
+  if ! configure_docker_access && command -v service >/dev/null 2>&1; then
+    run_as_root service docker start || true
+  fi
+}
+
+install_docker() {
+  if [[ "$AUTO_INSTALL_DOCKER" != "1" ]]; then
+    error "未安装 Docker，且 NEW_API_LITE_AUTO_INSTALL_DOCKER 已禁用自动安装。"
+    return 1
+  fi
+  info "未检测到 Docker；将为 ${OS_NAME} 自动安装 Docker。"
+  if command -v apt-get >/dev/null 2>&1; then
+    run_as_root apt-get update
+    run_as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io
+  elif command -v dnf >/dev/null 2>&1; then
+    run_as_root dnf install -y moby-engine
+  elif command -v yum >/dev/null 2>&1; then
+    run_as_root yum install -y docker
+  elif command -v apk >/dev/null 2>&1; then
+    run_as_root apk add docker
+  else
+    error "未识别可用的软件包管理器。请先手动安装 Docker 后重新运行脚本。"
+    return 1
+  fi
+  start_docker_daemon
+}
+
+ensure_docker() {
+  if ! command -v docker >/dev/null 2>&1; then
+    install_docker || return 1
+  fi
+  if ! configure_docker_access; then
+    info "Docker 已安装但服务不可用，正在尝试启动 Docker daemon。"
+    start_docker_daemon
+  fi
+  if ! configure_docker_access; then
+    error "Docker 服务仍不可用。请确认 docker daemon 已启动，并为当前用户授予 Docker 访问权限。"
+    return 1
+  fi
 }
 
 require_docker() {
   if ! command -v docker >/dev/null 2>&1; then
-    error "未检测到 Docker。请先安装并启动 Docker 服务。"
+    error "未检测到 Docker。请执行 ./installl.sh install 以自动安装 Docker。"
     exit 1
   fi
-  if ! docker info >/dev/null 2>&1; then
-    error "Docker 服务不可用。请确认当前用户有 Docker 权限且 Docker daemon 已启动。"
+  if ! configure_docker_access; then
+    error "Docker 服务不可用。请执行 ./installl.sh install 尝试启动 Docker。"
     exit 1
   fi
 }
 
 check_architecture() {
-  case "$(uname -m)" in
-    x86_64|amd64) ;;
-    *) warn "当前架构为 $(uname -m)，默认镜像为 amd64。若环境不支持 amd64 模拟，请通过 NEW_API_LITE_IMAGE 指定可用镜像。" ;;
+  info "系统：${OS_NAME}；架构：${SYSTEM_ARCH}。"
+  case "$SYSTEM_ARCH" in
+    x86_64|amd64) info "默认镜像与当前 amd64 架构兼容。" ;;
+    aarch64|arm64) warn "当前为 ARM64 架构，默认镜像为 amd64；请确认 Docker 已启用 amd64 模拟，或通过 NEW_API_LITE_IMAGE 指定 ARM64 镜像。" ;;
+    *) warn "当前架构为 ${SYSTEM_ARCH}，默认镜像为 amd64；请确认镜像兼容性或通过 NEW_API_LITE_IMAGE 指定可用镜像。" ;;
   esac
 }
 
+check() {
+  check_architecture
+  if command -v docker >/dev/null 2>&1; then
+    if configure_docker_access; then
+      success "Docker 已安装且服务可用。"
+      docker_cli version --format 'Docker Server: {{.Server.Version}} ({{.Server.Arch}})' 2>/dev/null || true
+    else
+      warn "Docker 已安装，但当前服务不可用或当前用户无权访问。执行 install 可尝试自动启动服务。"
+    fi
+  else
+    warn "Docker 未安装。执行 install 会按当前系统的软件包管理器自动安装。"
+  fi
+}
+
 container_exists() {
-  docker container inspect "$APP_NAME" >/dev/null 2>&1
+  docker_cli container inspect "$APP_NAME" >/dev/null 2>&1
 }
 
 container_running() {
-  [[ "$(docker container inspect --format '{{.State.Running}}' "$APP_NAME" 2>/dev/null || true)" == "true" ]]
+  [[ "$(docker_cli container inspect --format '{{.State.Running}}' "$APP_NAME" 2>/dev/null || true)" == "true" ]]
 }
 
 ensure_data_dir() {
@@ -81,7 +182,7 @@ ensure_data_dir() {
 
 run_container() {
   ensure_data_dir
-  docker run \
+  docker_cli run \
     --name "$APP_NAME" \
     --detach \
     --init \
@@ -93,31 +194,31 @@ run_container() {
 }
 
 install() {
-  require_docker
+  ensure_docker || exit 1
   check_architecture
   if container_exists; then
     if container_running; then
       info "容器 ${APP_NAME} 已在运行。"
     else
-      docker start "$APP_NAME"
+      docker_cli start "$APP_NAME"
       success "已启动已有容器 ${APP_NAME}。"
     fi
     return
   fi
   info "拉取镜像：${IMAGE}"
-  docker pull "$IMAGE"
+  docker_cli pull "$IMAGE"
   run_container
   success "已启动 ${APP_NAME}，访问地址：http://localhost:${HOST_PORT}"
 }
 
 update() {
-  require_docker
+  ensure_docker || exit 1
   check_architecture
   info "拉取镜像：${IMAGE}"
-  docker pull "$IMAGE"
+  docker_cli pull "$IMAGE"
   if container_exists; then
     info "删除旧容器 ${APP_NAME}（保留 ${DATA_DIR} 数据目录）。"
-    docker rm --force "$APP_NAME"
+    docker_cli rm --force "$APP_NAME"
   fi
   run_container
   success "镜像更新完成，已使用保留的数据目录创建新容器。"
@@ -145,7 +246,7 @@ stop() {
     return
   fi
   if container_running; then
-    docker stop "$APP_NAME"
+    docker_cli stop "$APP_NAME"
     success "已停止容器 ${APP_NAME}。"
   else
     info "容器 ${APP_NAME} 已停止。"
@@ -159,7 +260,7 @@ restart() {
     install
     return
   fi
-  docker restart "$APP_NAME"
+  docker_cli restart "$APP_NAME"
   success "已重启容器 ${APP_NAME}。"
 }
 
@@ -167,7 +268,7 @@ status() {
   require_docker
   printf '应用名称：%s\n镜像：%s\n数据目录：%s\n端口：%s\n' "$APP_NAME" "$IMAGE" "$DATA_DIR" "$HOST_PORT"
   if container_exists; then
-    docker ps --filter "name=^/${APP_NAME}$" --format '状态：{{.Status}}\n端口映射：{{.Ports}}\n镜像：{{.Image}}'
+    docker_cli ps --filter "name=^/${APP_NAME}$" --format '状态：{{.Status}}\n端口映射：{{.Ports}}\n镜像：{{.Image}}'
   else
     warn "容器 ${APP_NAME} 尚未创建。"
   fi
@@ -179,7 +280,7 @@ logs() {
     error "未找到容器 ${APP_NAME}。"
     exit 1
   fi
-  docker logs --follow --tail 200 "$APP_NAME"
+  docker_cli logs --follow --tail 200 "$APP_NAME"
 }
 
 confirm() {
@@ -197,7 +298,7 @@ uninstall() {
   fi
   warn "此操作仅删除容器 ${APP_NAME}，会保留数据目录：${DATA_DIR}"
   if confirm "确认继续删除容器吗？"; then
-    docker rm --force "$APP_NAME"
+    docker_cli rm --force "$APP_NAME"
     success "容器已删除；数据目录仍保留在 ${DATA_DIR}。"
   else
     info "已取消。"
@@ -267,6 +368,7 @@ case "${1:-}" in
   stop) stop ;;
   restart) restart ;;
   status) status ;;
+  check) check ;;
   logs) logs ;;
   uninstall) uninstall ;;
   remove-data) remove_data ;;

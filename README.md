@@ -32,11 +32,12 @@ chmod +x ./installl.sh
 ./installl.sh
 ```
 
-交互面板提供安装/启动、拉取镜像并重建容器、状态、日志、停止、重启、卸载及数据删除功能。容器更新和卸载均会明确保留 `data`；删除数据需输入 `DELETE` 二次确认。也可使用非交互命令，适合写入自己的运维脚本：
+脚本会显示当前系统发行版与 CPU 架构，并检查 Docker 客户端、守护进程和当前用户访问权限。若在 `install` 或 `update` 时未检测到 Docker，脚本会使用当前系统可用的软件包管理器自动安装并尝试启动 Docker；目前支持 `apt-get`、`dnf`、`yum` 与 `apk`。当当前用户没有 Docker 组权限时，脚本会在本次运行中使用 `sudo`，不会静默修改用户组。交互面板提供安装/启动、拉取镜像并重建容器、状态、日志、停止、重启、卸载及数据删除功能。容器更新和卸载均会明确保留 `data`；删除数据需输入 `DELETE` 二次确认。也可使用非交互命令，适合写入自己的运维脚本：
 
 ```bash
 ./installl.sh install
 ./installl.sh update
+./installl.sh check
 ./installl.sh status
 ./installl.sh logs
 ./installl.sh stop
@@ -51,6 +52,9 @@ NEW_API_LITE_DATA_DIR=/srv/new-api/data \
 NEW_API_LITE_PORT=3000 \
 NEW_API_LITE_TZ=Asia/Shanghai \
 ./installl.sh update
+
+# 如只检查系统与 Docker 状态，不执行安装或更新
+./installl.sh check
 ```
 
 | 常用操作 | 命令 |
@@ -65,7 +69,7 @@ NEW_API_LITE_TZ=Asia/Shanghai \
 
 ## 更新镜像
 
-推荐使用 `./installl.sh update` 完成更新。若不使用管理脚本，可在项目数据目录所在的同一目录执行下列原生 Docker 命令。该流程会先拉取镜像，随后仅在 `new-api` 容器存在时停止并删除它，最后使用原有宿主机 `./data` 数据目录创建新容器；**不会删除 SQLite 数据库或程序配置**。
+推荐使用 `./installl.sh update` 完成更新。该命令同样会先检查 Docker；若 Docker 尚未安装，会先按系统的软件包管理器自动安装并尝试启动服务。若需禁止自动安装，可设置 `NEW_API_LITE_AUTO_INSTALL_DOCKER=0`。若不使用管理脚本，可在项目数据目录所在的同一目录执行下列原生 Docker 命令。该流程会先拉取镜像，随后仅在 `new-api` 容器存在时停止并删除它，最后使用原有宿主机 `./data` 数据目录创建新容器；**不会删除 SQLite 数据库或程序配置**。
 
 ```bash
 set -e
