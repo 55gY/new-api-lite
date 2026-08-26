@@ -186,19 +186,18 @@ func Seconds2Time(num int) (time string) {
 }
 
 func Interface2String(inter interface{}) string {
-	switch inter.(type) {
+	switch value := inter.(type) {
 	case string:
-		return inter.(string)
+		return value
 	case int:
-		return fmt.Sprintf("%d", inter.(int))
+		return fmt.Sprintf("%d", value)
 	case float64:
-		return strconv.FormatFloat(inter.(float64), 'f', -1, 64)
+		return strconv.FormatFloat(value, 'f', -1, 64)
 	case bool:
-		if inter.(bool) {
+		if value {
 			return "true"
-		} else {
-			return "false"
 		}
+		return "false"
 	case nil:
 		return ""
 	}

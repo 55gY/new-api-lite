@@ -226,7 +226,6 @@ func Register(c *gin.Context) {
 		"success": true,
 		"message": "",
 	})
-	return
 }
 
 func GetAllUsers(c *gin.Context) {
@@ -241,7 +240,6 @@ func GetAllUsers(c *gin.Context) {
 	pageInfo.SetItems(users)
 
 	common.ApiSuccess(c, pageInfo)
-	return
 }
 
 func SearchUsers(c *gin.Context) {
@@ -269,7 +267,6 @@ func SearchUsers(c *gin.Context) {
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(users)
 	common.ApiSuccess(c, pageInfo)
-	return
 }
 
 func canManageTargetRole(myRole int, targetRole int) bool {
@@ -297,7 +294,6 @@ func GetUser(c *gin.Context) {
 		"message": "",
 		"data":    user,
 	})
-	return
 }
 
 func GenerateAccessToken(c *gin.Context) {
@@ -332,7 +328,6 @@ func GenerateAccessToken(c *gin.Context) {
 		"message": "",
 		"data":    user.AccessToken,
 	})
-	return
 }
 
 type TransferAffQuotaRequest struct {
@@ -365,7 +360,6 @@ func GetAffCode(c *gin.Context) {
 		"message": "",
 		"data":    user.AffCode,
 	})
-	return
 }
 
 func GetSelf(c *gin.Context) {
@@ -412,7 +406,6 @@ func GetSelf(c *gin.Context) {
 		"message": "",
 		"data":    responseData,
 	})
-	return
 }
 
 // 计算用户权限的辅助函数
@@ -524,7 +517,6 @@ func GetUserModels(c *gin.Context) {
 		"message": "",
 		"data":    models,
 	})
-	return
 }
 
 func UpdateUser(c *gin.Context) {
@@ -567,7 +559,6 @@ func UpdateUser(c *gin.Context) {
 		"success": true,
 		"message": "",
 	})
-	return
 }
 
 func UpdateSelf(c *gin.Context) {
@@ -609,7 +600,6 @@ func UpdateSelf(c *gin.Context) {
 		"success": true,
 		"message": "",
 	})
-	return
 }
 
 func checkUpdatePassword(originalPassword string, newPassword string, userId int) (updatePassword bool, err error) {
@@ -657,7 +647,6 @@ func DeleteUser(c *gin.Context) {
 		"success": true,
 		"message": "",
 	})
-	return
 }
 
 func DeleteSelf(c *gin.Context) {
@@ -678,7 +667,6 @@ func DeleteSelf(c *gin.Context) {
 		"success": true,
 		"message": "",
 	})
-	return
 }
 
 func CreateUser(c *gin.Context) {
@@ -717,7 +705,6 @@ func CreateUser(c *gin.Context) {
 		"success": true,
 		"message": "",
 	})
-	return
 }
 
 type ManageRequest struct {
@@ -835,7 +822,6 @@ func ManageUser(c *gin.Context) {
 		"message": "",
 		"data":    clearUser,
 	})
-	return
 }
 
 type emailBindRequest struct {
@@ -876,7 +862,6 @@ func EmailBind(c *gin.Context) {
 		"success": true,
 		"message": "",
 	})
-	return
 }
 
 type UpdateUserSettingRequest struct {

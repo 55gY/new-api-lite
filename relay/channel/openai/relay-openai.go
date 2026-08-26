@@ -69,7 +69,7 @@ func sendStreamData(c *gin.Context, info *relaycommon.RelayInfo, data string, fo
 		}
 	}
 
-	if lastStreamResponse.Choices == nil || len(lastStreamResponse.Choices) == 0 {
+	if len(lastStreamResponse.Choices) == 0 {
 		return helper.ObjectData(c, lastStreamResponse)
 	}
 

@@ -189,14 +189,14 @@ func oaiFormEdit2AliImageEdit(c *gin.Context, info *relaycommon.RelayInfo, reque
 	return &imageRequest, nil
 }
 
-func updateTask(info *relaycommon.RelayInfo, taskID string) (*AliResponse, error, []byte) {
+func updateTask(info *relaycommon.RelayInfo, taskID string) (*AliResponse, []byte, error) {
 	url := fmt.Sprintf("%s/api/v1/tasks/%s", info.ChannelBaseUrl, taskID)
 
 	var aliResponse AliResponse
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return &aliResponse, err, nil
+		return &aliResponse, nil, err
 	}
 
 	req.Header.Set("Authorization", "Bearer "+info.ApiKey)
@@ -205,24 +205,24 @@ func updateTask(info *relaycommon.RelayInfo, taskID string) (*AliResponse, error
 	resp, err := client.Do(req)
 	if err != nil {
 		common.SysLog("updateTask client.Do err: " + err.Error())
-		return &aliResponse, err, nil
+		return &aliResponse, nil, err
 	}
 	defer resp.Body.Close()
 
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		common.SysLog("updateTask read response body err: " + err.Error())
-		return &aliResponse, err, nil
+		return &aliResponse, nil, err
 	}
 
 	var response AliResponse
 	err = common.Unmarshal(responseBody, &response)
 	if err != nil {
 		common.SysLog("updateTask NewDecoder err: " + err.Error())
-		return &aliResponse, err, nil
+		return &aliResponse, nil, err
 	}
 
-	return &response, nil, responseBody
+	return &response, responseBody, nil
 }
 
 func asyncTaskWait(c *gin.Context, info *relaycommon.RelayInfo, taskID string) (*AliResponse, []byte, error) {
@@ -238,7 +238,7 @@ func asyncTaskWait(c *gin.Context, info *relaycommon.RelayInfo, taskID string) (
 	for {
 		logger.LogDebug(c, "asyncTaskWait step %d/%d, wait %d seconds", step, maxStep, waitSeconds)
 		step++
-		rsp, err, body := updateTask(info, taskID)
+		rsp, body, err := updateTask(info, taskID)
 		responseBody = body
 		if err != nil {
 			logger.LogWarn(c, "asyncTaskWait UpdateTask err: "+err.Error())

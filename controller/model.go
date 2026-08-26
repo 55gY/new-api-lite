@@ -225,14 +225,12 @@ func ListModels(c *gin.Context, modelType int) {
 		} else {
 			tokenModelLimit = map[string]bool{}
 		}
-		for allowModel, _ := range tokenModelLimit {
+		for allowModel := range tokenModelLimit {
 			userModelNames = append(userModelNames, allowModel)
 		}
 	} else {
 		models := model.GetEnabledModels()
-		for _, modelName := range models {
-			userModelNames = append(userModelNames, modelName)
-		}
+		userModelNames = append(userModelNames, models...)
 	}
 
 	ownerByModel := getPreferredModelOwners(userModelNames, ownerGroups)

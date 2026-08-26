@@ -41,8 +41,7 @@ func formatRequest(requestBody io.Reader, requestHeader http.Header) (*AwsClaude
 	// check header anthropic-beta
 	anthropicBetaValues := requestHeader.Get("anthropic-beta")
 	if len(anthropicBetaValues) > 0 {
-		var tempArray []string
-		tempArray = strings.Split(anthropicBetaValues, ",")
+		tempArray := strings.Split(anthropicBetaValues, ",")
 		if len(tempArray) > 0 {
 			betaJson, err := common.Marshal(tempArray)
 			if err != nil {
