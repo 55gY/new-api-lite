@@ -5,7 +5,10 @@
 set -Eeuo pipefail
 
 APP_NAME="new-api"
-IMAGE="${NEW_API_LITE_IMAGE:-ghcr.io/55gy/new-api-lite:latest}"
+BASE_IMAGE="${NEW_API_LITE_IMAGE:-ghcr.io/55gy/new-api-lite:latest}"
+IMAGE="$BASE_IMAGE"
+MIRROR_MODE="${NEW_API_LITE_MIRROR_MODE:-direct}"
+DOCKER_MIRRORS="${NEW_API_LITE_DOCKER_MIRRORS:-gh-proxy.org/docker/ gh-proxy.com/docker/}"
 DATA_DIR="${NEW_API_LITE_DATA_DIR:-"$PWD/data"}"
 HOST_PORT="${NEW_API_LITE_PORT:-3000}"
 TIME_ZONE="${NEW_API_LITE_TZ:-Asia/Shanghai}"
@@ -53,7 +56,9 @@ usage() {
 环境变量：
   NEW_API_LITE_DATA_DIR  数据目录，默认当前目录/data
   NEW_API_LITE_PORT      宿主机端口，默认 3000
-  NEW_API_LITE_IMAGE     镜像，默认 ghcr.io/55gy/new-api-lite:latest（多架构自动选择）
+  NEW_API_LITE_IMAGE     完整镜像名，默认 ghcr.io/55gy/new-api-lite:latest（多架构自动选择）
+  NEW_API_LITE_MIRROR_MODE  direct 仅直连；mirror 优先镜像；auto 直连失败后尝试镜像
+  NEW_API_LITE_DOCKER_MIRRORS  GHCR 加速注册表前缀，空格分隔，可自行替换
   NEW_API_LITE_TZ         时区，默认 Asia/Shanghai
   NEW_API_LITE_AUTO_INSTALL_DOCKER  为 0 时禁止自动安装 Docker
 EOF
@@ -144,6 +149,60 @@ require_docker() {
   fi
 }
 
+add_image_candidate() {
+  local candidate="$1"
+  local existing
+  [[ -n "$candidate" ]] || return 0
+  for existing in "${IMAGE_CANDIDATES[@]:-}"; do
+    [[ "$existing" == "$candidate" ]] && return 0
+  done
+  IMAGE_CANDIDATES+=("$candidate")
+}
+
+build_image_candidates() {
+  IMAGE_CANDIDATES=()
+  case "$MIRROR_MODE" in
+    direct)
+      add_image_candidate "$BASE_IMAGE"
+      ;;
+    mirror|auto)
+      if [[ "$MIRROR_MODE" == "auto" ]]; then
+        add_image_candidate "$BASE_IMAGE"
+      fi
+      if [[ "$BASE_IMAGE" == ghcr.io/* ]]; then
+        local prefix
+        for prefix in $DOCKER_MIRRORS; do
+          prefix="${prefix%/}/"
+          add_image_candidate "${prefix}${BASE_IMAGE}"
+        done
+      else
+        warn "镜像不是 ghcr.io 地址，跳过 GHCR 加速节点：${BASE_IMAGE}"
+      fi
+      add_image_candidate "$BASE_IMAGE"
+      ;;
+    *)
+      error "NEW_API_LITE_MIRROR_MODE 只能是 direct、mirror 或 auto，当前值：${MIRROR_MODE}"
+      return 1
+      ;;
+  esac
+}
+
+pull_image() {
+  build_image_candidates || return 1
+  local candidate
+  for candidate in "${IMAGE_CANDIDATES[@]}"; do
+    info "拉取镜像：${candidate}"
+    if docker_cli pull "$candidate"; then
+      IMAGE="$candidate"
+      success "镜像拉取成功：${IMAGE}"
+      return 0
+    fi
+    warn "镜像节点不可用，尝试下一个节点：${candidate}"
+  done
+  error "所有镜像节点均拉取失败。可设置 NEW_API_LITE_IMAGE 或 NEW_API_LITE_DOCKER_MIRRORS 更换节点。"
+  return 1
+}
+
 check_architecture() {
   info "系统：${OS_NAME}；架构：${SYSTEM_ARCH}。"
   case "$SYSTEM_ARCH" in
@@ -205,8 +264,7 @@ install() {
     fi
     return
   fi
-  info "拉取镜像：${IMAGE}"
-  docker_cli pull "$IMAGE"
+  pull_image || exit 1
   run_container
   success "已启动 ${APP_NAME}，访问地址：http://localhost:${HOST_PORT}"
 }
@@ -214,8 +272,7 @@ install() {
 update() {
   ensure_docker || exit 1
   check_architecture
-  info "拉取镜像：${IMAGE}"
-  docker_cli pull "$IMAGE"
+  pull_image || exit 1
   if container_exists; then
     info "删除旧容器 ${APP_NAME}（保留 ${DATA_DIR} 数据目录）。"
     docker_cli rm --force "$APP_NAME"
