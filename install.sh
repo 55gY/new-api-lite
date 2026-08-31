@@ -42,13 +42,13 @@ error() { printf '%b[错误]%b %s\n' "$COLOR_RED" "$COLOR_RESET" "$*" >&2; }
 usage() {
   cat <<'EOF'
 用法：
-  ./installl.sh                 打开交互式管理面板
-  ./installl.sh install         首次安装或启动已有容器
-  ./installl.sh update          拉取最新镜像并安全重建容器，保留 data
-  ./installl.sh start|stop|restart
-  ./installl.sh status|logs|check
-  ./installl.sh uninstall       删除容器，保留 data
-  ./installl.sh remove-data     删除 data（需要输入 DELETE）
+  ./install.sh                 打开交互式管理面板
+  ./install.sh install         首次安装或启动已有容器
+  ./install.sh update          拉取最新镜像并安全重建容器，保留 data
+  ./install.sh start|stop|restart
+  ./install.sh status|logs|check
+  ./install.sh uninstall       删除容器，保留 data
+  ./install.sh remove-data     删除 data（需要输入 DELETE）
 
 环境变量：
   NEW_API_LITE_DATA_DIR  数据目录，默认当前目录/data
@@ -135,11 +135,11 @@ ensure_docker() {
 
 require_docker() {
   if ! command -v docker >/dev/null 2>&1; then
-    error "未检测到 Docker。请执行 ./installl.sh install 以自动安装 Docker。"
+    error "未检测到 Docker。请执行 ./install.sh install 以自动安装 Docker。"
     exit 1
   fi
   if ! configure_docker_access; then
-    error "Docker 服务不可用。请执行 ./installl.sh install 尝试启动 Docker。"
+    error "Docker 服务不可用。请执行 ./install.sh install 尝试启动 Docker。"
     exit 1
   fi
 }
