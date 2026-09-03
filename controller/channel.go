@@ -627,6 +627,9 @@ func AddChannel(c *gin.Context) {
 	}
 
 	addChannelRequest.Channel.CreatedTime = common.GetTimestamp()
+	if addChannelRequest.Channel.Status == common.ChannelStatusUnknown {
+		addChannelRequest.Channel.Status = common.ChannelStatusEnabled
+	}
 	var keys []string
 	switch addChannelRequest.Mode {
 	case "multi_to_single":

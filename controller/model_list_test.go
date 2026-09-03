@@ -108,6 +108,13 @@ func TestListModelsIncludesEnabledModels(t *testing.T) {
 		Group:    "default",
 		Status:   common.UserStatusEnabled,
 	}).Error)
+	require.NoError(t, db.Create(&model.Channel{
+		Id:     1,
+		Type:   constant.ChannelTypeOpenAI,
+		Key:    "test-key",
+		Name:   "enabled-model-list-channel",
+		Status: common.ChannelStatusEnabled,
+	}).Error)
 	require.NoError(t, db.Create(&[]model.Ability{
 		{Group: "default", Model: "zz-routing-visible-model", ChannelId: 1, Enabled: true},
 		{Group: "default", Model: "zz-routing-empty-rule-model", ChannelId: 1, Enabled: true},
@@ -129,7 +136,104 @@ func TestListModelsIncludesEnabledModels(t *testing.T) {
 	require.Contains(t, ids, "zz-secondary-model")
 }
 
+func TestListModelsExcludesDisabledChannelsAndRestores(t *testing.T) {
+	db := setupModelListControllerTestDB(t)
+	require.NoError(t, db.Create(&model.User{
+		Id:       1002,
+		Username: "model-list-status-user",
+		Password: "password",
+		Group:    "default",
+		Status:   common.UserStatusEnabled,
+	}).Error)
+	require.NoError(t, db.Create(&[]model.Channel{
+		{Id: 1, Type: constant.ChannelTypeOpenAI, Key: "enabled-key", Name: "enabled", Status: common.ChannelStatusEnabled},
+		{Id: 2, Type: constant.ChannelTypeOpenAI, Key: "manual-key", Name: "manual", Status: common.ChannelStatusManuallyDisabled},
+		{Id: 3, Type: constant.ChannelTypeOpenAI, Key: "auto-key", Name: "auto", Status: common.ChannelStatusAutoDisabled},
+	}).Error)
+	require.NoError(t, db.Create(&[]model.Ability{
+		{Group: "default", Model: "zz-status-enabled-model", ChannelId: 1, Status: common.ChannelStatusEnabled, Enabled: true},
+		{Group: "default", Model: "zz-status-manual-model", ChannelId: 2, Status: common.ChannelStatusEnabled, Enabled: true},
+		{Group: "default", Model: "zz-status-auto-model", ChannelId: 3, Status: common.ChannelStatusEnabled, Enabled: true},
+	}).Error)
+
+	listModels := func() map[string]struct{} {
+		recorder := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(recorder)
+		ctx.Request = httptest.NewRequest(http.MethodGet, "/v1/models", nil)
+		ctx.Set("id", 1002)
+		ListModels(ctx, constant.ChannelTypeOpenAI)
+		return decodeListModelsResponse(t, recorder)
+	}
+
+	ids := listModels()
+	require.Contains(t, ids, "zz-status-enabled-model")
+	require.NotContains(t, ids, "zz-status-manual-model")
+	require.NotContains(t, ids, "zz-status-auto-model")
+
+	require.NoError(t, db.Model(&model.Channel{}).Where("id IN ?", []int{2, 3}).Update("status", common.ChannelStatusEnabled).Error)
+	ids = listModels()
+	require.Contains(t, ids, "zz-status-manual-model")
+	require.Contains(t, ids, "zz-status-auto-model")
+}
+
+func TestAddChannelDefaultsToEnabledAndListsModels(t *testing.T) {
+	db := setupModelListControllerTestDB(t)
+	require.NoError(t, db.Create(&model.User{
+		Id:       1003,
+		Username: "model-list-new-channel-user",
+		Password: "password",
+		Group:    "default",
+		Status:   common.UserStatusEnabled,
+	}).Error)
+
+	requestBody, err := common.Marshal(AddChannelRequest{
+		Mode: "single",
+		Channel: &model.Channel{
+			Type:   constant.ChannelTypeOpenAI,
+			Key:    "new-channel-key",
+			Name:   "new-enabled-channel",
+			Models: "zz-new-channel-model",
+			Group:  "default",
+		},
+	})
+	require.NoError(t, err)
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Request = httptest.NewRequest(http.MethodPost, "/api/channel/", strings.NewReader(string(requestBody)))
+	AddChannel(ctx)
+	require.Equal(t, http.StatusOK, recorder.Code)
+
+	var channel model.Channel
+	require.NoError(t, db.Where("name = ?", "new-enabled-channel").First(&channel).Error)
+	require.Equal(t, common.ChannelStatusEnabled, channel.Status)
+	var ability model.Ability
+	require.NoError(t, db.Where("channel_id = ? AND model = ?", channel.Id, "zz-new-channel-model").First(&ability).Error)
+	require.True(t, ability.Enabled)
+
+	listRecorder := httptest.NewRecorder()
+	listContext, _ := gin.CreateTestContext(listRecorder)
+	listContext.Request = httptest.NewRequest(http.MethodGet, "/v1/models", nil)
+	listContext.Set("id", 1003)
+	ListModels(listContext, constant.ChannelTypeOpenAI)
+	require.Contains(t, decodeListModelsResponse(t, listRecorder), "zz-new-channel-model")
+}
+
 func TestListModelsTokenLimitIncludesEnabledModels(t *testing.T) {
+	db := setupModelListControllerTestDB(t)
+	require.NoError(t, db.Create(&model.Channel{
+		Id:     1,
+		Type:   constant.ChannelTypeOpenAI,
+		Key:    "token-model-list-key",
+		Name:   "token-model-list-channel",
+		Status: common.ChannelStatusEnabled,
+	}).Error)
+	require.NoError(t, db.Create(&[]model.Ability{
+		{Group: "default", Model: "zz-token-routing-visible-model", ChannelId: 1, Enabled: true},
+		{Group: "default", Model: "zz-token-routing-empty-rule-model", ChannelId: 1, Enabled: true},
+		{Group: "default", Model: "zz-token-routing-missing-rule-model", ChannelId: 1, Enabled: true},
+		{Group: "default", Model: "zz-token-secondary-model", ChannelId: 1, Enabled: true},
+	}).Error)
+
 	recorder := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(recorder)
 	ctx.Request = httptest.NewRequest(http.MethodGet, "/v1/models", nil)
@@ -139,6 +243,7 @@ func TestListModelsTokenLimitIncludesEnabledModels(t *testing.T) {
 		"zz-token-routing-empty-rule-model":   true,
 		"zz-token-routing-missing-rule-model": true,
 		"zz-token-secondary-model":            true,
+		"zz-token-disabled-model":             true,
 	})
 
 	ListModels(ctx, constant.ChannelTypeOpenAI)

@@ -77,8 +77,8 @@ func GetAllEnableAbilityWithChannels() ([]AbilityWithChannel, error) {
 	var abilities []AbilityWithChannel
 	err := DB.Table("abilities").
 		Select("abilities.*, channels.type as channel_type").
-		Joins("left join channels on abilities.channel_id = channels.id").
-		Where("abilities.enabled = ?", true).
+		Joins("join channels on abilities.channel_id = channels.id").
+		Where("abilities.enabled = ? and channels.status = ?", true, common.ChannelStatusEnabled).
 		Scan(&abilities).Error
 	return abilities, err
 }
@@ -87,8 +87,8 @@ func GetModelChannels() ([]EnabledModelChannel, error) {
 	var channels []EnabledModelChannel
 	err := DB.Table("abilities").
 		Select("abilities.model, channels.id as channel_id, channels.name as channel_name, channels.type as channel_type, channels.model_mapping, abilities.status, abilities.enabled, abilities.test_status, abilities.test_time, abilities.response_time, abilities.test_error, abilities.test_response").
-		Joins("left join channels on abilities.channel_id = channels.id").
-		Where("channels.status != ?", common.ChannelStatusManuallyDisabled).
+		Joins("join channels on abilities.channel_id = channels.id").
+		Where("abilities.enabled = ? and channels.status = ?", true, common.ChannelStatusEnabled).
 		Scan(&channels).Error
 	return channels, err
 }
@@ -97,8 +97,8 @@ func GetEnabledModelChannels() ([]EnabledModelChannel, error) {
 	var channels []EnabledModelChannel
 	err := DB.Table("abilities").
 		Select("abilities.model, channels.id as channel_id, channels.name as channel_name, channels.type as channel_type, channels.model_mapping, abilities.status, abilities.enabled, abilities.test_status, abilities.test_time, abilities.response_time, abilities.test_error, abilities.test_response").
-		Joins("left join channels on abilities.channel_id = channels.id").
-		Where("abilities.enabled = ?", true).
+		Joins("join channels on abilities.channel_id = channels.id").
+		Where("abilities.enabled = ? and channels.status = ?", true, common.ChannelStatusEnabled).
 		Scan(&channels).Error
 	return channels, err
 }
@@ -312,14 +312,20 @@ func UpdateChannelModelStatus(channelId int, modelName string, group string, sta
 func GetGroupEnabledModels(group string) []string {
 	var models []string
 	// Find distinct models
-	DB.Table("abilities").Where(commonGroupCol+" = ? and enabled = ?", group, true).Distinct("model").Pluck("model", &models)
+	DB.Table("abilities").
+		Joins("join channels on abilities.channel_id = channels.id").
+		Where("abilities."+commonGroupCol+" = ? and abilities.enabled = ? and channels.status = ?", group, true, common.ChannelStatusEnabled).
+		Distinct("abilities.model").Pluck("abilities.model", &models)
 	return appendMappedRequestModels(models, group)
 }
 
 func GetEnabledModels() []string {
 	var models []string
 	// Find distinct models
-	DB.Table("abilities").Where("enabled = ?", true).Distinct("model").Pluck("model", &models)
+	DB.Table("abilities").
+		Joins("join channels on abilities.channel_id = channels.id").
+		Where("abilities.enabled = ? and channels.status = ?", true, common.ChannelStatusEnabled).
+		Distinct("abilities.model").Pluck("abilities.model", &models)
 	return appendMappedRequestModels(models, "")
 }
 
@@ -389,8 +395,8 @@ func appendMappedRequestModels(models []string, group string) []string {
 	var mappings []abilityMapping
 	query := DB.Table("abilities").
 		Select("abilities.model, channels.model_mapping").
-		Joins("left join channels on abilities.channel_id = channels.id").
-		Where("abilities.enabled = ?", true)
+		Joins("join channels on abilities.channel_id = channels.id").
+		Where("abilities.enabled = ? and channels.status = ?", true, common.ChannelStatusEnabled)
 	if group != "" {
 		query = query.Where("abilities."+commonGroupCol+" = ?", group)
 	}

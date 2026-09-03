@@ -225,8 +225,11 @@ func ListModels(c *gin.Context, modelType int) {
 		} else {
 			tokenModelLimit = map[string]bool{}
 		}
-		for allowModel := range tokenModelLimit {
-			userModelNames = append(userModelNames, allowModel)
+		availableModels := model.GetEnabledModels()
+		for _, modelName := range availableModels {
+			if tokenModelLimit[modelName] {
+				userModelNames = append(userModelNames, modelName)
+			}
 		}
 	} else {
 		models := model.GetEnabledModels()
