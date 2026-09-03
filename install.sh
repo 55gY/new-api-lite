@@ -242,6 +242,7 @@ ensure_data_dir() {
 run_container() {
   ensure_data_dir
   docker_cli run \
+    --pull=always \
     --name "$APP_NAME" \
     --detach \
     --init \
@@ -272,13 +273,24 @@ install() {
 update() {
   ensure_docker || exit 1
   check_architecture
+  local old_image_id=""
+  if container_exists; then
+    old_image_id="$(docker_cli container inspect --format '{{.Image}}' "$APP_NAME" 2>/dev/null || true)"
+  fi
   pull_image || exit 1
+  local new_image_id
+  new_image_id="$(docker_cli image inspect --format '{{.Id}}' "$IMAGE" 2>/dev/null || true)"
+  if [[ -n "$old_image_id" && -n "$new_image_id" && "$old_image_id" == "$new_image_id" ]]; then
+    warn "拉取后镜像 ID 未变化：${new_image_id}；远端标签可能尚未更新或加速节点返回了缓存内容。"
+  else
+    info "更新镜像 ID：${old_image_id:-无} -> ${new_image_id:-未知}"
+  fi
   if container_exists; then
     info "删除旧容器 ${APP_NAME}（保留 ${DATA_DIR} 数据目录）。"
     docker_cli rm --force "$APP_NAME"
   fi
   run_container
-  success "镜像更新完成，已使用保留的数据目录创建新容器。"
+  success "镜像更新完成，已使用 ${IMAGE} 创建新容器。"
 }
 
 start() {
@@ -291,7 +303,7 @@ start() {
   if container_running; then
     info "容器 ${APP_NAME} 已在运行。"
   else
-    docker start "$APP_NAME"
+    docker_cli start "$APP_NAME"
     success "已启动容器 ${APP_NAME}。"
   fi
 }
