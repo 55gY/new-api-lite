@@ -137,12 +137,12 @@ export default function SettingsSensitiveWords(props) {
                   checkedText='｜'
                   uncheckedText='〇'
                   extraText={t('关闭时尝试替换敏感词后继续生成')}
-                  onChange={(value) =>
-                    setInputs((current) => ({
-                      ...current,
+                  onChange={(value) => {
+                    setInputs({
+                      ...inputs,
                       StopOnSensitiveEnabled: value,
-                    }))
-                  }
+                    });
+                  }}
                 />
               </Col>
               <Col xs={24} sm={12} md={8} lg={8} xl={8}>

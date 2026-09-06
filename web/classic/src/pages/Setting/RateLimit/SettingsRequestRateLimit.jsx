@@ -130,15 +130,18 @@ export default function RequestRateLimit(props) {
             <Row>
               <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.Switch
-                  field='GlobalApiRateLimitEnable'
+                  field={'GlobalApiRateLimitEnable'}
                   label={t('启用全局 API 速率限制')}
                   size='default'
                   checkedText='｜'
                   uncheckedText='〇'
                   extraText={t('默认关闭；开启后按客户端 IP 限制 API 请求频率')}
-                  onChange={(value) =>
-                    updateField('GlobalApiRateLimitEnable')(value)
-                  }
+                  onChange={(value) => {
+                    setInputs({
+                      ...inputs,
+                      GlobalApiRateLimitEnable: value,
+                    });
+                  }}
                 />
               </Col>
             </Row>
@@ -186,12 +189,17 @@ export default function RequestRateLimit(props) {
             <Row gutter={16}>
               <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.Switch
-                  field='GlobalWebRateLimitEnable'
+                  field={'GlobalWebRateLimitEnable'}
                   label={t('启用全局 Web 速率限制')}
                   size='default'
                   checkedText='｜'
                   uncheckedText='〇'
-                  onChange={updateField('GlobalWebRateLimitEnable')}
+                  onChange={(value) => {
+                    setInputs({
+                      ...inputs,
+                      GlobalWebRateLimitEnable: value,
+                    });
+                  }}
                 />
               </Col>
               <Col xs={24} sm={12} md={8} lg={8} xl={8}>
@@ -226,12 +234,17 @@ export default function RequestRateLimit(props) {
             <Row gutter={16}>
               <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.Switch
-                  field='CriticalRateLimitEnable'
+                  field={'CriticalRateLimitEnable'}
                   label={t('启用关键接口速率限制')}
                   size='default'
                   checkedText='｜'
                   uncheckedText='〇'
-                  onChange={updateField('CriticalRateLimitEnable')}
+                  onChange={(value) => {
+                    setInputs({
+                      ...inputs,
+                      CriticalRateLimitEnable: value,
+                    });
+                  }}
                 />
               </Col>
               <Col xs={24} sm={12} md={8} lg={8} xl={8}>
@@ -258,12 +271,17 @@ export default function RequestRateLimit(props) {
             <Row gutter={16}>
               <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.Switch
-                  field='SearchRateLimitEnable'
+                  field={'SearchRateLimitEnable'}
                   label={t('启用搜索速率限制')}
                   size='default'
                   checkedText='｜'
                   uncheckedText='〇'
-                  onChange={updateField('SearchRateLimitEnable')}
+                  onChange={(value) => {
+                    setInputs({
+                      ...inputs,
+                      SearchRateLimitEnable: value,
+                    });
+                  }}
                 />
               </Col>
               <Col xs={24} sm={12} md={8} lg={8} xl={8}>
