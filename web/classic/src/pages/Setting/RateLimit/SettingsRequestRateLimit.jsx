@@ -33,6 +33,9 @@ export default function RequestRateLimit(props) {
 
   const [loading, setLoading] = useState(false);
   const [inputs, setInputs] = useState({
+    GlobalApiRateLimitEnable: false,
+    GlobalApiRateLimitNum: 180,
+    GlobalApiRateLimitDuration: 180,
     ModelRequestRateLimitEnabled: false,
     ModelRequestRateLimitCount: -1,
     ModelRequestRateLimitSuccessCount: 1000,
@@ -103,6 +106,53 @@ export default function RequestRateLimit(props) {
           getFormApi={(formAPI) => (refForm.current = formAPI)}
           style={{ marginBottom: 15 }}
         >
+          <Form.Section text={t('全局 API 速率限制')}>
+        <Row>
+          <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+            <Form.Switch
+              field='GlobalApiRateLimitEnable'
+              label={t('启用全局 API 速率限制')}
+              extraText={t('默认关闭；开启后按客户端 IP 限制 API 请求频率')}
+              onChange={(value) =>
+                setInputs({ ...inputs, GlobalApiRateLimitEnable: value })
+              }
+            />
+          </Col>
+        </Row>
+        <Row>
+          <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+            <Form.InputNumber
+              label={t('每周期最多请求次数')}
+              step={1}
+              min={1}
+              max={100000000}
+              suffix={t('次')}
+              field='GlobalApiRateLimitNum'
+              onChange={(value) =>
+                setInputs({ ...inputs, GlobalApiRateLimitNum: String(value) })
+              }
+            />
+          </Col>
+          <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+            <Form.InputNumber
+              label={t('限制周期')}
+              step={1}
+              min={1}
+              suffix={t('秒')}
+              field='GlobalApiRateLimitDuration'
+              onChange={(value) =>
+                setInputs({ ...inputs, GlobalApiRateLimitDuration: String(value) })
+              }
+            />
+          </Col>
+        </Row>
+        <Row>
+          <Button size='default' onClick={onSubmit}>
+            {t('保存全局 API 速率限制')}
+          </Button>
+        </Row>
+          </Form.Section>
+
           <Form.Section text={t('模型请求速率限制')}>
             <Row gutter={16}>
               <Col xs={24} sm={12} md={8} lg={8} xl={8}>
