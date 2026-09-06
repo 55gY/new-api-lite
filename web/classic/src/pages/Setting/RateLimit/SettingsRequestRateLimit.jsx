@@ -134,7 +134,7 @@ export default function RequestRateLimit(props) {
                   label={t('启用全局 API 速率限制')}
                   extraText={t('默认关闭；开启后按客户端 IP 限制 API 请求频率')}
                   onChange={(value) =>
-                    setInputs({ ...inputs, GlobalApiRateLimitEnable: value })
+                    updateField('GlobalApiRateLimitEnable')(value)
                   }
                 />
               </Col>

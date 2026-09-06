@@ -104,12 +104,12 @@ export default function SettingsSensitiveWords(props) {
                   size='default'
                   checkedText='｜'
                   uncheckedText='〇'
-                  onChange={(value) => {
-                    setInputs({
-                      ...inputs,
+                  onChange={(value) =>
+                    setInputs((current) => ({
+                      ...current,
                       CheckSensitiveEnabled: value,
-                    });
-                  }}
+                    }))
+                  }
                 />
               </Col>
               <Col xs={24} sm={12} md={8} lg={8} xl={8}>
@@ -120,10 +120,10 @@ export default function SettingsSensitiveWords(props) {
                   checkedText='｜'
                   uncheckedText='〇'
                   onChange={(value) =>
-                    setInputs({
-                      ...inputs,
+                    setInputs((current) => ({
+                      ...current,
                       CheckSensitiveOnPromptEnabled: value,
-                    })
+                    }))
                   }
                 />
               </Col>
@@ -135,7 +135,10 @@ export default function SettingsSensitiveWords(props) {
                   label={t('检测到敏感词后立即停止生成')}
                   extraText={t('关闭时尝试替换敏感词后继续生成')}
                   onChange={(value) =>
-                    setInputs({ ...inputs, StopOnSensitiveEnabled: value })
+                    setInputs((current) => ({
+                      ...current,
+                      StopOnSensitiveEnabled: value,
+                    }))
                   }
                 />
               </Col>
@@ -147,7 +150,10 @@ export default function SettingsSensitiveWords(props) {
                   max={10000}
                   extraText={t('0 表示关闭流缓存')}
                   onChange={(value) =>
-                    setInputs({ ...inputs, StreamCacheQueueLength: value })
+                    setInputs((current) => ({
+                      ...current,
+                      StreamCacheQueueLength: value,
+                    }))
                   }
                 />
               </Col>
@@ -160,10 +166,10 @@ export default function SettingsSensitiveWords(props) {
                   placeholder={t('一行一个屏蔽词，不需要符号分割')}
                   field={'SensitiveWords'}
                   onChange={(value) =>
-                    setInputs({
-                      ...inputs,
+                    setInputs((current) => ({
+                      ...current,
                       SensitiveWords: value,
-                    })
+                    }))
                   }
                   style={{ fontFamily: 'JetBrains Mono, Consolas' }}
                   autosize={{ minRows: 6, maxRows: 12 }}
