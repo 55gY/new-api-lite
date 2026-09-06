@@ -34,6 +34,8 @@ export default function SettingsSensitiveWords(props) {
   const [inputs, setInputs] = useState({
     CheckSensitiveEnabled: false,
     CheckSensitiveOnPromptEnabled: false,
+    StopOnSensitiveEnabled: true,
+    StreamCacheQueueLength: 0,
     SensitiveWords: '',
   });
   const refForm = useRef();
@@ -122,6 +124,30 @@ export default function SettingsSensitiveWords(props) {
                       ...inputs,
                       CheckSensitiveOnPromptEnabled: value,
                     })
+                  }
+                />
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                <Form.Switch
+                  field={'StopOnSensitiveEnabled'}
+                  label={t('检测到敏感词后立即停止生成')}
+                  extraText={t('关闭时尝试替换敏感词后继续生成')}
+                  onChange={(value) =>
+                    setInputs({ ...inputs, StopOnSensitiveEnabled: value })
+                  }
+                />
+              </Col>
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                <Form.InputNumber
+                  field={'StreamCacheQueueLength'}
+                  label={t('流模式缓存队列长度')}
+                  min={0}
+                  max={10000}
+                  extraText={t('0 表示关闭流缓存')}
+                  onChange={(value) =>
+                    setInputs({ ...inputs, StreamCacheQueueLength: value })
                   }
                 />
               </Col>

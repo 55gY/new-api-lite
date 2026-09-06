@@ -1,6 +1,8 @@
 package setting
 
 import (
+	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/55gY/new-api-lite/common"
@@ -35,11 +37,33 @@ func UserUsableGroups2JSONString() string {
 }
 
 func UpdateUserUsableGroupsByJSONString(jsonStr string) error {
+	var nextGroups map[string]string
+	if err := common.Unmarshal([]byte(jsonStr), &nextGroups); err != nil {
+		return err
+	}
 	userUsableGroupsMutex.Lock()
 	defer userUsableGroupsMutex.Unlock()
+	userUsableGroups = nextGroups
+	return nil
+}
 
-	userUsableGroups = make(map[string]string)
-	return common.Unmarshal([]byte(jsonStr), &userUsableGroups)
+func CheckUserUsableGroups(jsonStr string) error {
+	var groups map[string]string
+	if err := common.Unmarshal([]byte(jsonStr), &groups); err != nil {
+		return fmt.Errorf("用户可用分组必须是有效的 JSON 对象: %w", err)
+	}
+	if len(groups) > 100 {
+		return fmt.Errorf("用户可用分组数量不能超过 100 个")
+	}
+	for name, description := range groups {
+		if strings.TrimSpace(name) == "" || len(name) > 64 {
+			return fmt.Errorf("用户可用分组名称不能为空且不能超过 64 个字符")
+		}
+		if len(description) > 128 {
+			return fmt.Errorf("用户可用分组描述不能超过 128 个字符")
+		}
+	}
+	return nil
 }
 
 func GetUsableGroupDescription(groupName string) string {

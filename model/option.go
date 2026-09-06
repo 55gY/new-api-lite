@@ -86,6 +86,21 @@ func InitOptionMap() {
 	common.OptionMap["GlobalApiRateLimitEnable"] = strconv.FormatBool(common.GlobalApiRateLimitEnable)
 	common.OptionMap["GlobalApiRateLimitNum"] = strconv.Itoa(common.GlobalApiRateLimitNum)
 	common.OptionMap["GlobalApiRateLimitDuration"] = strconv.FormatInt(common.GlobalApiRateLimitDuration, 10)
+	common.OptionMap["GlobalWebRateLimitEnable"] = strconv.FormatBool(common.GlobalWebRateLimitEnable)
+	common.OptionMap["GlobalWebRateLimitNum"] = strconv.Itoa(common.GlobalWebRateLimitNum)
+	common.OptionMap["GlobalWebRateLimitDuration"] = strconv.FormatInt(common.GlobalWebRateLimitDuration, 10)
+	common.OptionMap["CriticalRateLimitEnable"] = strconv.FormatBool(common.CriticalRateLimitEnable)
+	common.OptionMap["CriticalRateLimitNum"] = strconv.Itoa(common.CriticalRateLimitNum)
+	common.OptionMap["CriticalRateLimitDuration"] = strconv.FormatInt(common.CriticalRateLimitDuration, 10)
+	common.OptionMap["SearchRateLimitEnable"] = strconv.FormatBool(common.SearchRateLimitEnable)
+	common.OptionMap["SearchRateLimitNum"] = strconv.Itoa(common.SearchRateLimitNum)
+	common.OptionMap["SearchRateLimitDuration"] = strconv.FormatInt(common.SearchRateLimitDuration, 10)
+	common.OptionMap["UploadRateLimitNum"] = strconv.Itoa(common.UploadRateLimitNum)
+	common.OptionMap["UploadRateLimitDuration"] = strconv.FormatInt(common.UploadRateLimitDuration, 10)
+	common.OptionMap["DownloadRateLimitNum"] = strconv.Itoa(common.DownloadRateLimitNum)
+	common.OptionMap["DownloadRateLimitDuration"] = strconv.FormatInt(common.DownloadRateLimitDuration, 10)
+	common.OptionMap["EmailVerificationMaxRequests"] = strconv.Itoa(common.EmailVerificationMaxRequests)
+	common.OptionMap["EmailVerificationDuration"] = strconv.FormatInt(common.EmailVerificationDuration, 10)
 	common.OptionMap["CheckSensitiveOnPromptEnabled"] = strconv.FormatBool(setting.CheckSensitiveOnPromptEnabled)
 	common.OptionMap["StopOnSensitiveEnabled"] = strconv.FormatBool(setting.StopOnSensitiveEnabled)
 	common.OptionMap["SensitiveWords"] = setting.SensitiveWordsToString()
@@ -232,6 +247,12 @@ func updateOptionMap(key string, value string) (err error) {
 			setting.ModelRequestRateLimitEnabled = boolValue
 		case "GlobalApiRateLimitEnable":
 			common.GlobalApiRateLimitEnable = boolValue
+		case "GlobalWebRateLimitEnable":
+			common.GlobalWebRateLimitEnable = boolValue
+		case "CriticalRateLimitEnable":
+			common.CriticalRateLimitEnable = boolValue
+		case "SearchRateLimitEnable":
+			common.SearchRateLimitEnable = boolValue
 		case "StopOnSensitiveEnabled":
 			setting.StopOnSensitiveEnabled = boolValue
 		case "SMTPSSLEnabled":
@@ -283,6 +304,30 @@ func updateOptionMap(key string, value string) (err error) {
 		common.GlobalApiRateLimitNum, _ = strconv.Atoi(value)
 	case "GlobalApiRateLimitDuration":
 		common.GlobalApiRateLimitDuration, _ = strconv.ParseInt(value, 10, 64)
+	case "GlobalWebRateLimitNum":
+		common.GlobalWebRateLimitNum, _ = strconv.Atoi(value)
+	case "GlobalWebRateLimitDuration":
+		common.GlobalWebRateLimitDuration, _ = strconv.ParseInt(value, 10, 64)
+	case "CriticalRateLimitNum":
+		common.CriticalRateLimitNum, _ = strconv.Atoi(value)
+	case "CriticalRateLimitDuration":
+		common.CriticalRateLimitDuration, _ = strconv.ParseInt(value, 10, 64)
+	case "SearchRateLimitNum":
+		common.SearchRateLimitNum, _ = strconv.Atoi(value)
+	case "SearchRateLimitDuration":
+		common.SearchRateLimitDuration, _ = strconv.ParseInt(value, 10, 64)
+	case "UploadRateLimitNum":
+		common.UploadRateLimitNum, _ = strconv.Atoi(value)
+	case "UploadRateLimitDuration":
+		common.UploadRateLimitDuration, _ = strconv.ParseInt(value, 10, 64)
+	case "DownloadRateLimitNum":
+		common.DownloadRateLimitNum, _ = strconv.Atoi(value)
+	case "DownloadRateLimitDuration":
+		common.DownloadRateLimitDuration, _ = strconv.ParseInt(value, 10, 64)
+	case "EmailVerificationMaxRequests":
+		common.EmailVerificationMaxRequests, _ = strconv.Atoi(value)
+	case "EmailVerificationDuration":
+		common.EmailVerificationDuration, _ = strconv.ParseInt(value, 10, 64)
 	case "ModelRequestRateLimitCount":
 		setting.ModelRequestRateLimitCount, _ = strconv.Atoi(value)
 	case "ModelRequestRateLimitDurationMinutes":

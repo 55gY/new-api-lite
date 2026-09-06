@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/55gY/new-api-lite/common"
@@ -94,6 +95,26 @@ func UpdateOption(c *gin.Context) {
 			"message": "当前版本仅支持 classic 经典前端，不支持主题切换",
 		})
 		return
+	case "GlobalApiRateLimitNum", "GlobalWebRateLimitNum", "CriticalRateLimitNum", "SearchRateLimitNum", "UploadRateLimitNum", "DownloadRateLimitNum", "EmailVerificationMaxRequests":
+		var value int
+		value, err = strconv.Atoi(option.Value.(string))
+		if err != nil || value < 1 || value > 100000000 {
+			err = fmt.Errorf("限制次数必须是 1 到 100000000 之间的整数")
+		}
+	case "GlobalApiRateLimitDuration", "GlobalWebRateLimitDuration", "CriticalRateLimitDuration", "SearchRateLimitDuration", "UploadRateLimitDuration", "DownloadRateLimitDuration", "EmailVerificationDuration":
+		var value int
+		value, err = strconv.Atoi(option.Value.(string))
+		if err != nil || value < 1 || value > 1200 {
+			err = fmt.Errorf("限制周期必须是 1 到 1200 秒之间的整数（受 Redis 限流键过期窗口限制）")
+		}
+	case "StreamCacheQueueLength":
+		var value int
+		value, err = strconv.Atoi(option.Value.(string))
+		if err != nil || value < 0 || value > 10000 {
+			err = fmt.Errorf("流缓存队列长度必须是 0 到 10000 之间的整数")
+		}
+	case "UserUsableGroups":
+		err = setting.CheckUserUsableGroups(option.Value.(string))
 	case "ModelRequestRateLimitGroup":
 		err = setting.CheckModelRequestRateLimitGroup(option.Value.(string))
 		if err != nil {
@@ -148,6 +169,10 @@ func UpdateOption(c *gin.Context) {
 			})
 			return
 		}
+	}
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+		return
 	}
 	err = model.UpdateOption(option.Key, option.Value.(string))
 	if err != nil {

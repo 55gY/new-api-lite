@@ -152,16 +152,20 @@ var (
 	CriticalRateLimitNum            = 20
 	CriticalRateLimitDuration int64 = 20 * 60
 
-	UploadRateLimitNum            = 10
-	UploadRateLimitDuration int64 = 60
+	UploadRateLimitNum      int
+	UploadRateLimitDuration int64
 
-	DownloadRateLimitNum            = 10
-	DownloadRateLimitDuration int64 = 60
+	DownloadRateLimitNum      int
+	DownloadRateLimitDuration int64
 
 	// Per-user search rate limit (applies after authentication, keyed by user ID)
 	SearchRateLimitEnable         = true
 	SearchRateLimitNum            = 10
 	SearchRateLimitDuration int64 = 60
+
+	// Email verification rate limit. The frontend enforces safe bounds when editing.
+	EmailVerificationMaxRequests       = 2
+	EmailVerificationDuration    int64 = 30
 )
 
 var RateLimitKeyExpirationDuration = 20 * time.Minute
