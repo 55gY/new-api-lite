@@ -132,6 +132,9 @@ export default function RequestRateLimit(props) {
                 <Form.Switch
                   field='GlobalApiRateLimitEnable'
                   label={t('启用全局 API 速率限制')}
+                  size='default'
+                  checkedText='｜'
+                  uncheckedText='〇'
                   extraText={t('默认关闭；开启后按客户端 IP 限制 API 请求频率')}
                   onChange={(value) =>
                     updateField('GlobalApiRateLimitEnable')(value)
@@ -185,6 +188,9 @@ export default function RequestRateLimit(props) {
                 <Form.Switch
                   field='GlobalWebRateLimitEnable'
                   label={t('启用全局 Web 速率限制')}
+                  size='default'
+                  checkedText='｜'
+                  uncheckedText='〇'
                   onChange={updateField('GlobalWebRateLimitEnable')}
                 />
               </Col>
@@ -222,6 +228,9 @@ export default function RequestRateLimit(props) {
                 <Form.Switch
                   field='CriticalRateLimitEnable'
                   label={t('启用关键接口速率限制')}
+                  size='default'
+                  checkedText='｜'
+                  uncheckedText='〇'
                   onChange={updateField('CriticalRateLimitEnable')}
                 />
               </Col>
@@ -251,6 +260,9 @@ export default function RequestRateLimit(props) {
                 <Form.Switch
                   field='SearchRateLimitEnable'
                   label={t('启用搜索速率限制')}
+                  size='default'
+                  checkedText='｜'
+                  uncheckedText='〇'
                   onChange={updateField('SearchRateLimitEnable')}
                 />
               </Col>

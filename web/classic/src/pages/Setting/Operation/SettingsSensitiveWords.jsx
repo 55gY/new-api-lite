@@ -133,6 +133,9 @@ export default function SettingsSensitiveWords(props) {
                 <Form.Switch
                   field={'StopOnSensitiveEnabled'}
                   label={t('检测到敏感词后立即停止生成')}
+                  size='default'
+                  checkedText='｜'
+                  uncheckedText='〇'
                   extraText={t('关闭时尝试替换敏感词后继续生成')}
                   onChange={(value) =>
                     setInputs((current) => ({
