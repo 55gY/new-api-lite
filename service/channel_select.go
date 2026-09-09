@@ -112,7 +112,7 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*model.Channel, string, 
 	if param.IsMappedPhase {
 		retry = param.GetMappedRetry()
 	}
-	if param.ModelName == model.AutoModelName && param.IsMappedPhase {
+	if param.ModelName == model.AutoModelName {
 		if param.AutoTried == nil {
 			param.AutoTried = make(map[string]struct{})
 		}

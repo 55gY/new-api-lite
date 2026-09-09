@@ -208,7 +208,7 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		}
 
 		if newAPIError == nil {
-			if relayInfo.OriginModelName == model.AutoModelName && retryParam.SelectedModelName != "" {
+			if retryParam.ModelName == model.AutoModelName && retryParam.SelectedModelName != "" {
 				model.RecordAutoModelSuccess(relayInfo.TokenGroup, channel.Id, retryParam.SelectedModelName)
 			}
 			relayInfo.LastError = nil

@@ -31,6 +31,8 @@ type ModelRequest struct {
 func Distribute() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		var channel *model.Channel
+		var selectedAutoModel string
+		usingGroup := ""
 		channelId, ok := common.GetContextKey(c, constant.ContextKeyTokenSpecificChannelId)
 		modelRequest, shouldSelectChannel, err := getModelRequest(c)
 		if err != nil {
@@ -81,7 +83,6 @@ func Distribute() func(c *gin.Context) {
 					return
 				}
 				var selectGroup string
-				usingGroup := ""
 				// check path is /pg/chat/completions
 				if strings.HasPrefix(c.Request.URL.Path, "/pg/chat/completions") {
 					playgroundRequest := &dto.PlayGroundRequest{}
@@ -92,29 +93,33 @@ func Distribute() func(c *gin.Context) {
 					}
 				}
 
-				if preferredChannelID, found := service.GetPreferredChannelByAffinity(c, modelRequest.Model, usingGroup); found {
-					preferred, err := model.CacheGetChannel(preferredChannelID)
-					if err == nil && preferred != nil {
-						if preferred.Status != common.ChannelStatusEnabled {
-							if service.ShouldSkipRetryAfterChannelAffinityFailure(c) {
-								abortWithOpenAiMessage(c, http.StatusForbidden, i18n.T(c, i18n.MsgDistributorAffinityChannelDisabled))
-								return
+				if modelRequest.Model != model.AutoModelName {
+					if preferredChannelID, found := service.GetPreferredChannelByAffinity(c, modelRequest.Model, usingGroup); found {
+						preferred, err := model.CacheGetChannel(preferredChannelID)
+						if err == nil && preferred != nil {
+							if preferred.Status != common.ChannelStatusEnabled {
+								if service.ShouldSkipRetryAfterChannelAffinityFailure(c) {
+									abortWithOpenAiMessage(c, http.StatusForbidden, i18n.T(c, i18n.MsgDistributorAffinityChannelDisabled))
+									return
+								}
+							} else if model.IsChannelEnabledForGroupModel("", modelRequest.Model, preferred.Id) {
+								channel = preferred
+								service.MarkChannelAffinityUsed(c, "", preferred.Id)
 							}
-						} else if model.IsChannelEnabledForGroupModel("", modelRequest.Model, preferred.Id) {
-							channel = preferred
-							service.MarkChannelAffinityUsed(c, "", preferred.Id)
 						}
 					}
 				}
 
 				if channel == nil {
-					channel, selectGroup, err = service.CacheGetRandomSatisfiedChannel(&service.RetryParam{
+					routeParam := &service.RetryParam{
 						Ctx:           c,
 						ModelName:     modelRequest.Model,
 						TokenGroup:    usingGroup,
 						ActualRetry:   common.GetPointer(0),
 						IsMappedPhase: false,
-					})
+					}
+					channel, selectGroup, err = service.CacheGetRandomSatisfiedChannel(routeParam)
+					selectedAutoModel = routeParam.SelectedModelName
 					if err != nil {
 						message := i18n.T(c, i18n.MsgDistributorGetChannelFailed, map[string]any{"Group": selectGroup, "Model": modelRequest.Model, "Error": err.Error()})
 						// 如果错误，但是渠道不为空，说明是数据库一致性问题
@@ -134,9 +139,15 @@ func Distribute() func(c *gin.Context) {
 		}
 		common.SetContextKey(c, constant.ContextKeyRequestStartTime, time.Now())
 		SetupContextForSelectedChannel(c, channel, modelRequest.Model)
+		if modelRequest.Model == model.AutoModelName && selectedAutoModel != "" {
+			common.SetContextKey(c, constant.ContextKeyChannelModelMapping, model.GetRuntimeSelectedModelMappingJSON(channel, selectedAutoModel))
+		}
 		c.Next()
 		if channel != nil && c.Writer != nil && c.Writer.Status() < http.StatusBadRequest {
 			service.RecordChannelAffinity(c, channel.Id)
+			if modelRequest.Model == model.AutoModelName && selectedAutoModel != "" {
+				model.RecordAutoModelSuccess(usingGroup, channel.Id, selectedAutoModel)
+			}
 		}
 	}
 }
