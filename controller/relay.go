@@ -208,6 +208,9 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		}
 
 		if newAPIError == nil {
+			if relayInfo.OriginModelName == model.AutoModelName && retryParam.SelectedModelName != "" {
+				model.RecordAutoModelSuccess(relayInfo.TokenGroup, channel.Id, retryParam.SelectedModelName)
+			}
 			relayInfo.LastError = nil
 			return
 		}
@@ -316,6 +319,9 @@ func getChannel(c *gin.Context, info *relaycommon.RelayInfo, retryParam *service
 	newAPIError := middleware.SetupContextForSelectedChannel(c, channel, info.OriginModelName)
 	if newAPIError != nil {
 		return nil, newAPIError
+	}
+	if retryParam.ModelName == model.AutoModelName && retryParam.SelectedModelName != "" {
+		common.SetContextKey(c, constant.ContextKeyChannelModelMapping, model.GetRuntimeSelectedModelMappingJSON(channel, retryParam.SelectedModelName))
 	}
 	return channel, nil
 }

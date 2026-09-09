@@ -127,7 +127,11 @@ func UpdateAbilityTestResult(channelId int, modelName string, status int, respon
 		"test_error":    truncateAbilityTestText(testError),
 		"test_response": truncateAbilityTestText(testResponse),
 	}
-	return DB.Model(&Ability{}).Where("channel_id = ? AND model = ?", channelId, modelName).Updates(updates).Error
+	err := DB.Model(&Ability{}).Where("channel_id = ? AND model = ?", channelId, modelName).Updates(updates).Error
+	if err == nil {
+		RefreshAutoCandidatesForChannel(channelId)
+	}
+	return err
 }
 
 func UpdateAbilityTestResultAndStatus(channelId int, modelName string, testStatus int, responseTime int, testError string, testResponse string, abilityStatus int) error {
@@ -150,7 +154,11 @@ func UpdateAbilityTestResultAndStatus(channelId int, modelName string, testStatu
 		"test_error":    truncateAbilityTestText(testError),
 		"test_response": truncateAbilityTestText(testResponse),
 	}
-	return DB.Model(&Ability{}).Where("channel_id = ? AND model = ?", channelId, modelName).Updates(updates).Error
+	err := DB.Model(&Ability{}).Where("channel_id = ? AND model = ?", channelId, modelName).Updates(updates).Error
+	if err == nil {
+		RefreshAutoCandidatesForChannel(channelId)
+	}
+	return err
 }
 
 func IsChannelAllModelsUnavailable(channelId int) (bool, error) {
@@ -408,6 +416,9 @@ func appendMappedRequestModels(models []string, group string) []string {
 		if actualModel == "" {
 			continue
 		}
+		if isConcreteModelName(actualModel) {
+			modelSet[AutoModelName] = struct{}{}
+		}
 		mapping := parseModelMapping(item.ModelMapping)
 		for _, requestModel := range common.SplitModelMappingValues(mapping[actualModel]) {
 			modelSet[requestModel] = struct{}{}
@@ -452,6 +463,13 @@ func getMappedCandidateAbilities(group string, requestModel string) ([]Ability, 
 	abilities := make([]Ability, 0, len(mappedAbilities))
 	for _, item := range mappedAbilities {
 		actualModel := strings.TrimSpace(item.Model)
+		if requestModel == AutoModelName {
+			// auto 只落到能力表中的真实渠道模型，不把逻辑映射名再次作为候选。
+			if isConcreteModelName(actualModel) {
+				abilities = append(abilities, item.Ability)
+			}
+			continue
+		}
 		mapping := parseModelMapping(item.ModelMapping)
 		if !common.StringsContains(common.SplitModelMappingValues(mapping[actualModel]), requestModel) {
 			continue

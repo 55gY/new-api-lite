@@ -17,7 +17,8 @@ import (
 
 var group2model2channels map[string]map[string][]int // enabled channel
 var group2mappedModel2channels map[string]map[string][]int
-var channelsIDM map[int]*Channel // all channels include disabled
+var group2autoCandidates map[string][]autoCandidate // precomputed concrete candidates for auto
+var channelsIDM map[int]*Channel                    // all channels include disabled
 var channelSyncLock sync.RWMutex
 
 func InitChannelCache() {
@@ -46,6 +47,10 @@ func InitChannelCache() {
 		newGroup2model2channels[group] = make(map[string][]int)
 		newGroup2mappedModel2channels[group] = make(map[string][]int)
 	}
+	newAutoCandidates := map[string][]autoCandidate{"": {}}
+	for group := range groups {
+		newAutoCandidates[group] = make([]autoCandidate, 0)
+	}
 	for _, channel := range channels {
 		if channel.Status != common.ChannelStatusEnabled {
 			continue // skip disabled channels
@@ -58,7 +63,8 @@ func InitChannelCache() {
 				channelModelSet[model] = struct{}{}
 			}
 		}
-		modelMapping := parseModelMapping(channel.ModelMapping)
+		// 在运行时视图中自动把该渠道的实际模型纳入 auto；不修改数据库里的手动映射。
+		modelMapping := autoModelMapping(channel)
 		for _, group := range groups {
 			group = strings.TrimSpace(group)
 			for model := range channelModelSet {
@@ -100,6 +106,19 @@ func InitChannelCache() {
 			}
 		}
 	}
+	// 预计算 auto 的实际模型候选，状态过滤与普通能力选择保持一致。
+	for _, ability := range abilities {
+		if !ability.Enabled || ability.Status != common.ChannelStatusEnabled || ability.TestStatus == AbilityTestStatusUnavailable || !isConcreteModelName(ability.Model) {
+			continue
+		}
+		channel, ok := newChannelId2channel[ability.ChannelId]
+		if !ok || channel.Status != common.ChannelStatusEnabled {
+			continue
+		}
+		candidate := autoCandidate{Model: strings.TrimSpace(ability.Model), ChannelId: ability.ChannelId, Priority: int64(abilityPriority(*ability)), Weight: ability.Weight}
+		newAutoCandidates[""] = append(newAutoCandidates[""], candidate)
+		newAutoCandidates[ability.Group] = append(newAutoCandidates[ability.Group], candidate)
+	}
 
 	// sort by priority
 	for group, model2channels := range newGroup2model2channels {
@@ -109,6 +128,15 @@ func InitChannelCache() {
 			})
 			newGroup2model2channels[group][model] = channels
 		}
+	}
+	for group, candidates := range newAutoCandidates {
+		sort.SliceStable(candidates, func(i, j int) bool {
+			if candidates[i].Priority != candidates[j].Priority {
+				return candidates[i].Priority > candidates[j].Priority
+			}
+			return candidates[i].ChannelId < candidates[j].ChannelId
+		})
+		newAutoCandidates[group] = candidates
 	}
 	for group, model2channels := range newGroup2mappedModel2channels {
 		for model, channels := range model2channels {
@@ -122,6 +150,7 @@ func InitChannelCache() {
 	channelSyncLock.Lock()
 	group2model2channels = newGroup2model2channels
 	group2mappedModel2channels = newGroup2mappedModel2channels
+	group2autoCandidates = newAutoCandidates
 	//channelsIDM = newChannelId2channel
 	for i, channel := range newChannelId2channel {
 		if channel.ChannelInfo.IsMultiKey {
@@ -375,7 +404,6 @@ func CacheUpdateChannelStatus(id int, status int) {
 		return
 	}
 	channelSyncLock.Lock()
-	defer channelSyncLock.Unlock()
 	if channel, ok := channelsIDM[id]; ok {
 		channel.Status = status
 	}
@@ -385,7 +413,6 @@ func CacheUpdateChannelStatus(id int, status int) {
 			for model, channels := range model2channels {
 				for i, channelId := range channels {
 					if channelId == id {
-						// remove the channel from the slice
 						group2model2channels[group][model] = append(channels[:i], channels[i+1:]...)
 						break
 					}
@@ -403,18 +430,15 @@ func CacheUpdateChannelStatus(id int, status int) {
 			}
 		}
 	}
+	channelSyncLock.Unlock()
+	RefreshAutoCandidatesForChannel(id)
 }
 
 func CacheUpdateChannel(channel *Channel) {
-	if !common.MemoryCacheEnabled {
+	if !common.MemoryCacheEnabled || channel == nil {
 		return
 	}
 	channelSyncLock.Lock()
-	defer channelSyncLock.Unlock()
-	if channel == nil {
-		return
-	}
-
 	if channelsIDM == nil {
 		channelsIDM = make(map[int]*Channel)
 	}
@@ -423,4 +447,6 @@ func CacheUpdateChannel(channel *Channel) {
 	}
 	channelsIDM[channel.Id] = channel
 	logger.LogDebug(context.Background(), "CacheUpdateChannel after: id=%d, name=%s, status=%d, polling_index=%d", channel.Id, channel.Name, channel.Status, channel.ChannelInfo.MultiKeyPollingIndex)
+	channelSyncLock.Unlock()
+	RefreshAutoCandidatesForChannel(channel.Id)
 }

@@ -1,18 +1,22 @@
 package service
 
 import (
+	"fmt"
+
 	"github.com/55gY/new-api-lite/model"
 	"github.com/gin-gonic/gin"
 )
 
 type RetryParam struct {
-	Ctx           *gin.Context
-	TokenGroup    string
-	ModelName     string // 请求模型名称（未映射前）
-	ActualRetry   *int   // 实际模型重试次数（独立）
-	MappedRetry   *int   // 映射模型重试次数（独立）
-	IsMappedPhase bool   // 当前是否在映射模型阶段
-	resetNextTry  bool
+	Ctx               *gin.Context
+	TokenGroup        string
+	ModelName         string              // 请求模型名称（未映射前）
+	ActualRetry       *int                // 实际模型重试次数（独立）
+	MappedRetry       *int                // 映射模型重试次数（独立）
+	IsMappedPhase     bool                // 当前是否在映射模型阶段
+	AutoTried         map[string]struct{} // auto 请求内已尝试的渠道/实际模型候选
+	SelectedModelName string              // auto 最近一次选择的实际模型
+	resetNextTry      bool
 }
 
 func (p *RetryParam) GetActualRetry() int {
@@ -107,6 +111,17 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*model.Channel, string, 
 	retry := param.GetActualRetry()
 	if param.IsMappedPhase {
 		retry = param.GetMappedRetry()
+	}
+	if param.ModelName == model.AutoModelName && param.IsMappedPhase {
+		if param.AutoTried == nil {
+			param.AutoTried = make(map[string]struct{})
+		}
+		channel, actualModel, err := model.GetRandomAutoChannel(param.TokenGroup, retry, param.AutoTried)
+		if err == nil && channel != nil {
+			param.SelectedModelName = actualModel
+			param.AutoTried[fmt.Sprintf("%d:%s", channel.Id, actualModel)] = struct{}{}
+		}
+		return channel, param.TokenGroup, err
 	}
 	channel, err := model.GetRandomSatisfiedChannel("", param.ModelName, retry, param.IsMappedPhase)
 	return channel, "", err
